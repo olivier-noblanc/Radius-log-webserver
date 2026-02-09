@@ -25,6 +25,9 @@ use windows::Win32::Security::Cryptography::{
 };
 use windows::core::PCWSTR;
 
+// Include generated build info
+include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
+
 // --- CONSTANTES ---
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
@@ -889,15 +892,22 @@ async fn get_security_config() -> impl Responder {
 
 // --- INDEX HTML (2026 Design) ---
 async fn index() -> impl Responder {
+    let body = include_str!("../assets/index.html")
+        .replace("{{BUILD_INFO}}", &format!("{} [{}]", BUILD_VERSION, BUILD_COMMIT));
+    
     HttpResponse::Ok()
         .content_type("text/html")
-        .body(include_str!("../assets/index.html")) // Embed HTML from assets
+        .insert_header(("Cache-Control", "no-cache, no-store, must-revalidate"))
+        .insert_header(("Pragma", "no-cache"))
+        .insert_header(("Expires", "0"))
+        .body(body)
 }
 
 // --- CHART.JS STATIC HANDLER ---
 async fn serve_chart_js() -> impl Responder {
     HttpResponse::Ok()
         .content_type("application/javascript")
+        .insert_header(("Cache-Control", "no-cache, no-store, must-revalidate"))
         .body(include_bytes!("../assets/chart.js").as_slice()) // Embed from assets folder
 }
 
