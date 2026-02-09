@@ -1,0 +1,43 @@
+# RADIUS LOG SERVER // 2026
+
+A high-performance, security-focused web interface for monitoring and analyzing RADIUS/NPS logs in real-time. Built with Rust, Actix-web, and SChannel diagnostics.
+
+![Design Preview](assets/index.html) <!-- Ideally a screenshot here -->
+
+## Core Features
+
+- **🚀 Real-time Monitoring**: Live log stream via WebSockets with integrated file watching.
+- **🛡️ Security Audit**: Deep inspection of server TLS protocols, cipher suites, and local certificates (CryptoAPI/Registry).
+- **🔎 SChannel Diagnostics**: One-click analysis of SChannel authentication failures directly from the log interface.
+- **📊 Analytics Dashboard**: KPI cards and real-time charts (via Chart.js) for rejection rates and user activity.
+- **🌐 Offline Reliability**: All assets (fonts, scripts) are embedded or localized for air-gapped environment compatibility.
+- **📦 Rolling Logs**: Integrated application logging with auto-rotation (20MB limit, 5 archives).
+
+## Technical Stack
+
+- **Backend**: Rust (Actix-web, Tokio, Notify, Windows-RS)
+- **Frontend**: Clean Modern CSS (Glassmorphism), Vanilla JS, Chart.js
+- **Design**: Premium "2026" aesthetic with Inter & JetBrains Mono typography.
+
+## Quick Start
+
+### Prerequisites
+- Rust 1.82+
+- Windows OS (for SChannel/Registry diagnostics)
+
+### Build & Run
+```powershell
+# Build for release
+cargo build --release
+
+# Run the server
+./target/release/radius-log-webserver
+```
+The server will be available at `http://localhost:8080` (and on your local network).
+
+## Deployment
+
+This project includes a **Nightly Build** CI/CD pipeline. Every commit triggers a fresh build and release available on GitHub.
+
+---
+**SYSTEM ARCHITECT: OLIVIER NOBLANC** // RADIUS SECURITY CORE v2026

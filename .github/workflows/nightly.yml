@@ -1,0 +1,32 @@
+name: Nightly Build
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 0 * * *' # Every night at midnight
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        targets: x86_64-pc-windows-msvc
+        
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+      
+    - name: Build Release
+      run: cargo build --release
+      
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: radius-log-webserver-nightly
+        path: target/release/radius-log-webserver.exe
