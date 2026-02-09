@@ -670,10 +670,21 @@
                         els.fileSelect.innerHTML = '<option>NO LOG FILES DETECTED</option>';
                         return;
                     }
+
                     files.forEach(f => {
                         const opt = document.createElement('option');
                         opt.value = f.path;
-                        opt.textContent = `${f.name} [${(f.size / 1024).toFixed(0)}KB]`;
+
+                        // Format Date [DD-MM]
+                        let dateStr = "";
+                        if (f.modified_ts) {
+                            const d = new Date(f.modified_ts * 1000);
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            dateStr = ` [${day}-${month}]`;
+                        }
+
+                        opt.textContent = `${f.name}${dateStr} [${(f.size / 1024).toFixed(0)}KB]`;
                         els.fileSelect.appendChild(opt);
                     });
                     if (files.length > 0) fetchData();

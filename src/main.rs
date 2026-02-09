@@ -406,6 +406,7 @@ struct LogFile {
     name: String,
     path: String,
     size: u64,
+    modified_ts: u64,
 }
 
 // --- LOGGING ---
@@ -468,17 +469,25 @@ async fn list_files() -> impl Responder {
                 let p = entry.path();
                 if p.is_file() && p.extension().is_some_and(|ext| ext == "log") {
                     if let Ok(metadata) = fs::metadata(&p) {
+                        let modified = metadata.modified()
+                            .ok()
+                            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                            .map(|d| d.as_secs())
+                            .unwrap_or(0);
+
                         if let Ok(name) = p.strip_prefix(&path) {
                             files.push(LogFile {
                                 name: name.to_string_lossy().to_string(),
                                 path: p.to_string_lossy().to_string(),
                                 size: metadata.len(),
+                                modified_ts: modified,
                             });
                         }
                     }
                 }
             }
-            files.sort_by(|a, b| b.name.cmp(&a.name));
+            // Sort by modification time descending (newest first)
+            files.sort_by(|a, b| b.modified_ts.cmp(&a.modified_ts));
             HttpResponse::Ok().json(files)
         }
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
