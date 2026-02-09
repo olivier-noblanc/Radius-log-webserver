@@ -30,10 +30,13 @@ A high-performance, security-focused web interface for monitoring and analyzing 
 # Build for release
 cargo build --release
 
-# Run the server
+# Run the server (default port 8080)
 ./target/release/radius-log-webserver
+
+# Run with a custom port
+$env:PORT=9000; ./target/release/radius-log-webserver
 ```
-The server will be available at `http://localhost:8080` (and on your local network).
+The server will be available at `http://localhost:8080` (or your custom port) and on your local network.
 
 ## Deployment
 
