@@ -390,6 +390,7 @@ async fn ws_route(
     stream: web::Payload, 
     data: web::Data<Arc<Mutex<Broadcaster>>>,
 ) -> Result<HttpResponse, Error> {
+    if !is_authorized(&req) { return Err(actix_web::error::ErrorForbidden("Access Denied")); }
     use std::sync::atomic::{AtomicUsize, Ordering};
     static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
@@ -410,6 +411,43 @@ struct LogFile {
     path: String,
     size: u64,
     modified_ts: u64,
+}
+
+// --- SECURITY HELPERS ---
+fn is_authorized(req: &HttpRequest) -> bool {
+    // 1. Check custom Auth Header (Session Bridge from Human Gate)
+    let auth = req.headers().get("X-Radius-Auth")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("");
+    
+    // 2. Check Referer/Origin (Anti-CSRF / Bot Protection)
+    let referer = req.headers().get("Referer")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("");
+    
+    let origin = req.headers().get("Origin")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("");
+
+    let connection_info = req.connection_info();
+    let host = connection_info.host();
+
+    // Referer/Origin must contain the host if present (ensures local-only access logic)
+    let origin_safe = if !referer.is_empty() {
+        referer.contains(host)
+    } else if !origin.is_empty() {
+        origin.contains(host)
+    } else {
+        true 
+    };
+
+    // WebSocket logic: Browsers don't allow custom headers in WS constructor 
+    // so we skip X-Radius-Auth for /ws but strictly enforce Origin/Referer
+    if req.path() == "/ws" {
+        return origin_safe;
+    }
+
+    auth == "authorized" && origin_safe
 }
 
 // --- LOGGING ---
@@ -462,7 +500,8 @@ fn get_log_path_from_registry() -> String {
     r"C:\Windows\System32\LogFiles".to_string()
 }
 
-async fn list_files() -> impl Responder {
+async fn list_files(req: HttpRequest) -> impl Responder {
+    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let base_path = get_log_path_from_registry();
     let path = PathBuf::from(&base_path);
     match fs::read_dir(&path) {
@@ -508,7 +547,8 @@ struct ParseQuery {
     sort_desc: bool,
 }
 
-async fn parse_file(query: web::Query<ParseQuery>) -> impl Responder {
+async fn parse_file(req: HttpRequest, query: web::Query<ParseQuery>) -> impl Responder {
+    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let file_path = &query.file;
     if file_path.contains("..") { return HttpResponse::BadRequest().json("Invalid path"); }
 
@@ -559,7 +599,8 @@ struct ExportQuery {
     search: String,
 }
 
-async fn export_csv(query: web::Query<ExportQuery>) -> impl Responder {
+async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> impl Responder {
+    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let file_path = &query.file;
     if file_path.contains("..") { return HttpResponse::BadRequest().body("Invalid path"); }
 
@@ -617,7 +658,8 @@ fn get_latest_log_file() -> Option<PathBuf> {
     None
 }
 
-async fn get_stats() -> impl Responder {
+async fn get_stats(req: HttpRequest) -> impl Responder {
+    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let mut total_requests = 0;
     let mut success_count = 0;
     let mut unique_users = std::collections::HashSet::new();
@@ -747,7 +789,8 @@ struct DebugQuery {
     timestamp: String,
 }
 
-async fn get_debug_info(query: web::Query<DebugQuery>) -> impl Responder {
+async fn get_debug_info(req: HttpRequest, query: web::Query<DebugQuery>) -> impl Responder {
+    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let schannel_errors = fetch_schannel_details(&query.timestamp);
     
     let report = if schannel_errors.is_empty() {
@@ -756,10 +799,10 @@ async fn get_debug_info(query: web::Query<DebugQuery>) -> impl Responder {
         schannel_errors.join("\n")
     };
 
-    serde_json::json!({
+    HttpResponse::Ok().json(serde_json::json!({
         "schannel_analysis": report,
         "timestamp": query.timestamp
-    }).to_string()
+    }))
 }
 
 // --- SECURITY AUDIT ---
@@ -804,7 +847,8 @@ fn get_cipher_name(id: &str) -> String {
     }
 }
 
-async fn get_security_config() -> impl Responder {
+async fn get_security_config(req: HttpRequest) -> impl Responder {
+    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let mut protocols = Vec::new();
     let mut ciphers = Vec::new();
     let mut certificates = Vec::new();

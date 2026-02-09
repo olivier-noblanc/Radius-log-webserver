@@ -413,14 +413,22 @@
         <div class="container">
             <!-- Header -->
             <header class="flex justify-between items-center mb-4">
-                <a href="#" class="brand-logo">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                        <path d="M12 8v8" />
-                        <path d="M8 12h8" />
-                    </svg>
-                    RADIUS // LOG CORE
-                </a>
+                <div class="flex flex-col">
+                    <a href="#" class="brand-logo">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
+                            <path d="M12 8v8" />
+                            <path d="M8 12h8" />
+                        </svg>
+                        RADIUS // LOG CORE
+                    </a>
+                    <div
+                        style="font-size: 0.65rem; color: var(--text-muted); letter-spacing: 1px; margin-top: 2px; opacity: 0.8;">
+                        SYSTEM ARCHITECT: <span style="color: var(--accent-cyan); font-weight: 600;">OLIVIER
+                            NOBLANC</span> // {{BUILD_INFO}}
+                    </div>
+                </div>
 
                 <nav class="flex glass-panel" style="padding: 0.5rem; gap: 0.5rem;">
                     <button class="btn-glass btn-nav active" onclick="switchView('logs')">LOG STREAM</button>
@@ -572,7 +580,9 @@
                 function openSecurityAudit() {
                     document.getElementById('securityModal').classList.add('open');
 
-                    fetch('/api/security-config')
+                    fetch('/api/security-config', {
+                        headers: { 'X-Radius-Auth': 'authorized' }
+                    })
                         .then(r => r.json())
                         .then(data => {
                             // Render Protocols
@@ -708,7 +718,9 @@
                     els.modalBody.innerHTML = '<div style="color:var(--accent-cyan)">ANALYZING SYSTEM LOGS...</div>';
                     els.modal.classList.add('open');
 
-                    fetch(`/api/debug?timestamp=${encodeURIComponent(ts)}`)
+                    fetch(`/api/debug?timestamp=${encodeURIComponent(ts)}`, {
+                        headers: { 'X-Radius-Auth': 'authorized' }
+                    })
                         .then(r => r.json())
                         .then(json => {
                             els.modalBody.innerText = json.schannel_analysis;
@@ -719,7 +731,9 @@
                 }
 
                 function loadFiles() {
-                    fetch('/api/files').then(r => r.json()).then(files => {
+                    fetch('/api/files', {
+                        headers: { 'X-Radius-Auth': 'authorized' }
+                    }).then(r => r.json()).then(files => {
                         els.fileSelect.innerHTML = '';
                         if (files.length === 0) {
                             els.fileSelect.innerHTML = '<option>NO LOG FILES DETECTED</option>';
@@ -755,7 +769,9 @@
                     // Fetching all data without search/sort params to cache it locally
                     const url = `/api/parse?file=${encodeURIComponent(path)}`;
 
-                    fetch(url).then(r => r.json()).then(data => {
+                    fetch(url, {
+                        headers: { 'X-Radius-Auth': 'authorized' }
+                    }).then(r => r.json()).then(data => {
                         fullData = data;
                         renderData();
                     });
@@ -827,7 +843,9 @@
                 // --- CHARTS ---
                 function initCharts() {
                     // Updated to fetch REAL stats
-                    fetch('/api/stats').then(r => r.json()).then(stats => {
+                    fetch('/api/stats', {
+                        headers: { 'X-Radius-Auth': 'authorized' }
+                    }).then(r => r.json()).then(stats => {
 
                         // Update KPIs
                         els.statTotal.textContent = stats.total_requests.toLocaleString();
@@ -940,8 +958,8 @@
                 // Remove direct calls to loadFiles and connectWS
             </script>
             <footer
-                style="margin-top: 2rem; padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.75rem; border-top: 1px solid var(--border-glass);">
-                SYSTEM ARCHITECT: OLIVIER NOBLANC // RADIUS SECURITY CORE v2026 // BUILD: {{BUILD_INFO}}
+                style="margin-top: 2rem; padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.75rem; border-top: 1px solid var(--border-glass); opacity: 0.3;">
+                RADIUS SECURITY CORE v2026 // END OF LINE.
             </footer>
         </div>
 </body>
