@@ -909,19 +909,33 @@
                 });
 
                 // --- INIT ---
-                document.getElementById('authBtn').onclick = () => {
+                function authorize() {
                     const gate = document.getElementById('human-gate');
                     const root = document.getElementById('app-root');
 
                     gate.classList.add('hidden');
                     root.classList.add('visible');
 
+                    localStorage.setItem('radius_authorized', 'true');
+
                     setTimeout(() => {
                         gate.style.display = 'none';
                         loadFiles();
                         connectWS();
                     }, 500);
-                };
+                }
+
+                document.getElementById('authBtn').onclick = authorize;
+
+                // Auto-bypass if already authorized
+                if (localStorage.getItem('radius_authorized') === 'true') {
+                    const gate = document.getElementById('human-gate');
+                    const root = document.getElementById('app-root');
+                    gate.style.display = 'none';
+                    root.classList.add('visible');
+                    loadFiles();
+                    connectWS();
+                }
 
                 // Remove direct calls to loadFiles and connectWS
             </script>
