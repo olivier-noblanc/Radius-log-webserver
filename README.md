@@ -2,7 +2,19 @@
 
 A high-performance, security-focused web interface for monitoring and analyzing RADIUS/NPS logs in real-time. Built with Rust, Actix-web, and SChannel diagnostics.
 
-![Design Preview](assets/index.html) <!-- Ideally a screenshot here -->
+
+```mermaid
+graph TD
+    subgraph "✨ UI DESIGN PREVIEW (2026 GLASSMORPHISM)"
+    A["Main Dashboard"] --> B["KPI Cards (Success/Auth/Active)"]
+    A["Main Dashboard"] --> C["Live Log Stream (WebSockets)"]
+    A["Main Dashboard"] --> D["Stats Grid (Chart.js)"]
+    A["Main Dashboard"] --> E["Diagnostic Console (SChannel)"]
+    end
+```
+
+> [!NOTE]
+> The interface uses a deep dark theme with translucent glass panels, cyan/green high-contrast accents, and modern typography (Inter/JetBrains Mono).
 
 ## Core Features
 
