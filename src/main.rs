@@ -909,7 +909,12 @@ async fn main() -> std::io::Result<()> {
     println!("Watching log directory: {}", log_path);
     start_watcher(broadcaster, log_path.clone());
 
-    println!("Server running at http://0.0.0.0:8080 (Access from LAN allowed)");
+    let port: u16 = std::env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(8080);
+
+    println!("Server running at http://0.0.0.0:{} (Access from LAN allowed)", port);
 
     HttpServer::new(move || {
         App::new()
@@ -926,7 +931,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/debug", web::get().to(get_debug_info))
             .route("/api/security-config", web::get().to(get_security_config))
     })
-    .bind("0.0.0.0:8080")?
+    .bind(format!("0.0.0.0:{}", port))?
     .run()
     .await
 }
