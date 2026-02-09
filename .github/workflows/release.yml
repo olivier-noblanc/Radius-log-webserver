@@ -1,24 +1,24 @@
-name: Nightly Release
+name: Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  nightly:
+  build:
     runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          toolchain: stable
 
       - name: Build Release
         shell: pwsh
@@ -37,21 +37,9 @@ jobs:
               exit 1
           }
 
-      - name: Update Nightly Tag
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -f nightly
-          git push -f origin nightly
-
-      - name: Upload Nightly Asset
+      - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          name: Nightly Build
-          tag_name: nightly
           files: target/release/radius-log-webserver.exe
-          prerelease: true
-          make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
