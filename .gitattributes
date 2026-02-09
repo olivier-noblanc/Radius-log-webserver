@@ -1,0 +1,6 @@
+# Mark assets as vendored/generated so they don't count towards language stats
+assets/index.html linguist-vendored
+assets/chart.js linguist-vendored
+
+# Ensure Rust is the focus
+*.rs linguist-detectable=true
