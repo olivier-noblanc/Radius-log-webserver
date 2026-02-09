@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>RADIUS // LOG CORE</title>
     <!-- ONLINE FONTS: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -298,20 +299,57 @@
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
+            background: rgba(0, 5, 10, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
             align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
+            justify-content: center;
             transition: opacity 0.2s;
         }
 
         .modal-overlay.open {
+            display: flex;
             opacity: 1;
             pointer-events: auto;
+        }
+
+        /* --- HUMAN GATE --- */
+        #human-gate {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-deep);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: opacity 0.5s;
+        }
+
+        #human-gate.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .gate-logo {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+        }
+
+        #app-root {
+            display: none;
+        }
+
+        #app-root.visible {
+            display: block;
         }
 
         .modal-content {
@@ -359,185 +397,201 @@
 </head>
 
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-4">
-            <a href="#" class="brand-logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                    <path d="M12 8v8" />
-                    <path d="M8 12h8" />
-                </svg>
-                RADIUS // LOG CORE
-            </a>
-
-            <nav class="flex glass-panel" style="padding: 0.5rem; gap: 0.5rem;">
-                <button class="btn-glass btn-nav active" onclick="switchView('logs')">LOG STREAM</button>
-                <button class="btn-glass btn-nav" onclick="switchView('dashboard')">ANALYTICS</button>
-            </nav>
-
-            <div class="flex items-center">
-                <button class="btn-glass" onclick="openSecurityAudit()"
-                    style="margin-right: 15px; border-color: var(--accent-cyan); color: var(--accent-cyan);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg> SECURITY AUDIT
-                </button>
-                <div id="statusBadge" style="margin-right: 15px; font-size: 0.8rem; color: #666;">DISCONNECTED</div>
-                <button class="btn-glass" id="liveBtn">
-                    <div class="live-dot"></div> LIVE
-                </button>
-            </div>
-        </header>
-
-        <!-- ... (Rest of Main Views) ... -->
-
-        <div id="view-logs">
-            <div class="flex items-center mb-4 glass-panel" style="padding: 1rem;">
-                <div class="flex-grow">
-                    <select id="fileSelect" class="input-glass" onchange="fetchData()">
-                        <option>Loading files...</option>
-                    </select>
-                </div>
-                <div class="flex-grow">
-                    <input type="text" id="searchInput" class="input-glass" placeholder="Search (User, IP, Reason)...">
-                </div>
-                <div>
-                    <button class="btn-glass btn-primary" id="loadBtn">REFRESH</button>
-                    <button class="btn-glass" id="exportBtn">EXPORT CSV</button>
-                </div>
-            </div>
-
-            <div class="glass-panel table-container">
-                <table id="logTable">
-                    <thead>
-                        <tr>
-                            <th onclick="sort('timestamp')">TIMESTAMP</th>
-                            <th onclick="sort('req_type')">TYPE</th>
-                            <th onclick="sort('server')">SERVER</th>
-                            <th onclick="sort('ap_ip')">AP IP</th>
-                            <th onclick="sort('ap_name')">AP NAME</th>
-                            <th onclick="sort('mac')">MAC</th>
-                            <th onclick="sort('user')">USER</th>
-                            <th onclick="sort('resp_type')">RESULT</th>
-                            <th onclick="sort('reason')">REASON / DIAGNOSTICS</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+    <div id="human-gate">
+        <div class="gate-logo">// RADIUS SECURITY CORE</div>
+        <div style="color: var(--text-muted); margin-bottom: 2rem; max-width: 400px; line-height: 1.6;">
+            HIGH-PERFORMANCE LOG ANALYTICS INTERFACE.<br>
+            SECURE SESSION INITIALIZATION REQUIRED.
         </div>
+        <button id="authBtn" class="btn-glass btn-primary"
+            style="padding: 1.2rem 3rem; font-size: 1.1rem; border-radius: 50px;">
+            AUTHORIZE SESSION
+        </button>
+    </div>
 
-        <div id="view-dashboard" class="hidden">
-            <div class="grid-3 mb-4">
-                <div class="glass-panel text-center">
-                    <div class="text-muted">TOTAL EVENTS</div>
-                    <div class="stat-value" id="statTotal">-</div>
+    <div id="app-root">
+        <div class="container">
+            <!-- Header -->
+            <header class="flex justify-between items-center mb-4">
+                <a href="#" class="brand-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
+                        <path d="M12 8v8" />
+                        <path d="M8 12h8" />
+                    </svg>
+                    RADIUS // LOG CORE
+                </a>
+
+                <nav class="flex glass-panel" style="padding: 0.5rem; gap: 0.5rem;">
+                    <button class="btn-glass btn-nav active" onclick="switchView('logs')">LOG STREAM</button>
+                    <button class="btn-glass btn-nav" onclick="switchView('dashboard')">ANALYTICS</button>
+                </nav>
+
+                <div class="flex items-center">
+                    <button class="btn-glass" onclick="openSecurityAudit()"
+                        style="margin-right: 15px; border-color: var(--accent-cyan); color: var(--accent-cyan);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg> SECURITY AUDIT
+                    </button>
+                    <div id="statusBadge" style="margin-right: 15px; font-size: 0.8rem; color: #666;">DISCONNECTED</div>
+                    <button class="btn-glass" id="liveBtn">
+                        <div class="live-dot"></div> LIVE
+                    </button>
                 </div>
-                <div class="glass-panel text-center">
-                    <div class="text-muted">SUCCESS RATE</div>
-                    <div class="stat-value" style="color: var(--accent-green);" id="statSuccess">-%</div>
+            </header>
+
+            <!-- ... (Rest of Main Views) ... -->
+
+            <div id="view-logs">
+                <div class="flex items-center mb-4 glass-panel" style="padding: 1rem;">
+                    <div class="flex-grow">
+                        <select id="fileSelect" class="input-glass" onchange="fetchData()">
+                            <option>Loading files...</option>
+                        </select>
+                    </div>
+                    <div class="flex-grow">
+                        <input type="text" id="searchInput" class="input-glass"
+                            placeholder="Search (User, IP, Reason)...">
+                    </div>
+                    <div>
+                        <button class="btn-glass btn-primary" id="loadBtn">REFRESH</button>
+                        <button class="btn-glass" id="exportBtn">EXPORT CSV</button>
+                    </div>
                 </div>
-                <div class="glass-panel text-center">
-                    <div class="text-muted">ACTIVE USERS</div>
-                    <div class="stat-value" style="color: #fff;" id="statUsers">-</div>
+
+                <div class="glass-panel table-container">
+                    <table id="logTable">
+                        <thead>
+                            <tr>
+                                <th onclick="sort('timestamp')">TIMESTAMP</th>
+                                <th onclick="sort('req_type')">TYPE</th>
+                                <th onclick="sort('server')">SERVER</th>
+                                <th onclick="sort('ap_ip')">AP IP</th>
+                                <th onclick="sort('ap_name')">AP NAME</th>
+                                <th onclick="sort('mac')">MAC</th>
+                                <th onclick="sort('user')">USER</th>
+                                <th onclick="sort('resp_type')">RESULT</th>
+                                <th onclick="sort('reason')">REASON / DIAGNOSTICS</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="grid-2">
-                <div class="glass-panel">
-                    <h3 class="text-muted mb-4">REJECTIONS (24H)</h3>
-                    <canvas id="chartRejects"></canvas>
-                </div>
-                <div class="glass-panel">
-                    <h3 class="text-muted mb-4">TOP FAILURES (USER)</h3>
-                    <canvas id="chartUsers"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Security Modal -->
-        <div class="modal-overlay" id="securityModal">
-            <div class="modal-content" style="max-width: 1000px;">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 style="color: var(--accent-green); font-family: var(--font-code);">SERVER SECURITY CONFIGURATION
-                    </h3>
-                    <button class="btn-glass"
-                        onclick="document.getElementById('securityModal').classList.remove('open')">CLOSE</button>
+            <div id="view-dashboard" class="hidden">
+                <div class="grid-3 mb-4">
+                    <div class="glass-panel text-center">
+                        <div class="text-muted">TOTAL EVENTS</div>
+                        <div class="stat-value" id="statTotal">-</div>
+                    </div>
+                    <div class="glass-panel text-center">
+                        <div class="text-muted">SUCCESS RATE</div>
+                        <div class="stat-value" style="color: var(--accent-green);" id="statSuccess">-%</div>
+                    </div>
+                    <div class="glass-panel text-center">
+                        <div class="text-muted">ACTIVE USERS</div>
+                        <div class="stat-value" style="color: #fff;" id="statUsers">-</div>
+                    </div>
                 </div>
 
-                <div class="grid-3">
-                    <!-- Column 1: Protocols -->
+                <div class="grid-2">
                     <div class="glass-panel">
-                        <h4 class="text-muted mb-4">TLS PROTOCOLS</h4>
-                        <div id="protocolList" class="flex flex-col" style="gap: 0.5rem;"></div>
+                        <h3 class="text-muted mb-4">REJECTIONS (24H)</h3>
+                        <canvas id="chartRejects"></canvas>
+                    </div>
+                    <div class="glass-panel">
+                        <h3 class="text-muted mb-4">TOP FAILURES (USER)</h3>
+                        <canvas id="chartUsers"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Modal -->
+            <div class="modal-overlay" id="securityModal">
+                <div class="modal-content" style="max-width: 1000px;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 style="color: var(--accent-green); font-family: var(--font-code);">SERVER SECURITY
+                            CONFIGURATION
+                        </h3>
+                        <button class="btn-glass"
+                            onclick="document.getElementById('securityModal').classList.remove('open')">CLOSE</button>
                     </div>
 
-                    <!-- Column 2: Ciphers -->
-                    <div class="glass-panel">
-                        <h4 class="text-muted mb-4">CIPHER SUITES</h4>
-                        <div class="table-container" style="max-height: 300px; overflow-y: auto;">
-                            <table style="font-size: 0.75rem;">
-                                <tbody id="cipherTable"></tbody>
-                            </table>
+                    <div class="grid-3">
+                        <!-- Column 1: Protocols -->
+                        <div class="glass-panel">
+                            <h4 class="text-muted mb-4">TLS PROTOCOLS</h4>
+                            <div id="protocolList" class="flex flex-col" style="gap: 0.5rem;"></div>
+                        </div>
+
+                        <!-- Column 2: Ciphers -->
+                        <div class="glass-panel">
+                            <h4 class="text-muted mb-4">CIPHER SUITES</h4>
+                            <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                                <table style="font-size: 0.75rem;">
+                                    <tbody id="cipherTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Column 3: Certs -->
+                        <div class="glass-panel">
+                            <h4 class="text-muted mb-4">LOCAL CERTIFICATES</h4>
+                            <div id="certList" class="flex flex-col"
+                                style="gap: 1rem; max-height: 300px; overflow-y: auto;"></div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Column 3: Certs -->
-                    <div class="glass-panel">
-                        <h4 class="text-muted mb-4">LOCAL CERTIFICATES</h4>
-                        <div id="certList" class="flex flex-col"
-                            style="gap: 1rem; max-height: 300px; overflow-y: auto;"></div>
+            <!-- Details Modal -->
+            <div class="modal-overlay" id="detailModal">
+                <div class="modal-content">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 style="color: var(--accent-cyan); font-family: var(--font-code);">PACKET INSPECTION</h3>
+                        <button class="btn-glass" onclick="closeModal()">CLOSE</button>
                     </div>
+                    <div id="modalBody" class="code-block"></div>
                 </div>
             </div>
-        </div>
 
-        <!-- Details Modal -->
-        <div class="modal-overlay" id="detailModal">
-            <div class="modal-content">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 style="color: var(--accent-cyan); font-family: var(--font-code);">PACKET INSPECTION</h3>
-                    <button class="btn-glass" onclick="closeModal()">CLOSE</button>
-                </div>
-                <div id="modalBody" class="code-block"></div>
-            </div>
-        </div>
+            <footer
+                style="margin-top: 2rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; padding-bottom: 1rem;">
+                SYSTEM ARCHITECT: <span style="color: var(--accent-cyan); font-weight: bold;">OLIVIER NOBLANC</span> //
+                RADIUS SECURITY CORE v2026
+            </footer>
 
-        <footer
-            style="margin-top: 2rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; padding-bottom: 1rem;">
-            SYSTEM ARCHITECT: <span style="color: var(--accent-cyan); font-weight: bold;">OLIVIER NOBLANC</span> //
-            RADIUS SECURITY CORE v2026
-        </footer>
+            <!-- LOGIC -->
+            <script>
+                // Use native WebSocket
+                // ... (Previous Logic) ...
 
-        <!-- LOGIC -->
-        <script>
-            // Use native WebSocket
-            // ... (Previous Logic) ...
+                function openSecurityAudit() {
+                    document.getElementById('securityModal').classList.add('open');
 
-            function openSecurityAudit() {
-                document.getElementById('securityModal').classList.add('open');
-
-                fetch('/api/security-config')
-                    .then(r => r.json())
-                    .then(data => {
-                        // Render Protocols
-                        const protoDiv = document.getElementById('protocolList');
-                        if (data.protocols.length === 0) protoDiv.innerHTML = '<div class="text-muted">No TLS keys found in Registry</div>';
-                        else {
-                            protoDiv.innerHTML = data.protocols.map(p => `
+                    fetch('/api/security-config')
+                        .then(r => r.json())
+                        .then(data => {
+                            // Render Protocols
+                            const protoDiv = document.getElementById('protocolList');
+                            if (data.protocols.length === 0) protoDiv.innerHTML = '<div class="text-muted">No TLS keys found in Registry</div>';
+                            else {
+                                protoDiv.innerHTML = data.protocols.map(p => `
                             <div style="padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid ${p.enabled ? 'var(--accent-green)' : 'rgba(255,255,255,0.1)'}; color: ${p.enabled ? 'var(--accent-green)' : 'var(--text-muted)'}; font-weight: bold; display: flex; justify-content: space-between;">
                                 <span>${p.name}</span>
                                 <span>${p.enabled ? 'ON' : 'OFF'}</span>
                             </div>
                         `).join('');
-                        }
+                            }
 
-                        // Render Ciphers
-                        const cipherBody = document.getElementById('cipherTable');
-                        if (data.ciphers.length === 0) cipherBody.innerHTML = '<tr><td colspan="3" class="text-muted">No specific cipher suites found</td></tr>';
-                        else {
-                            cipherBody.innerHTML = data.ciphers.map(c => `
+                            // Render Ciphers
+                            const cipherBody = document.getElementById('cipherTable');
+                            if (data.ciphers.length === 0) cipherBody.innerHTML = '<tr><td colspan="3" class="text-muted">No specific cipher suites found</td></tr>';
+                            else {
+                                cipherBody.innerHTML = data.ciphers.map(c => `
                             <tr style="opacity: ${c.enabled ? '1' : '0.4'}">
                                 <td style="color: var(--text-muted);">${c.id}</td>
                                 <td>${c.name}</td>
@@ -546,13 +600,13 @@
                                 </td>
                             </tr>
                         `).join('');
-                        }
+                            }
 
-                        // Render Certs
-                        const certDiv = document.getElementById('certList');
-                        if (data.certificates.length === 0) certDiv.innerHTML = '<div class="text-muted">No certificates found in LocalMachine/MY</div>';
-                        else {
-                            certDiv.innerHTML = data.certificates.map(c => `
+                            // Render Certs
+                            const certDiv = document.getElementById('certList');
+                            if (data.certificates.length === 0) certDiv.innerHTML = '<div class="text-muted">No certificates found in LocalMachine/MY</div>';
+                            else {
+                                certDiv.innerHTML = data.certificates.map(c => `
                             <div class="glass-panel" style="padding: 1rem; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.1);">
                                 <div style="color: var(--accent-cyan); font-weight: bold; margin-bottom: 0.5rem; word-break: break-all;">${c.subject}</div>
                                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
@@ -564,71 +618,71 @@
                                 </div>
                             </div>
                         `).join('');
-                        }
-                    });
-            }
-
-            // State
-            let currentSort = { col: 'timestamp', desc: true };
-            let isLive = false;
-            let ws = null;
-            let chartInstances = {};
-            let fullData = []; // Store all logs client-side
-
-            // DOM Elements
-            const els = {
-                viewLogs: document.getElementById('view-logs'),
-                viewDash: document.getElementById('view-dashboard'),
-                navBtns: document.querySelectorAll('.btn-nav'),
-                fileSelect: document.getElementById('fileSelect'),
-                searchInput: document.getElementById('searchInput'),
-                tbody: document.querySelector('#logTable tbody'),
-                status: document.getElementById('statusBadge'),
-                liveBtn: document.getElementById('liveBtn'),
-                modal: document.getElementById('detailModal'),
-                modalBody: document.getElementById('modalBody'),
-                // Stats
-                statTotal: document.getElementById('statTotal'),
-                statSuccess: document.getElementById('statSuccess'),
-                statUsers: document.getElementById('statUsers')
-            };
-
-            // --- CORE FUNCTIONS ---
-
-            function switchView(view) {
-                els.navBtns.forEach(b => b.classList.remove('active')); // Hacky check text
-                document.querySelectorAll('.btn-nav').forEach(b => {
-                    if (b.textContent.includes(view === 'logs' ? 'STREAM' : 'ANALYTICS')) b.classList.add('active');
-                });
-
-                if (view === 'logs') {
-                    els.viewLogs.classList.remove('hidden');
-                    els.viewDash.classList.add('hidden');
-                } else {
-                    els.viewLogs.classList.add('hidden');
-                    els.viewDash.classList.remove('hidden');
-                    initCharts();
+                            }
+                        });
                 }
-            }
 
-            function createRow(data) {
-                const tr = document.createElement('tr');
+                // State
+                let currentSort = { col: 'timestamp', desc: true };
+                let isLive = false;
+                let ws = null;
+                let chartInstances = {};
+                let fullData = []; // Store all logs client-side
 
-                // Status determination
-                let statusClass = '';
-                if (data.resp_type.includes('Accept')) statusClass = 'status-success';
-                if (data.resp_type.includes('Reject')) statusClass = 'status-fail';
+                // DOM Elements
+                const els = {
+                    viewLogs: document.getElementById('view-logs'),
+                    viewDash: document.getElementById('view-dashboard'),
+                    navBtns: document.querySelectorAll('.btn-nav'),
+                    fileSelect: document.getElementById('fileSelect'),
+                    searchInput: document.getElementById('searchInput'),
+                    tbody: document.querySelector('#logTable tbody'),
+                    status: document.getElementById('statusBadge'),
+                    liveBtn: document.getElementById('liveBtn'),
+                    modal: document.getElementById('detailModal'),
+                    modalBody: document.getElementById('modalBody'),
+                    // Stats
+                    statTotal: document.getElementById('statTotal'),
+                    statSuccess: document.getElementById('statSuccess'),
+                    statUsers: document.getElementById('statUsers')
+                };
 
-                const safe = (txt) => txt || '-';
+                // --- CORE FUNCTIONS ---
 
-                let actionHtml = '';
-                if (data.resp_type.includes('Reject')) {
-                    actionHtml = `<button onclick="fetchDebug('${data.timestamp}', event)" class="btn-glass" style="padding: 2px 6px; margin-left: 5px; color: var(--accent-red); border-color: var(--accent-red);" title="Analyze SChannel Errors">
+                function switchView(view) {
+                    els.navBtns.forEach(b => b.classList.remove('active')); // Hacky check text
+                    document.querySelectorAll('.btn-nav').forEach(b => {
+                        if (b.textContent.includes(view === 'logs' ? 'STREAM' : 'ANALYTICS')) b.classList.add('active');
+                    });
+
+                    if (view === 'logs') {
+                        els.viewLogs.classList.remove('hidden');
+                        els.viewDash.classList.add('hidden');
+                    } else {
+                        els.viewLogs.classList.add('hidden');
+                        els.viewDash.classList.remove('hidden');
+                        initCharts();
+                    }
+                }
+
+                function createRow(data) {
+                    const tr = document.createElement('tr');
+
+                    // Status determination
+                    let statusClass = '';
+                    if (data.resp_type.includes('Accept')) statusClass = 'status-success';
+                    if (data.resp_type.includes('Reject')) statusClass = 'status-fail';
+
+                    const safe = (txt) => txt || '-';
+
+                    let actionHtml = '';
+                    if (data.resp_type.includes('Reject')) {
+                        actionHtml = `<button onclick="fetchDebug('${data.timestamp}', event)" class="btn-glass" style="padding: 2px 6px; margin-left: 5px; color: var(--accent-red); border-color: var(--accent-red);" title="Analyze SChannel Errors">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c0 4.97-3 9-5.46 9m10.92 0C15 11 12 6.97 12 2m0 0c-2 0-3.5 1-4.5 3m4.5-3c2 0 3.5 1 4.5 3m-9 3c0 4 3 7 3 7m6-7s-3 3-3 7m-3 7v3m-3-3v3m6-3v3M5 9a9 9 0 0 1 14 0"/></svg>
                 </button>`;
-                }
+                    }
 
-                tr.innerHTML = `
+                    tr.innerHTML = `
                 <td>${safe(data.timestamp)}</td>
                 <td>${safe(data.req_type)}</td>
                 <td>${safe(data.server)}</td>
@@ -642,227 +696,241 @@
                     ${actionHtml}
                 </td>
             `;
-                tr.onclick = (e) => {
-                    if (!e.target.closest('button')) openModal(data);
-                };
-                return tr;
-            }
+                    tr.onclick = (e) => {
+                        if (!e.target.closest('button')) openModal(data);
+                    };
+                    return tr;
+                }
 
-            function fetchDebug(ts, e) {
-                e.stopPropagation();
-                // Show loading
-                els.modalBody.innerHTML = '<div style="color:var(--accent-cyan)">ANALYZING SYSTEM LOGS...</div>';
-                els.modal.classList.add('open');
+                function fetchDebug(ts, e) {
+                    e.stopPropagation();
+                    // Show loading
+                    els.modalBody.innerHTML = '<div style="color:var(--accent-cyan)">ANALYZING SYSTEM LOGS...</div>';
+                    els.modal.classList.add('open');
 
-                fetch(`/api/debug?timestamp=${encodeURIComponent(ts)}`)
-                    .then(r => r.json())
-                    .then(json => {
-                        els.modalBody.innerText = json.schannel_analysis;
-                    })
-                    .catch(err => {
-                        els.modalBody.innerText = "ERROR: " + err;
-                    });
-            }
+                    fetch(`/api/debug?timestamp=${encodeURIComponent(ts)}`)
+                        .then(r => r.json())
+                        .then(json => {
+                            els.modalBody.innerText = json.schannel_analysis;
+                        })
+                        .catch(err => {
+                            els.modalBody.innerText = "ERROR: " + err;
+                        });
+                }
 
-            function loadFiles() {
-                fetch('/api/files').then(r => r.json()).then(files => {
-                    els.fileSelect.innerHTML = '';
-                    if (files.length === 0) {
-                        els.fileSelect.innerHTML = '<option>NO LOG FILES DETECTED</option>';
-                        return;
-                    }
-
-                    files.forEach(f => {
-                        const opt = document.createElement('option');
-                        opt.value = f.path;
-
-                        // Format Date [DD-MM]
-                        let dateStr = "";
-                        if (f.modified_ts) {
-                            const d = new Date(f.modified_ts * 1000);
-                            const day = String(d.getDate()).padStart(2, '0');
-                            const month = String(d.getMonth() + 1).padStart(2, '0');
-                            dateStr = ` [${day}-${month}]`;
+                function loadFiles() {
+                    fetch('/api/files').then(r => r.json()).then(files => {
+                        els.fileSelect.innerHTML = '';
+                        if (files.length === 0) {
+                            els.fileSelect.innerHTML = '<option>NO LOG FILES DETECTED</option>';
+                            return;
                         }
 
-                        opt.textContent = `${f.name}${dateStr} [${(f.size / 1024).toFixed(0)}KB]`;
-                        els.fileSelect.appendChild(opt);
+                        files.forEach(f => {
+                            const opt = document.createElement('option');
+                            opt.value = f.path;
+
+                            // Format Date [DD-MM]
+                            let dateStr = "";
+                            if (f.modified_ts) {
+                                const d = new Date(f.modified_ts * 1000);
+                                const day = String(d.getDate()).padStart(2, '0');
+                                const month = String(d.getMonth() + 1).padStart(2, '0');
+                                dateStr = ` [${day}-${month}]`;
+                            }
+
+                            opt.textContent = `${f.name}${dateStr} [${(f.size / 1024).toFixed(0)}KB]`;
+                            els.fileSelect.appendChild(opt);
+                        });
+                        if (files.length > 0) fetchData();
                     });
-                    if (files.length > 0) fetchData();
-                });
-            }
-
-            function fetchData() {
-                const path = els.fileSelect.value;
-                if (!path || path.startsWith("NO LOG")) return;
-
-                els.tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">// QUERYING CORE...</td></tr>';
-
-                // Fetching all data without search/sort params to cache it locally
-                const url = `/api/parse?file=${encodeURIComponent(path)}`;
-
-                fetch(url).then(r => r.json()).then(data => {
-                    fullData = data;
-                    renderData();
-                });
-            }
-
-            function renderData() {
-                els.tbody.innerHTML = '';
-                const search = els.searchInput.value.toLowerCase();
-
-                let filtered = fullData.filter(item => {
-                    if (!search) return true;
-                    return Object.values(item).some(v => String(v).toLowerCase().includes(search));
-                });
-
-                // Local Sort
-                filtered.sort((a, b) => {
-                    let v1 = a[currentSort.col];
-                    let v2 = b[currentSort.col];
-                    if (v1 < v2) return currentSort.desc ? 1 : -1;
-                    if (v1 > v2) return currentSort.desc ? -1 : 1;
-                    return 0;
-                });
-
-                if (filtered.length === 0) {
-                    els.tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem;">NO DATA FOUND</td></tr>';
-                    return;
                 }
-                filtered.forEach(item => els.tbody.appendChild(createRow(item)));
-            }
 
-            function sort(col) {
-                if (currentSort.col === col) currentSort.desc = !currentSort.desc;
-                else { currentSort.col = col; currentSort.desc = true; }
-                renderData();
-            }
+                function fetchData() {
+                    const path = els.fileSelect.value;
+                    if (!path || path.startsWith("NO LOG")) return;
 
-            // --- WEBSOCKET ---
-            function connectWS() {
-                const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-                ws = new WebSocket(`${proto}://${window.location.host}/ws`);
+                    els.tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">// QUERYING CORE...</td></tr>';
 
-                ws.onopen = () => {
-                    els.status.textContent = 'SYSTEM ONLINE';
-                    els.status.style.color = 'var(--accent-green)';
+                    // Fetching all data without search/sort params to cache it locally
+                    const url = `/api/parse?file=${encodeURIComponent(path)}`;
+
+                    fetch(url).then(r => r.json()).then(data => {
+                        fullData = data;
+                        renderData();
+                    });
+                }
+
+                function renderData() {
+                    els.tbody.innerHTML = '';
+                    const search = els.searchInput.value.toLowerCase();
+
+                    let filtered = fullData.filter(item => {
+                        if (!search) return true;
+                        return Object.values(item).some(v => String(v).toLowerCase().includes(search));
+                    });
+
+                    // Local Sort
+                    filtered.sort((a, b) => {
+                        let v1 = a[currentSort.col];
+                        let v2 = b[currentSort.col];
+                        if (v1 < v2) return currentSort.desc ? 1 : -1;
+                        if (v1 > v2) return currentSort.desc ? -1 : 1;
+                        return 0;
+                    });
+
+                    if (filtered.length === 0) {
+                        els.tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem;">NO DATA FOUND</td></tr>';
+                        return;
+                    }
+                    filtered.forEach(item => els.tbody.appendChild(createRow(item)));
+                }
+
+                function sort(col) {
+                    if (currentSort.col === col) currentSort.desc = !currentSort.desc;
+                    else { currentSort.col = col; currentSort.desc = true; }
+                    renderData();
+                }
+
+                // --- WEBSOCKET ---
+                function connectWS() {
+                    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                    ws = new WebSocket(`${proto}://${window.location.host}/ws`);
+
+                    ws.onopen = () => {
+                        els.status.textContent = 'SYSTEM ONLINE';
+                        els.status.style.color = 'var(--accent-green)';
+                    };
+                    ws.onclose = () => {
+                        els.status.textContent = 'CONNECTION LOST';
+                        els.status.style.color = 'var(--accent-red)';
+                        setTimeout(connectWS, 2000);
+                    };
+                    ws.onmessage = (e) => {
+                        if (!isLive) return;
+                        const items = JSON.parse(e.data);
+                        fullData = [...items, ...fullData].slice(0, 5000); // Buffer management
+                        renderData();
+                    };
+                }
+
+                // --- MODAL ---
+                function openModal(data) {
+                    els.modalBody.textContent = JSON.stringify(data, null, 2);
+                    els.modal.classList.add('open');
+                }
+                function closeModal() {
+                    els.modal.classList.remove('open');
+                }
+                els.modal.onclick = (e) => { if (e.target === els.modal) closeModal(); }
+
+                // --- CHARTS ---
+                function initCharts() {
+                    // Updated to fetch REAL stats
+                    fetch('/api/stats').then(r => r.json()).then(stats => {
+
+                        // Update KPIs
+                        els.statTotal.textContent = stats.total_requests.toLocaleString();
+                        els.statSuccess.textContent = stats.success_rate.toFixed(1) + '%';
+                        els.statUsers.textContent = stats.active_users.toLocaleString();
+
+                        if (chartInstances.rejects) {
+                            chartInstances.rejects.destroy();
+                            chartInstances.users.destroy();
+                        }
+
+                        Chart.defaults.color = '#8b9bb4';
+                        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+
+                        const ctx1 = document.getElementById('chartRejects');
+                        if (ctx1) {
+                            chartInstances.rejects = new Chart(ctx1, {
+                                type: 'line',
+                                data: {
+                                    labels: stats.rejections_by_hour.map(x => x[0]),
+                                    datasets: [{
+                                        label: 'Rejections',
+                                        data: stats.rejections_by_hour.map(x => x[1]),
+                                        borderColor: '#ff4757',
+                                        backgroundColor: 'rgba(255, 71, 87, 0.1)',
+                                        fill: true,
+                                        tension: 0.4
+                                    }]
+                                },
+                                options: { responsive: true, plugins: { legend: { display: false } } }
+                            });
+                        }
+
+                        const ctx2 = document.getElementById('chartUsers');
+                        if (ctx2) {
+                            chartInstances.users = new Chart(ctx2, {
+                                type: 'bar',
+                                data: {
+                                    labels: stats.top_users.map(x => x[0]),
+                                    datasets: [{
+                                        label: 'Failures',
+                                        data: stats.top_users.map(x => x[1]),
+                                        backgroundColor: '#00f2ff'
+                                    }]
+                                },
+                                options: { responsive: true, plugins: { legend: { display: false } } }
+                            });
+                        }
+                    });
+                }
+
+                // --- EVENTS ---
+                document.getElementById('loadBtn').onclick = fetchData;
+                document.getElementById('exportBtn').onclick = () => {
+                    const url = `/api/export?file=${encodeURIComponent(els.fileSelect.value)}&search=${encodeURIComponent(els.searchInput.value)}`;
+                    window.open(url, '_blank');
                 };
-                ws.onclose = () => {
-                    els.status.textContent = 'CONNECTION LOST';
-                    els.status.style.color = 'var(--accent-red)';
-                    setTimeout(connectWS, 2000);
-                };
-                ws.onmessage = (e) => {
-                    if (!isLive) return;
-                    const items = JSON.parse(e.data);
-                    fullData = [...items, ...fullData].slice(0, 5000); // Buffer management
+
+                els.searchInput.oninput = () => {
                     renderData();
                 };
-            }
 
-            // --- MODAL ---
-            function openModal(data) {
-                els.modalBody.textContent = JSON.stringify(data, null, 2);
-                els.modal.classList.add('open');
-            }
-            function closeModal() {
-                els.modal.classList.remove('open');
-            }
-            els.modal.onclick = (e) => { if (e.target === els.modal) closeModal(); }
+                els.liveBtn.onclick = () => {
+                    isLive = !isLive;
+                    els.liveBtn.classList.toggle('live-active');
+                };
 
-            // --- CHARTS ---
-            function initCharts() {
-                // Updated to fetch REAL stats
-                fetch('/api/stats').then(r => r.json()).then(stats => {
-
-                    // Update KPIs
-                    els.statTotal.textContent = stats.total_requests.toLocaleString();
-                    els.statSuccess.textContent = stats.success_rate.toFixed(1) + '%';
-                    els.statUsers.textContent = stats.active_users.toLocaleString();
-
-                    if (chartInstances.rejects) {
-                        chartInstances.rejects.destroy();
-                        chartInstances.users.destroy();
-                    }
-
-                    Chart.defaults.color = '#8b9bb4';
-                    Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
-
-                    const ctx1 = document.getElementById('chartRejects');
-                    if (ctx1) {
-                        chartInstances.rejects = new Chart(ctx1, {
-                            type: 'line',
-                            data: {
-                                labels: stats.rejections_by_hour.map(x => x[0]),
-                                datasets: [{
-                                    label: 'Rejections',
-                                    data: stats.rejections_by_hour.map(x => x[1]),
-                                    borderColor: '#ff4757',
-                                    backgroundColor: 'rgba(255, 71, 87, 0.1)',
-                                    fill: true,
-                                    tension: 0.4
-                                }]
-                            },
-                            options: { responsive: true, plugins: { legend: { display: false } } }
-                        });
-                    }
-
-                    const ctx2 = document.getElementById('chartUsers');
-                    if (ctx2) {
-                        chartInstances.users = new Chart(ctx2, {
-                            type: 'bar',
-                            data: {
-                                labels: stats.top_users.map(x => x[0]),
-                                datasets: [{
-                                    label: 'Failures',
-                                    data: stats.top_users.map(x => x[1]),
-                                    backgroundColor: '#00f2ff'
-                                }]
-                            },
-                            options: { responsive: true, plugins: { legend: { display: false } } }
-                        });
+                // Navigation Keys (Arrow Down/Up) for scrolling
+                window.addEventListener('keydown', (e) => {
+                    const step = 60;
+                    const container = document.querySelector('.table-container');
+                    if (e.key === 'ArrowDown') {
+                        container.scrollBy({ top: step, behavior: 'smooth' });
+                        e.preventDefault();
+                    } else if (e.key === 'ArrowUp') {
+                        container.scrollBy({ top: -step, behavior: 'smooth' });
+                        e.preventDefault();
                     }
                 });
-            }
 
-            // --- EVENTS ---
-            document.getElementById('loadBtn').onclick = fetchData;
-            document.getElementById('exportBtn').onclick = () => {
-                const url = `/api/export?file=${encodeURIComponent(els.fileSelect.value)}&search=${encodeURIComponent(els.searchInput.value)}`;
-                window.open(url, '_blank');
-            };
+                // --- INIT ---
+                document.getElementById('authBtn').onclick = () => {
+                    const gate = document.getElementById('human-gate');
+                    const root = document.getElementById('app-root');
 
-            els.searchInput.oninput = () => {
-                renderData();
-            };
+                    gate.classList.add('hidden');
+                    root.classList.add('visible');
 
-            els.liveBtn.onclick = () => {
-                isLive = !isLive;
-                els.liveBtn.classList.toggle('live-active');
-            };
+                    setTimeout(() => {
+                        gate.style.display = 'none';
+                        loadFiles();
+                        connectWS();
+                    }, 500);
+                };
 
-            // Navigation Keys (Arrow Down/Up) for scrolling
-            window.addEventListener('keydown', (e) => {
-                const step = 60;
-                const container = document.querySelector('.table-container');
-                if (e.key === 'ArrowDown') {
-                    container.scrollBy({ top: step, behavior: 'smooth' });
-                    e.preventDefault();
-                } else if (e.key === 'ArrowUp') {
-                    container.scrollBy({ top: -step, behavior: 'smooth' });
-                    e.preventDefault();
-                }
-            });
-
-            // Init
-            loadFiles();
-            connectWS();
-
-        </script>
-        <footer
-            style="margin-top: 2rem; padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.75rem; border-top: 1px solid var(--border-glass);">
-            SYSTEM ARCHITECT: OLIVIER NOBLANC // RADIUS SECURITY CORE v2026 // BUILD: {{BUILD_INFO}}
-        </footer>
+                // Remove direct calls to loadFiles and connectWS
+            </script>
+            <footer
+                style="margin-top: 2rem; padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.75rem; border-top: 1px solid var(--border-glass);">
+                SYSTEM ARCHITECT: OLIVIER NOBLANC // RADIUS SECURITY CORE v2026 // BUILD: {{BUILD_INFO}}
+            </footer>
+        </div>
 </body>
 
 </html>
+```

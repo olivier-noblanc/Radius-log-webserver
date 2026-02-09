@@ -911,6 +911,13 @@ async fn serve_chart_js() -> impl Responder {
         .body(include_bytes!("../assets/chart.js").as_slice()) // Embed from assets folder
 }
 
+// --- ROBOTS.TXT ---
+async fn robots_txt() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("text/plain")
+        .body("User-agent: *\nDisallow: /")
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     match init_logging() {
@@ -949,6 +956,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/stats", web::get().to(get_stats))
             .route("/api/debug", web::get().to(get_debug_info))
             .route("/api/security-config", web::get().to(get_security_config))
+            .route("/robots.txt", web::get().to(robots_txt))
     })
     .bind(format!("0.0.0.0:{}", port))?
     .run()
