@@ -573,6 +573,7 @@
             let isLive = false;
             let ws = null;
             let chartInstances = {};
+            let fullData = []; // Store all logs client-side
 
             // DOM Elements
             const els = {
@@ -697,22 +698,44 @@
 
                 els.tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">// QUERYING CORE...</td></tr>';
 
-                const url = `/api/parse?file=${encodeURIComponent(path)}&search=${encodeURIComponent(els.searchInput.value)}&sort_by=${currentSort.col}&sort_desc=${currentSort.desc}`;
+                // Fetching all data without search/sort params to cache it locally
+                const url = `/api/parse?file=${encodeURIComponent(path)}`;
 
                 fetch(url).then(r => r.json()).then(data => {
-                    els.tbody.innerHTML = '';
-                    if (data.length === 0) {
-                        els.tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem;">NO DATA FOUND</td></tr>';
-                        return;
-                    }
-                    data.forEach(item => els.tbody.appendChild(createRow(item)));
+                    fullData = data;
+                    renderData();
                 });
+            }
+
+            function renderData() {
+                els.tbody.innerHTML = '';
+                const search = els.searchInput.value.toLowerCase();
+
+                let filtered = fullData.filter(item => {
+                    if (!search) return true;
+                    return Object.values(item).some(v => String(v).toLowerCase().includes(search));
+                });
+
+                // Local Sort
+                filtered.sort((a, b) => {
+                    let v1 = a[currentSort.col];
+                    let v2 = b[currentSort.col];
+                    if (v1 < v2) return currentSort.desc ? 1 : -1;
+                    if (v1 > v2) return currentSort.desc ? -1 : 1;
+                    return 0;
+                });
+
+                if (filtered.length === 0) {
+                    els.tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem;">NO DATA FOUND</td></tr>';
+                    return;
+                }
+                filtered.forEach(item => els.tbody.appendChild(createRow(item)));
             }
 
             function sort(col) {
                 if (currentSort.col === col) currentSort.desc = !currentSort.desc;
                 else { currentSort.col = col; currentSort.desc = true; }
-                fetchData();
+                renderData();
             }
 
             // --- WEBSOCKET ---
@@ -732,11 +755,8 @@
                 ws.onmessage = (e) => {
                     if (!isLive) return;
                     const items = JSON.parse(e.data);
-                    items.forEach(item => {
-                        const row = createRow(item);
-                        row.classList.add('row-new');
-                        els.tbody.insertBefore(row, els.tbody.firstChild);
-                    });
+                    fullData = [...items, ...fullData].slice(0, 5000); // Buffer management
+                    renderData();
                 };
             }
 
@@ -812,16 +832,27 @@
                 window.open(url, '_blank');
             };
 
-            let debounce;
             els.searchInput.oninput = () => {
-                clearTimeout(debounce);
-                debounce = setTimeout(fetchData, 500);
+                renderData();
             };
 
             els.liveBtn.onclick = () => {
                 isLive = !isLive;
                 els.liveBtn.classList.toggle('live-active');
             };
+
+            // Navigation Keys (Arrow Down/Up) for scrolling
+            window.addEventListener('keydown', (e) => {
+                const step = 60;
+                const container = document.querySelector('.table-container');
+                if (e.key === 'ArrowDown') {
+                    container.scrollBy({ top: step, behavior: 'smooth' });
+                    e.preventDefault();
+                } else if (e.key === 'ArrowUp') {
+                    container.scrollBy({ top: -step, behavior: 'smooth' });
+                    e.preventDefault();
+                }
+            });
 
             // Init
             loadFiles();
