@@ -1,4 +1,5 @@
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder, middleware};
+use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web_actors::ws;
 use std::time::{Duration, Instant};
 use actix::prelude::*;
@@ -443,11 +444,20 @@ fn is_authorized(req: &HttpRequest) -> bool {
 
     // WebSocket logic: Browsers don't allow custom headers in WS constructor 
     // so we skip X-Radius-Auth for /ws but strictly enforce Origin/Referer
-    if req.path() == "/ws" {
-        return origin_safe;
+    let authorized = if req.path() == "/ws" {
+        origin_safe
+    } else {
+        auth == "authorized" && origin_safe
+    };
+
+    let peer_ip = req.peer_addr().map(|a| a.to_string()).unwrap_or_else(|| "unknown".to_string());
+    if authorized {
+        log::info!("AUDIT: Authorized access to {} from IP: {}", req.path(), peer_ip);
+    } else {
+        log::warn!("AUDIT: BLOCKED unauthorized access to {} from IP: {}", req.path(), peer_ip);
     }
 
-    auth == "authorized" && origin_safe
+    authorized
 }
 
 // --- LOGGING ---
@@ -550,7 +560,15 @@ struct ParseQuery {
 async fn parse_file(req: HttpRequest, query: web::Query<ParseQuery>) -> impl Responder {
     if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let file_path = &query.file;
-    if file_path.contains("..") { return HttpResponse::BadRequest().json("Invalid path"); }
+    if file_path.contains("..") || !file_path.ends_with(".log") { 
+        return HttpResponse::Forbidden().json("Invalid request: Path traversal or non-log file blocked."); 
+    }
+    
+    // Ensure file is within the intended log directory
+    let log_dir = get_log_path_from_registry();
+    if !file_path.starts_with(&log_dir) {
+        return HttpResponse::Forbidden().json("Access Denied: Resource out of scope.");
+    }
 
     match fs::read_to_string(file_path) {
         Ok(content) => {
@@ -602,7 +620,14 @@ struct ExportQuery {
 async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> impl Responder {
     if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let file_path = &query.file;
-    if file_path.contains("..") { return HttpResponse::BadRequest().body("Invalid path"); }
+    if file_path.contains("..") || !file_path.ends_with(".log") { 
+        return HttpResponse::Forbidden().body("Invalid request: Path traversal or non-log file blocked."); 
+    }
+    
+    let log_dir = get_log_path_from_registry();
+    if !file_path.starts_with(&log_dir) {
+        return HttpResponse::Forbidden().body("Access Denied: Resource out of scope.");
+    }
 
     match fs::read_to_string(file_path) {
         Ok(content) => {
@@ -986,9 +1011,23 @@ async fn main() -> std::io::Result<()> {
 
     println!("Server running at http://0.0.0.0:{} (Access from LAN allowed)", port);
 
+    // Rate Limit Config: 10 req/s per IP
+    let governor_conf = GovernorConfigBuilder::default()
+        .per_second(10)
+        .burst_size(20)
+        .finish()
+        .unwrap();
+
     HttpServer::new(move || {
         App::new()
-            .wrap(middleware::Logger::default()) // Access Logs (Apache Style)
+            .wrap(middleware::Logger::default()) // Access Logs
+            .wrap(Governor::new(&governor_conf)) // Rate Limiting
+            .wrap(
+                middleware::DefaultHeaders::new()
+                    .add(("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;"))
+                    .add(("X-Frame-Options", "DENY"))
+                    .add(("X-Content-Type-Options", "nosniff"))
+            )
             .app_data(broadcaster_data.clone())
             .wrap(middleware::Compress::default())
             .route("/", web::get().to(index))
