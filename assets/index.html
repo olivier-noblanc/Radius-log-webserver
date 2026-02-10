@@ -164,6 +164,57 @@
             font-size: 1rem;
         }
 
+        /* TERMINAL (SSH) THEME */
+        [data-theme="terminal"] {
+            --bg-deep: #000;
+            --bg-panel: #000;
+            --border-glass: #00ff41;
+            --accent-cyan: #00ff41;
+            --accent-green: #00ff41;
+            --accent-red: #ff3e3e;
+            --text-main: #00ff41;
+            --text-muted: #008822;
+            --font-ui: "JetBrains Mono", monospace;
+            --font-code: "JetBrains Mono", monospace;
+        }
+
+        [data-theme="terminal"] .glass-panel,
+        [data-theme="terminal"] .btn-glass,
+        [data-theme="terminal"] .input-glass,
+        [data-theme="terminal"] .modal-content,
+        [data-theme="terminal"] th,
+        [data-theme="terminal"] td,
+        [data-theme="terminal"] .table-container {
+            border-radius: 0 !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            box-shadow: none !important;
+        }
+
+        [data-theme="terminal"] tr:hover td {
+            background: #00ff41 !important;
+            color: #000 !important;
+        }
+
+        [data-theme="terminal"] th {
+            border-bottom: 1px solid #00ff41 !important;
+            text-transform: uppercase;
+        }
+
+        [data-theme="terminal"] .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
+        }
+
         body {
             background-color: var(--bg-deep);
             background-image:
@@ -553,6 +604,7 @@
 
 <body>
     <div id="human-gate">
+        <div class="scanlines"></div>
         <div class="gate-logo">// RADIUS SECURITY CORE</div>
         <div style="color: var(--text-muted); margin-bottom: 2rem; max-width: 400px; line-height: 1.6;">
             HIGH-PERFORMANCE LOG ANALYTICS INTERFACE.<br>
@@ -565,6 +617,7 @@
     </div>
 
     <div id="app-root">
+        <div class="scanlines"></div>
         <div class="container">
             <!-- Header -->
             <header class="flex justify-between items-center mb-4 main-header">
@@ -593,9 +646,10 @@
                 <div class="flex items-center">
                     <select id="themeSelect" class="btn-glass"
                         style="margin-right: 15px; background: transparent; border-color: var(--border-glass);">
-                        <option value="neon">Néon Core</option>
-                        <option value="dsfr">Gouvernement (DSFR)</option>
-                        <option value="compact">Compact Mode</option>
+                        <option value="neon">NÉON // CORE</option>
+                        <option value="dsfr">RÉPUBLIQUE // FR</option>
+                        <option value="compact">INDUSTRIAL // DENSE</option>
+                        <option value="terminal">TERMINAL // SSH</option>
                     </select>
 
                     <button class="btn-glass" onclick="openSecurityAudit()"
@@ -1168,6 +1222,20 @@
                             document.addEventListener('mousemove', onMouseMove);
                             document.addEventListener('mouseup', onMouseUp);
                             document.body.classList.add('resizing');
+                        });
+
+                        resizer.addEventListener('dblclick', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            th.style.width = 'auto';
+                            // Immediately update and save all widths
+                            setTimeout(() => {
+                                const widths = {};
+                                cols.forEach((t, i) => {
+                                    widths[i] = t.offsetWidth;
+                                });
+                                localStorage.setItem('radius_col_widths', JSON.stringify(widths));
+                            }, 50);
                         });
                     });
 
