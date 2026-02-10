@@ -141,6 +141,7 @@
         [data-theme="compact"] table {
             letter-spacing: -0.2px;
             font-stretch: condensed;
+            table-layout: auto !important;
         }
 
         [data-theme="compact"] .glass-panel {
@@ -1202,6 +1203,14 @@
                     const theme = e.target.value;
                     document.documentElement.setAttribute('data-theme', theme);
                     localStorage.setItem('radius_theme', theme);
+
+                    // If switching to industrial (compact), clear fixed column widths for auto-adjust
+                    if (theme === 'compact') {
+                        const table = document.getElementById('logTable');
+                        if (table) {
+                            table.querySelectorAll('th').forEach(th => th.style.width = '');
+                        }
+                    }
                 });
 
                 // Use native WebSocket
@@ -1578,10 +1587,12 @@
                     const cols = table.querySelectorAll('th');
                     let startX, startWidth, currentTh;
 
+                    const theme = document.documentElement.getAttribute('data-theme');
                     const savedWidths = JSON.parse(localStorage.getItem('radius_col_widths') || '{}');
 
                     cols.forEach((th, idx) => {
-                        if (savedWidths[idx]) {
+                        // Bypass fixed widths in industrial/compact mode
+                        if (theme !== 'compact' && savedWidths[idx]) {
                             th.style.width = savedWidths[idx] + 'px';
                         }
 
