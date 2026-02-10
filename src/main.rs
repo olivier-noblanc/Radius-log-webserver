@@ -1052,6 +1052,18 @@ async fn robots_txt() -> impl Responder {
         .body("User-agent: *\nDisallow: /")
 }
 
+// --- FAVICON (SVG) ---
+async fn serve_favicon() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("image/svg+xml")
+        .insert_header(("Cache-Control", "public, max-age=86400"))
+        .body(r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#050505"/>
+  <path d="M16 6L8 10V16C8 21.55 11.84 26.74 17 28C22.16 26.74 26 21.55 26 16V10L16 6Z" fill="#00f2ff"/>
+  <path d="M16 12L12 14V16C12 18.22 13.78 20.29 16 21.2C18.22 20.29 20 18.22 20 16V14L16 12Z" fill="#050505"/>
+</svg>"##)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     match init_logging() {
@@ -1098,6 +1110,9 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(index))
             .route("/ws", web::get().to(ws_route))
             .route("/chart.js", web::get().to(serve_chart_js))
+            .route("/favicon.svg", web::get().to(serve_favicon))
+            .route("/favicon.ico", web::get().to(serve_favicon))
+            .route("/favicon.png", web::get().to(serve_favicon))
             .route("/api/files", web::get().to(list_files))
             .route("/api/parse", web::get().to(parse_file))
             .route("/api/export", web::get().to(export_csv))
