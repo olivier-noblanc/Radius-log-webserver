@@ -327,218 +327,220 @@
 
         .btn-nav.active {
             color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
 
-            .resizing {
-                cursor: col-resize;
+        .resizing {
+            cursor: col-resize;
+        }
+
+        .resizing * {
+            user-select: none !important;
+        }
+
+        /* Live Indicator */
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #444;
+            transition: all 0.3s;
+        }
+
+        .live-active .live-dot {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        /* --- TABLE --- */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-code);
+            font-size: var(--font-size-table);
+            table-layout: fixed;
+        }
+
+        th {
+            position: relative;
+            text-align: left;
+            padding: 0.75rem 0.5rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-glass);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        th:hover {
+            color: var(--accent-cyan);
+        }
+
+        .resizer {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: col-resize;
+            user-select: none;
+            z-index: 10;
+        }
+
+        .resizer:hover,
+        .resizing .resizer {
+            background: var(--accent-cyan);
+            opacity: 1;
+        }
+
+        td {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border-glass);
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 0;
+            /* Required for ellipsis in flexible cells */
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            color: #fff;
+        }
+
+        /* Status Colors */
+        .status-success {
+            color: var(--accent-green);
+        }
+
+        .status-fail {
+            color: var(--accent-red);
+        }
+
+        .row-new {
+            animation: flash 1.5s ease-out;
+        }
+
+        @keyframes flash {
+            0% {
+                background-color: rgba(0, 242, 255, 0.2);
             }
 
-            .resizing * {
-                user-select: none !important;
+            100% {
+                background-color: transparent;
             }
+        }
 
-            /* Live Indicator */
-            .live-dot {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #444;
-                transition: all 0.3s;
-            }
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 5, 10, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
 
-            .live-active .live-dot {
-                background: var(--accent-green);
-                box-shadow: 0 0 8px var(--accent-green);
-            }
+        .modal-overlay.open {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
 
-            /* --- TABLE --- */
-            .table-container {
-                overflow-x: auto;
-                border-radius: 8px;
-            }
+        /* --- HUMAN GATE --- */
+        #human-gate {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-deep);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: opacity 0.5s;
+        }
 
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                font-family: var(--font-code);
-                font-size: var(--font-size-table);
-                table-layout: fixed;
-            }
+        #human-gate.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
 
-            th {
-                position: relative;
-                text-align: left;
-                padding: 0.75rem 0.5rem;
-                color: var(--text-muted);
-                font-weight: 600;
-                border-bottom: 2px solid var(--border-glass);
-                cursor: pointer;
-                user-select: none;
-                white-space: nowrap;
-                font-size: 0.75rem;
-                letter-spacing: 0.5px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
+        .gate-logo {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+        }
 
-            th:hover {
-                color: var(--accent-cyan);
-            }
+        #app-root {
+            display: none;
+        }
 
-            .resizer {
-                position: absolute;
-                right: 0;
-                top: 0;
-                height: 100%;
-                width: 5px;
-                background: rgba(255, 255, 255, 0.05);
-                cursor: col-resize;
-                user-select: none;
-                z-index: 10;
-            }
+        #app-root.visible {
+            display: block;
+        }
 
-            .resizer:hover,
-            .resizing .resizer {
-                background: var(--accent-cyan);
-                opacity: 1;
-            }
+        .modal-content {
+            background: #101014;
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+        }
 
-            td {
-                padding: 0.5rem;
-                border-bottom: 1px solid var(--border-glass);
-                color: var(--text-main);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 0;
-                /* Required for ellipsis in flexible cells */
-            }
+        .code-block {
+            background: #0a0a0c;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-glass);
+            color: #a9b7c6;
+            white-space: pre-wrap;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+        }
 
-            tr:hover td {
-                background: rgba(255, 255, 255, 0.02);
-                color: #fff;
-            }
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
 
-            /* Status Colors */
-            .status-success {
-                color: var(--accent-green);
-            }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
-            .status-fail {
-                color: var(--accent-red);
-            }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
 
-            .row-new {
-                animation: flash 1.5s ease-out;
-            }
-
-            @keyframes flash {
-                0% {
-                    background-color: rgba(0, 242, 255, 0.2);
-                }
-
-                100% {
-                    background-color: transparent;
-                }
-            }
-
-            /* --- MODAL --- */
-            .modal-overlay {
-                position: fixed;
-                inset: 0;
-                background: rgba(0, 5, 10, 0.95);
-                backdrop-filter: blur(10px);
-                z-index: 2000;
-                display: none;
-                align-items: center;
-                justify-content: center;
-                transition: opacity 0.2s;
-            }
-
-            .modal-overlay.open {
-                display: flex;
-                opacity: 1;
-                pointer-events: auto;
-            }
-
-            /* --- HUMAN GATE --- */
-            #human-gate {
-                position: fixed;
-                inset: 0;
-                background: var(--bg-deep);
-                z-index: 3000;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-                transition: opacity 0.5s;
-            }
-
-            #human-gate.hidden {
-                opacity: 0;
-                pointer-events: none;
-            }
-
-            .gate-logo {
-                font-size: 3rem;
-                font-weight: 800;
-                letter-spacing: -2px;
-                background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
-                -webkit-background-clip: text;
-                background-clip: text;
-                -webkit-text-fill-color: transparent;
-                margin-bottom: 2rem;
-            }
-
-            #app-root {
-                display: none;
-            }
-
-            #app-root.visible {
-                display: block;
-            }
-
-            .modal-content {
-                background: #101014;
-                border: 1px solid var(--border-glass);
-                border-radius: 12px;
-                padding: 2rem;
-                width: 90%;
-                max-width: 800px;
-                max-height: 90vh;
-                overflow-y: auto;
-                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-            }
-
-            .code-block {
-                background: #0a0a0c;
-                padding: 1rem;
-                border-radius: 6px;
-                border: 1px solid var(--border-glass);
-                color: #a9b7c6;
-                white-space: pre-wrap;
-                font-family: var(--font-code);
-                font-size: 0.85rem;
-            }
-
-            /* Scrollbar */
-            ::-webkit-scrollbar {
-                width: 8px;
-                height: 8px;
-            }
-
-            ::-webkit-scrollbar-track {
-                background: transparent;
-            }
-
-            ::-webkit-scrollbar-thumb {
-                background: #333;
-                border-radius: 4px;
-            }
-
-            ::-webkit-scrollbar-thumb:hover {
-                background: #555;
-            }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 
