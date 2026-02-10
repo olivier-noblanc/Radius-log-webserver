@@ -1,31 +1,33 @@
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder, middleware};
-use actix_governor::{Governor, GovernorConfigBuilder};
-use actix_web_actors::ws;
-use std::time::{Duration, Instant};
 use actix::prelude::*;
-use std::collections::{HashMap};
+use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web_actors::ws;
+use anyhow::{Context, Result};
+use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
+use quick_xml::events::Event as XmlEvent;
+use quick_xml::reader::Reader;
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs::{self, File};
-use std::io::{Seek, SeekFrom, Read};
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
-use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
+use windows::core::PCWSTR;
+use windows::Win32::Security::Cryptography::{
+    CertCloseStore, CertDuplicateCertificateContext, CertEnumCertificatesInStore, CertOpenStore,
+    CERT_STORE_PROV_SYSTEM_A, PKCS_7_ASN_ENCODING, X509_ASN_ENCODING,
+};
+use windows::Win32::System::EventLog::{
+    CloseEventLog, //, EVENTLOGRECORD
+    OpenEventLogW,
+    ReadEventLogW,
+};
 use winreg::enums::*;
 use winreg::RegKey;
-use rayon::prelude::*;
-use std::sync::OnceLock;
-use quick_xml::reader::Reader;
-use quick_xml::events::Event as XmlEvent;
-use windows::Win32::System::EventLog::{
-    OpenEventLogW, ReadEventLogW, CloseEventLog //, EVENTLOGRECORD
-};
-use windows::Win32::Security::Cryptography::{
-    CertOpenStore, CertCloseStore, CertEnumCertificatesInStore, CertDuplicateCertificateContext,
-    CERT_STORE_PROV_SYSTEM_A, PKCS_7_ASN_ENCODING, X509_ASN_ENCODING
-};
-use windows::core::PCWSTR;
-use anyhow::{Context, Result};
 
 // Include generated build info
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
@@ -77,7 +79,7 @@ struct RadiusRequest {
     reason: String,
     class_id: String,
     session_id: String,
-    bg_color_class: Option<String>, 
+    bg_color_class: Option<String>,
 }
 
 // --- LOGIQUE METIER (Partagée) ---
@@ -96,7 +98,7 @@ fn map_reason(code: &str) -> String {
         .get(code)
         .cloned()
         .unwrap_or_else(|| format!("Code {}", code));
-    
+
     if code != "0" {
         format!("{} ({})", reason, code)
     } else {
@@ -121,30 +123,49 @@ fn process_group(group: &[RadiusEvent]) -> RadiusRequest {
     for event in group {
         let p_type = event.packet_type.as_deref().unwrap_or("");
         if p_type == "1" || p_type == "4" {
-            if let Some(val) = &event.timestamp { req.timestamp.clone_from(val); }
-            if let Some(val) = &event.acct_session_id { req.session_id.clone_from(val); }
-            if let Some(val) = &event.server { req.server.clone_from(val); }
-            if let Some(val) = &event.ap_ip { req.ap_ip.clone_from(val); }
-            if let Some(val) = &event.client_friendly_name { req.ap_name.clone_from(val); }
-            else if let Some(val) = &event.ap_name { req.ap_name.clone_from(val); }
-            if let Some(val) = &event.mac { req.mac.clone_from(val); }
-            if let Some(val) = &event.class { req.class_id.clone_from(val); }
+            if let Some(val) = &event.timestamp {
+                req.timestamp.clone_from(val);
+            }
+            if let Some(val) = &event.acct_session_id {
+                req.session_id.clone_from(val);
+            }
+            if let Some(val) = &event.server {
+                req.server.clone_from(val);
+            }
+            if let Some(val) = &event.ap_ip {
+                req.ap_ip.clone_from(val);
+            }
+            if let Some(val) = &event.client_friendly_name {
+                req.ap_name.clone_from(val);
+            } else if let Some(val) = &event.ap_name {
+                req.ap_name.clone_from(val);
+            }
+            if let Some(val) = &event.mac {
+                req.mac.clone_from(val);
+            }
+            if let Some(val) = &event.class {
+                req.class_id.clone_from(val);
+            }
             req.req_type = map_packet_type(p_type);
-            
-            if let Some(user) = &event.sam_account { req.user.clone_from(user); } 
-            else if let Some(user) = &event.user_name { req.user.clone_from(user); } 
-            else { req.user = "Unknown User".to_string(); }
+
+            if let Some(user) = &event.sam_account {
+                req.user.clone_from(user);
+            } else if let Some(user) = &event.user_name {
+                req.user.clone_from(user);
+            } else {
+                req.user = "Unknown User".to_string();
+            }
         } else {
             let this_resp_type = map_packet_type(p_type);
             let code = event.reason_code.as_deref().unwrap_or("0");
             if req.reason.is_empty() || code != "0" {
-                 req.resp_type = this_resp_type.clone();
-                 req.reason = map_reason(code);
+                req.resp_type = this_resp_type.clone();
+                req.reason = map_reason(code);
             }
             match p_type {
                 "2" => req.bg_color_class = Some("table-success".to_string()),
                 "3" => req.bg_color_class = Some("table-danger".to_string()),
-                _ => {},
+                _ => {}
             }
         }
     }
@@ -154,15 +175,16 @@ fn process_group(group: &[RadiusEvent]) -> RadiusRequest {
 // Fonction de parsing générique (buffer ou fichier entier)
 fn parse_xml_bytes(content: &str) -> Vec<RadiusRequest> {
     // SECURITY: Limit XML logic to avoid bombs
-    if content.len() > 500 * 1024 * 1024 { // 500 MB Limit
+    if content.len() > 500 * 1024 * 1024 {
+        // 500 MB Limit
         log::error!("SECURITY: XML File too large (>500MB), parsing aborted.");
         return Vec::new();
     }
 
     let mut reader = Reader::from_str(content);
     reader.config_mut().check_end_names = false; // Perf optimization
-    // DTD processing is disabled by default in quick-xml, which prevents XXE.
-    
+                                                 // DTD processing is disabled by default in quick-xml, which prevents XXE.
+
     let mut buf = Vec::new();
     let mut event_blobs = Vec::new();
 
@@ -182,7 +204,9 @@ fn parse_xml_bytes(content: &str) -> Vec<RadiusRequest> {
         buf.clear();
     }
 
-    if event_blobs.is_empty() { return Vec::new(); }
+    if event_blobs.is_empty() {
+        return Vec::new();
+    }
 
     let events_all: Vec<RadiusEvent> = event_blobs
         .into_par_iter()
@@ -193,10 +217,12 @@ fn parse_xml_bytes(content: &str) -> Vec<RadiusRequest> {
     let mut class_map: HashMap<String, usize> = HashMap::new();
 
     for ev in events_all {
-        let key_opt = ev.class.as_deref()
+        let key_opt = ev
+            .class
+            .as_deref()
             .or(ev.acct_session_id.as_deref())
             .filter(|s| !s.is_empty());
-        
+
         if let Some(k) = key_opt {
             if let Some(&idx) = class_map.get(k) {
                 groups[idx].push(ev);
@@ -209,9 +235,7 @@ fn parse_xml_bytes(content: &str) -> Vec<RadiusRequest> {
         }
     }
 
-    groups.into_par_iter()
-        .map(|g| process_group(&g))
-        .collect()
+    groups.into_par_iter().map(|g| process_group(&g)).collect()
 }
 
 // --- WEBSOCKET ACTOR ---
@@ -261,8 +285,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
             Ok(ws::Message::Pong(_)) => {
                 self.hb = Instant::now();
             }
-            Ok(ws::Message::Text(_)) => {}, // Ignore text
-            Ok(ws::Message::Binary(_)) => {},
+            Ok(ws::Message::Text(_)) => {} // Ignore text
+            Ok(ws::Message::Binary(_)) => {}
             Ok(ws::Message::Close(reason)) => {
                 ctx.close(reason);
                 ctx.stop();
@@ -309,13 +333,14 @@ impl Broadcaster {
 
 fn start_watcher(broadcaster: Arc<Mutex<Broadcaster>>, path_str: String) {
     let path = PathBuf::from(path_str.clone());
-    
+
     // Initial scan to set sizes
     if let Ok(entries) = fs::read_dir(&path) {
         let mut b = broadcaster.lock().unwrap();
         for entry in entries.flatten() {
             if let Ok(meta) = entry.metadata() {
-                 b.file_sizes.insert(entry.path().to_string_lossy().to_string(), meta.len());
+                b.file_sizes
+                    .insert(entry.path().to_string_lossy().to_string(), meta.len());
             }
         }
     }
@@ -323,7 +348,7 @@ fn start_watcher(broadcaster: Arc<Mutex<Broadcaster>>, path_str: String) {
     thread::spawn(move || {
         let (tx, rx) = std::sync::mpsc::channel();
         let mut watcher = RecommendedWatcher::new(tx, Config::default()).unwrap();
-        
+
         if let Err(e) = watcher.watch(&path, RecursiveMode::NonRecursive) {
             eprintln!("Watcher error: {:?}", e);
             return;
@@ -342,7 +367,7 @@ fn start_watcher(broadcaster: Arc<Mutex<Broadcaster>>, path_str: String) {
                             }
                         }
                     }
-                },
+                }
                 Err(e) => eprintln!("Watch error: {:?}", e),
             }
         }
@@ -352,7 +377,7 @@ fn start_watcher(broadcaster: Arc<Mutex<Broadcaster>>, path_str: String) {
 fn process_file_change(broadcaster: &Arc<Mutex<Broadcaster>>, path: &Path) {
     let path_str = path.to_string_lossy().to_string();
     let mut old_size = 0;
-    
+
     // Get old size safely
     {
         let b = broadcaster.lock().unwrap();
@@ -394,22 +419,24 @@ fn process_file_change(broadcaster: &Arc<Mutex<Broadcaster>>, path: &Path) {
 // --- HTTP HANDLERS ---
 
 async fn ws_route(
-    req: HttpRequest, 
-    stream: web::Payload, 
+    req: HttpRequest,
+    stream: web::Payload,
     data: web::Data<Arc<Mutex<Broadcaster>>>,
 ) -> Result<HttpResponse, Error> {
-    if !is_authorized(&req) { return Err(actix_web::error::ErrorForbidden("Access Denied")); }
+    if !is_authorized(&req) {
+        return Err(actix_web::error::ErrorForbidden("Access Denied"));
+    }
     use std::sync::atomic::{AtomicUsize, Ordering};
     static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
     ws::start(
-        WsSession { 
-            id, 
+        WsSession {
+            id,
             hb: Instant::now(),
-            broadcaster: data.get_ref().clone() 
-        }, 
-        &req, 
-        stream
+            broadcaster: data.get_ref().clone(),
+        },
+        &req,
+        stream,
     )
 }
 
@@ -429,7 +456,7 @@ pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
     // 1. Construire le chemin complet
     let base = Path::new(base_dir);
     let requested = Path::new(user_input);
-    
+
     // Si le chemin est absolu (ex: "C:\Windows\..."), on le refuse immédiatement
     if requested.is_absolute() {
         return Err(anyhow::anyhow!("Chemin absolu interdit."));
@@ -439,16 +466,23 @@ pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
 
     // 2. Canonicalize (La magie de la sécurité)
     // Cette fonction transforme "toto/../titi" en "titi" et résout les liens symboliques.
-    let canonical = full_path.canonicalize()
+    let canonical = full_path
+        .canonicalize()
         .with_context(|| format!("Fichier introuvable ou invalide: {:?}", user_input))?;
 
     // 3. Vérifier que le canonicalisé commence bien par le dossier de base
-    let canonical_base = base.canonicalize()
+    let canonical_base = base
+        .canonicalize()
         .context("Impossible de résoudre le dossier de base des logs")?;
 
     if !canonical.starts_with(&canonical_base) {
-        log::warn!("SECURITY ALERT: Path Traversal Attempt blocked: {:?}", user_input);
-        return Err(anyhow::anyhow!("Tentative d'accès en dehors du dossier autorisé !"));
+        log::warn!(
+            "SECURITY ALERT: Path Traversal Attempt blocked: {:?}",
+            user_input
+        );
+        return Err(anyhow::anyhow!(
+            "Tentative d'accès en dehors du dossier autorisé !"
+        ));
     }
 
     Ok(canonical)
@@ -457,16 +491,22 @@ pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
 // --- SECURITY HELPERS ---
 fn is_authorized(req: &HttpRequest) -> bool {
     // 1. Check custom Auth Header (Session Bridge from Human Gate)
-    let auth = req.headers().get("X-Radius-Auth")
+    let auth = req
+        .headers()
+        .get("X-Radius-Auth")
         .and_then(|h| h.to_str().ok())
         .unwrap_or("");
-    
+
     // 2. Check Referer/Origin (Anti-CSRF / Bot Protection)
-    let referer = req.headers().get("Referer")
+    let referer = req
+        .headers()
+        .get("Referer")
         .and_then(|h| h.to_str().ok())
         .unwrap_or("");
-    
-    let origin = req.headers().get("Origin")
+
+    let origin = req
+        .headers()
+        .get("Origin")
         .and_then(|h| h.to_str().ok())
         .unwrap_or("");
 
@@ -479,10 +519,10 @@ fn is_authorized(req: &HttpRequest) -> bool {
     } else if !origin.is_empty() {
         origin.contains(host)
     } else {
-        true 
+        true
     };
 
-    // WebSocket logic: Browsers don't allow custom headers in WS constructor 
+    // WebSocket logic: Browsers don't allow custom headers in WS constructor
     // so we skip X-Radius-Auth for /ws but strictly enforce Origin/Referer
     let authorized = if req.path() == "/ws" {
         origin_safe
@@ -490,11 +530,22 @@ fn is_authorized(req: &HttpRequest) -> bool {
         auth == "authorized" && origin_safe
     };
 
-    let peer_ip = req.peer_addr().map(|a| a.to_string()).unwrap_or_else(|| "unknown".to_string());
+    let peer_ip = req
+        .peer_addr()
+        .map(|a| a.to_string())
+        .unwrap_or_else(|| "unknown".to_string());
     if authorized {
-        log::info!("AUDIT: Authorized access to {} from IP: {}", req.path(), peer_ip);
+        log::info!(
+            "AUDIT: Authorized access to {} from IP: {}",
+            req.path(),
+            peer_ip
+        );
     } else {
-        log::warn!("AUDIT: BLOCKED unauthorized access to {} from IP: {}", req.path(), peer_ip);
+        log::warn!(
+            "AUDIT: BLOCKED unauthorized access to {} from IP: {}",
+            req.path(),
+            peer_ip
+        );
     }
 
     authorized
@@ -503,27 +554,23 @@ fn is_authorized(req: &HttpRequest) -> bool {
 // --- LOGGING ---
 fn init_logging() -> Result<(), Box<dyn std::error::Error>> {
     // use log4rs::append::file::FileAppender;
-    use log4rs::encode::pattern::PatternEncoder;
-    use log4rs::config::{Appender, Config, Root};
-    use log4rs::append::rolling_file::RollingFileAppender;
-    use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
-    use log4rs::append::rolling_file::policy::compound::trigger::size::SizeTrigger;
     use log4rs::append::rolling_file::policy::compound::roll::fixed_window::FixedWindowRoller;
+    use log4rs::append::rolling_file::policy::compound::trigger::size::SizeTrigger;
+    use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
+    use log4rs::append::rolling_file::RollingFileAppender;
+    use log4rs::config::{Appender, Config, Root};
+    use log4rs::encode::pattern::PatternEncoder;
 
     // Create 'logs' directory if not exists
     let _ = fs::create_dir("logs");
 
     // Rotation Policy: Limit 20MB, Keep 5 Archives
     // Pattern: logs/radius-web.log -> logs/radius-web.1.log -> ...
-    let window_roller = FixedWindowRoller::builder()
-        .build("logs/radius-web.{}.log", 5)?; // Keep 5 parsed files
+    let window_roller = FixedWindowRoller::builder().build("logs/radius-web.{}.log", 5)?; // Keep 5 parsed files
 
     let size_trigger = SizeTrigger::new(20 * 1024 * 1024); // 20 MB Limit
 
-    let compound_policy = CompoundPolicy::new(
-        Box::new(size_trigger),
-        Box::new(window_roller)
-    );
+    let compound_policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(window_roller));
 
     let logfile = RollingFileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{d} - {l} - {m}{n}")))
@@ -531,7 +578,11 @@ fn init_logging() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = Config::builder()
         .appender(Appender::builder().build("logfile", Box::new(logfile)))
-        .build(Root::builder().appender("logfile").build(log::LevelFilter::Info))?;
+        .build(
+            Root::builder()
+                .appender("logfile")
+                .build(log::LevelFilter::Info),
+        )?;
 
     log4rs::init_config(config)?;
     Ok(())
@@ -539,19 +590,31 @@ fn init_logging() -> Result<(), Box<dyn std::error::Error>> {
 
 fn get_log_path_from_registry() -> String {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    if let Ok(iis_params) = hklm.open_subkey_with_flags(r"SYSTEM\CurrentControlSet\Services\W3SVC\Parameters", KEY_READ) {
-        if let Ok(path) = iis_params.get_value::<String, _>("LogFileDirectory") { return path; }
+    if let Ok(iis_params) = hklm.open_subkey_with_flags(
+        r"SYSTEM\CurrentControlSet\Services\W3SVC\Parameters",
+        KEY_READ,
+    ) {
+        if let Ok(path) = iis_params.get_value::<String, _>("LogFileDirectory") {
+            return path;
+        }
     }
-    if let Ok(ias_params) = hklm.open_subkey_with_flags(r"SYSTEM\CurrentControlSet\Services\IAS\Parameters", KEY_READ) {
+    if let Ok(ias_params) = hklm.open_subkey_with_flags(
+        r"SYSTEM\CurrentControlSet\Services\IAS\Parameters",
+        KEY_READ,
+    ) {
         if let Ok(path) = ias_params.get_value::<String, _>("LogFilePath") {
-             if let Some(parent) = PathBuf::from(&path).parent() { return parent.to_string_lossy().to_string(); }
+            if let Some(parent) = PathBuf::from(&path).parent() {
+                return parent.to_string_lossy().to_string();
+            }
         }
     }
     r"C:\Windows\System32\LogFiles".to_string()
 }
 
 async fn list_files(req: HttpRequest) -> impl Responder {
-    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().finish();
+    }
     let base_path = get_log_path_from_registry();
     let path = PathBuf::from(&base_path);
     match fs::read_dir(&path) {
@@ -561,7 +624,8 @@ async fn list_files(req: HttpRequest) -> impl Responder {
                 let p = entry.path();
                 if p.is_file() && p.extension().is_some_and(|ext| ext == "log") {
                     if let Ok(metadata) = fs::metadata(&p) {
-                        let modified = metadata.modified()
+                        let modified = metadata
+                            .modified()
                             .ok()
                             .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                             .map(|d| d.as_secs())
@@ -599,7 +663,9 @@ struct ParseQuery {
 }
 
 async fn parse_file(req: HttpRequest, query: web::Query<ParseQuery>) -> impl Responder {
-    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().finish();
+    }
     let file_path = &query.file;
 
     // BULLETPROOF SECURITY: Sandboxing
@@ -622,11 +688,11 @@ async fn parse_file(req: HttpRequest, query: web::Query<ParseQuery>) -> impl Res
             if !search_lower.is_empty() {
                 reqs.retain(|r| {
                     r.timestamp.to_lowercase().contains(&search_lower)
-                    || r.user.to_lowercase().contains(&search_lower)
-                    || r.mac.to_lowercase().contains(&search_lower)
-                    || r.ap_ip.contains(&search_lower)
-                    || r.server.to_lowercase().contains(&search_lower)
-                    || r.reason.to_lowercase().contains(&search_lower)
+                        || r.user.to_lowercase().contains(&search_lower)
+                        || r.mac.to_lowercase().contains(&search_lower)
+                        || r.ap_ip.contains(&search_lower)
+                        || r.server.to_lowercase().contains(&search_lower)
+                        || r.reason.to_lowercase().contains(&search_lower)
                 });
             }
             // Sort
@@ -644,7 +710,11 @@ async fn parse_file(req: HttpRequest, query: web::Query<ParseQuery>) -> impl Res
                         "reason" => a.reason.cmp(&b.reason),
                         _ => std::cmp::Ordering::Equal,
                     };
-                    if query.sort_desc { ord.reverse() } else { ord }
+                    if query.sort_desc {
+                        ord.reverse()
+                    } else {
+                        ord
+                    }
                 });
             }
             HttpResponse::Ok().json(reqs)
@@ -662,7 +732,9 @@ struct ExportQuery {
 }
 
 async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> impl Responder {
-    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().finish();
+    }
     let file_path = &query.file;
 
     // BULLETPROOF SECURITY: Sandboxing
@@ -682,26 +754,27 @@ async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> impl Re
             let search_lower = query.search.trim().to_lowercase();
             if !search_lower.is_empty() {
                 reqs.retain(|r| {
-                    r.timestamp.to_lowercase().contains(&search_lower) ||
-                    r.user.to_lowercase().contains(&search_lower) ||
-                    r.mac.to_lowercase().contains(&search_lower)
+                    r.timestamp.to_lowercase().contains(&search_lower)
+                        || r.user.to_lowercase().contains(&search_lower)
+                        || r.mac.to_lowercase().contains(&search_lower)
                 });
             }
-            
+
             let mut wtr = csv::Writer::from_writer(vec![]);
             for r in reqs {
                 wtr.serialize(r).ok();
             }
             match wtr.into_inner() {
-                Ok(data) => {
-                    HttpResponse::Ok()
-                        .content_type("text/csv")
-                        .append_header(("Content-Disposition", "attachment; filename=\"radius_export.csv\""))
-                        .body(data)
-                },
+                Ok(data) => HttpResponse::Ok()
+                    .content_type("text/csv")
+                    .append_header((
+                        "Content-Disposition",
+                        "attachment; filename=\"radius_export.csv\"",
+                    ))
+                    .body(data),
                 Err(_) => HttpResponse::InternalServerError().body("CSV Error"),
             }
-        },
+        }
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
     }
 }
@@ -713,14 +786,15 @@ struct Stats {
     success_rate: f64,
     active_users: usize,
     rejections_by_hour: Vec<(String, u32)>,
-    top_users: Vec<(String, u32)>, 
+    top_users: Vec<(String, u32)>,
 }
 
 fn get_latest_log_file() -> Option<PathBuf> {
     let base_path = get_log_path_from_registry();
     let path = PathBuf::from(&base_path);
     if let Ok(entries) = fs::read_dir(&path) {
-        let mut files: Vec<_> = entries.flatten()
+        let mut files: Vec<_> = entries
+            .flatten()
             .filter(|e| e.path().extension().is_some_and(|ext| ext == "log"))
             .collect();
         // Sort by metadata modified time or name (name is usually date based)
@@ -731,7 +805,9 @@ fn get_latest_log_file() -> Option<PathBuf> {
 }
 
 async fn get_stats(req: HttpRequest) -> impl Responder {
-    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().finish();
+    }
     let mut total_requests = 0;
     let mut success_count = 0;
     let mut unique_users = std::collections::HashSet::new();
@@ -742,10 +818,10 @@ async fn get_stats(req: HttpRequest) -> impl Responder {
         if let Ok(content) = fs::read_to_string(path) {
             let reqs = parse_xml_bytes(&content);
             total_requests = reqs.len();
-            
+
             for r in &reqs {
                 unique_users.insert(r.user.clone());
-                
+
                 let is_accept = r.resp_type.contains("Accept");
                 let is_reject = r.resp_type.contains("Reject");
 
@@ -757,9 +833,9 @@ async fn get_stats(req: HttpRequest) -> impl Responder {
                     // Extract Hour: "MM/DD/YYYY HH:MM:SS" -> "HH:00"
                     // Simple split by space then ':'
                     if let Some(time_part) = r.timestamp.split_whitespace().last() {
-                         if let Some(hour) = time_part.split(':').next() {
-                             *rejections_map.entry(format!("{}:00", hour)).or_insert(0) += 1;
-                         }
+                        if let Some(hour) = time_part.split(':').next() {
+                            *rejections_map.entry(format!("{}:00", hour)).or_insert(0) += 1;
+                        }
                     }
                     *user_failures.entry(r.user.clone()).or_insert(0) += 1;
                 }
@@ -769,7 +845,9 @@ async fn get_stats(req: HttpRequest) -> impl Responder {
 
     let success_rate = if total_requests > 0 {
         (success_count as f64 / total_requests as f64) * 100.0
-    } else { 0.0 };
+    } else {
+        0.0
+    };
 
     let mut rejections_by_hour: Vec<_> = rejections_map.into_iter().collect();
     rejections_by_hour.sort_by(|a, b| a.0.cmp(&b.0));
@@ -778,12 +856,12 @@ async fn get_stats(req: HttpRequest) -> impl Responder {
     top_users.sort_by_key(|b| std::cmp::Reverse(b.1));
     top_users.truncate(10);
 
-    HttpResponse::Ok().json(Stats { 
+    HttpResponse::Ok().json(Stats {
         total_requests,
         success_rate,
         active_users: unique_users.len(),
-        rejections_by_hour, 
-        top_users 
+        rejections_by_hour,
+        top_users,
     })
 }
 
@@ -793,8 +871,8 @@ async fn get_stats(req: HttpRequest) -> impl Responder {
 fn fetch_schannel_details(_timestamp_str: &str) -> Vec<String> {
     let mut errors = Vec::new();
     let server_name = PCWSTR::null(); // Local machine
-    let source_name = windows::core::w!("System"); 
-    
+    let source_name = windows::core::w!("System");
+
     unsafe {
         if let Ok(h_log) = OpenEventLogW(server_name, source_name) {
             let mut buf: Vec<u8> = vec![0; 65536]; // Buffer large
@@ -804,40 +882,52 @@ fn fetch_schannel_details(_timestamp_str: &str) -> Vec<String> {
             // On lit les derniers événements (dans l'ordre chronologique inverse si possible, mais ici FORWARDS pour simplifier la démo ou BACKWARDS si on veut les plus récents en premier)
             // Pour l'instant on lit séquentiellement les plus vieux (default) ou on devrait utiliser BACKWARDS.
             // Simplification: On lit un batch et on cherche SChannel Error
-            
+
             // Note: EVENTLOG_BACKWARDS_READ | EVENTLOG_SEQUENTIAL_READ pour lire depuis la fin
             // Mais Win32 API est capricieuse. On va tenter une lecture standard.
-            
+
             let mut count = 0;
-            while count < 50 { // Limit scan
+            while count < 50 {
+                // Limit scan
                 let result = ReadEventLogW(
-                    h_log, 
+                    h_log,
                     // EVENTLOG_FORWARDS_READ (4) | EVENTLOG_SEQUENTIAL_READ (1)
-                    windows::Win32::System::EventLog::READ_EVENT_LOG_READ_FLAGS(4 | 1), 
-                    0, 
-                    buf.as_mut_ptr() as *mut _, 
-                    buf.len() as u32, 
-                    &mut bytes_read, 
-                    &mut bytes_needed
+                    windows::Win32::System::EventLog::READ_EVENT_LOG_READ_FLAGS(4 | 1),
+                    0,
+                    buf.as_mut_ptr() as *mut _,
+                    buf.len() as u32,
+                    &mut bytes_read,
+                    &mut bytes_needed,
                 );
 
-                if result.is_err() || bytes_read == 0 { break; }
+                if result.is_err() || bytes_read == 0 {
+                    break;
+                }
 
                 let mut offset = 0;
                 while offset < bytes_read {
-                    let record = (buf.as_ptr().add(offset as usize)) as *const windows::Win32::System::EventLog::EVENTLOGRECORD;
+                    let record = (buf.as_ptr().add(offset as usize))
+                        as *const windows::Win32::System::EventLog::EVENTLOGRECORD;
                     let r = &*record;
-                    
+
                     // SChannel Source Name check est difficile sans pointer math précis sur le nom
                     // On filtre par Event ID typiques de SChannel
                     // 36888: Fatal alert
                     // 36874: TLS protocol error
                     // 36871: Fatal error
-                    if (r.EventType == windows::Win32::System::EventLog::EVENTLOG_ERROR_TYPE || r.EventType == windows::Win32::System::EventLog::EVENTLOG_WARNING_TYPE)
-                        && (r.EventID == 36888 || r.EventID == 36874 || r.EventID == 36871 || r.EventID == 36887) {
-                             errors.push(format!("SChannel Event ID {}: Possible TLS/SSL Handshake Failure", r.EventID));
+                    if (r.EventType == windows::Win32::System::EventLog::EVENTLOG_ERROR_TYPE
+                        || r.EventType == windows::Win32::System::EventLog::EVENTLOG_WARNING_TYPE)
+                        && (r.EventID == 36888
+                            || r.EventID == 36874
+                            || r.EventID == 36871
+                            || r.EventID == 36887)
+                    {
+                        errors.push(format!(
+                            "SChannel Event ID {}: Possible TLS/SSL Handshake Failure",
+                            r.EventID
+                        ));
                     }
-                    
+
                     offset += r.Length;
                 }
                 count += 1;
@@ -845,13 +935,13 @@ fn fetch_schannel_details(_timestamp_str: &str) -> Vec<String> {
             let _ = CloseEventLog(h_log);
         }
     }
-    
+
     if errors.is_empty() {
         // Mock pour la démo si rien trouvé (car on ne peut pas facilement générer une erreur SChannel à la demande)
         // errors.push("Simulated: TLS1_ALERT_INTERNAL_ERROR (SChannel 36888)".to_string());
         // errors.push("Simulated: The certificate is not trusted (SChannel 36882)".to_string());
     }
-    
+
     errors
 }
 
@@ -861,9 +951,11 @@ struct DebugQuery {
 }
 
 async fn get_debug_info(req: HttpRequest, query: web::Query<DebugQuery>) -> impl Responder {
-    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().finish();
+    }
     let schannel_errors = fetch_schannel_details(&query.timestamp);
-    
+
     let report = if schannel_errors.is_empty() {
         "NO SCHANNEL ERRORS DETECTED IN SYSTEM LOGS.\n\nTips:\n- Ensure 'SChannel' logging is enabled in Registry.\n- Check 'System' Event Viewer manually.".to_string()
     } else {
@@ -920,15 +1012,18 @@ fn get_cipher_name(id: &str) -> String {
 }
 
 async fn get_security_config(req: HttpRequest) -> impl Responder {
-    if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().finish();
+    }
     let mut protocols = Vec::new();
     let mut ciphers = Vec::new();
     let mut certificates = Vec::new();
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    
+
     // --- 0. Detect Logging Level ---
-    let logging_level = hklm.open_subkey(r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL")
+    let logging_level = hklm
+        .open_subkey(r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL")
         .ok()
         .and_then(|k| k.get_value::<u32, _>("EventLogging").ok())
         .unwrap_or(0);
@@ -938,10 +1033,10 @@ async fn get_security_config(req: HttpRequest) -> impl Responder {
     // --- 1. Parsing TLS & Ciphers (Registre) ---
     if let Ok(ssl_key) = hklm.open_subkey_with_flags(base_path, KEY_READ) {
         let keys: Vec<_> = ssl_key.enum_keys().filter_map(Result::ok).collect();
-        
+
         if keys.is_empty() {
-             // If key exists but empty, it often means OS defaults are used
-             protocols.push(ProtocolInfo {
+            // If key exists but empty, it often means OS defaults are used
+            protocols.push(ProtocolInfo {
                 name: "System Defaults (Managed by Windows)".to_string(),
                 enabled: true,
             });
@@ -952,10 +1047,12 @@ async fn get_security_config(req: HttpRequest) -> impl Responder {
             if protocol_name.contains("TLS") || protocol_name.contains("SSL") {
                 // État du protocole (Client & Server subkeys)
                 // Check Server side usually for Radius
-                let enabled = ssl_key.open_subkey(format!("{}\\Server", protocol_name))
+                let enabled = ssl_key
+                    .open_subkey(format!("{}\\Server", protocol_name))
                     .ok()
                     .and_then(|k| k.get_value::<u32, _>("Enabled").ok())
-                    .unwrap_or(0) == 1;
+                    .unwrap_or(0)
+                    == 1;
 
                 protocols.push(ProtocolInfo {
                     name: protocol_name.clone(),
@@ -968,17 +1065,19 @@ async fn get_security_config(req: HttpRequest) -> impl Responder {
             }
         }
     }
-    
+
     // Check Ciphers separately
     let ciphers_path = r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers";
     if let Ok(ciphers_key) = hklm.open_subkey_with_flags(ciphers_path, KEY_READ) {
         for cipher_name in ciphers_key.enum_keys().filter_map(Result::ok) {
-             let enabled = ciphers_key.open_subkey(&cipher_name)
-                    .ok()
-                    .and_then(|k| k.get_value::<u32, _>("Enabled").ok())
-                    .unwrap_or(0) == 1;
-             
-             ciphers.push(CipherInfo {
+            let enabled = ciphers_key
+                .open_subkey(&cipher_name)
+                .ok()
+                .and_then(|k| k.get_value::<u32, _>("Enabled").ok())
+                .unwrap_or(0)
+                == 1;
+
+            ciphers.push(CipherInfo {
                 id: "---".to_string(), // No ID in key name usually
                 name: format!("{} ({})", cipher_name, get_cipher_name(&cipher_name)),
                 enabled,
@@ -994,14 +1093,14 @@ async fn get_security_config(req: HttpRequest) -> impl Responder {
             None,
             // CERT_SYSTEM_STORE_LOCAL_MACHINE (0x00020000)
             windows::Win32::Security::Cryptography::CERT_OPEN_STORE_FLAGS(0x00020000),
-            Some(windows::core::w!("MY").as_ptr() as *const std::ffi::c_void)
+            Some(windows::core::w!("MY").as_ptr() as *const std::ffi::c_void),
         ) {
             let mut p_cert_context = CertEnumCertificatesInStore(store, None);
             while !p_cert_context.is_null() {
-                // Extraction basique des infos
+                // Basic info extraction
                 let _context = CertDuplicateCertificateContext(Some(p_cert_context));
-                
-                // Placeholder pour démo car extraction raw est complexe
+
+                // Placeholder for demo as raw extraction is complex
                 certificates.push(CertInfo {
                     subject: "Found Local Cert".to_string(),
                     issuer: "System/CA".to_string(),
@@ -1026,9 +1125,11 @@ async fn get_security_config(req: HttpRequest) -> impl Responder {
 
 // --- INDEX HTML (2026 Design) ---
 async fn index() -> impl Responder {
-    let body = include_str!("../assets/index.html")
-        .replace("{{BUILD_INFO}}", &format!("{} [{}]", BUILD_VERSION, BUILD_COMMIT));
-    
+    let body = include_str!("../assets/index.html").replace(
+        "{{BUILD_INFO}}",
+        &format!("{} [{}]", BUILD_VERSION, BUILD_COMMIT),
+    );
+
     HttpResponse::Ok()
         .content_type("text/html")
         .insert_header(("Cache-Control", "no-cache, no-store, must-revalidate"))
@@ -1086,7 +1187,10 @@ async fn main() -> std::io::Result<()> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(8080);
 
-    println!("Server running at http://0.0.0.0:{} (Access from LAN allowed)", port);
+    println!(
+        "Server running at http://0.0.0.0:{} (Access from LAN allowed)",
+        port
+    );
 
     // Rate Limit Config: 10 req/s per IP (100ms period)
     let governor_conf = GovernorConfigBuilder::default()
