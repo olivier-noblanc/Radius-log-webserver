@@ -73,17 +73,34 @@
         /* COMPACT THEME */
         [data-theme="compact"] {
             --spacing-container: 0.25rem;
-            --spacing-panel: 0.5rem;
+            --spacing-panel: 0.4rem;
             --font-size-base: 11px;
-            --font-size-table: 0.7rem;
+            --font-size-table: 0.75rem;
+        }
+
+        [data-theme="compact"] body {
+            overflow: hidden;
+            height: 100vh;
+            max-height: 100vh;
         }
 
         [data-theme="compact"] .container {
             height: 100vh;
+            max-height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            /* Header, Content, Footer */
+            overflow: hidden;
+            padding: 0.25rem 0.5rem;
+            box-sizing: border-box;
+        }
+
+        [data-theme="compact"] #view-logs,
+        [data-theme="compact"] #view-dashboard {
+            overflow: hidden;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            padding: 0.5rem;
         }
 
         [data-theme="compact"] .main-content {
@@ -91,21 +108,28 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
 
         [data-theme="compact"] .table-container {
             flex: 1;
             overflow-y: auto;
+            min-height: 0;
         }
 
         [data-theme="compact"] header,
         [data-theme="compact"] footer {
-            padding: 0.2rem 0;
-            margin-bottom: 0.2rem !important;
+            padding: 0.1rem 0;
+            margin-bottom: 0.1rem !important;
+            flex-shrink: 0;
         }
 
         [data-theme="compact"] .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
+        }
+
+        [data-theme="compact"] .glass-panel {
+            padding: 0.4rem;
         }
 
         body {
@@ -332,13 +356,6 @@
             white-space: nowrap;
         }
 
-        /* Allow wrapping for AP Name */
-        td:nth-child(5) {
-            white-space: normal;
-            word-break: break-word;
-            min-width: 100px;
-        }
-
         tr:hover td {
             background: rgba(255, 255, 255, 0.02);
             color: #fff;
@@ -541,6 +558,12 @@
                     <div class="flex-grow">
                         <input type="text" id="searchInput" class="input-glass"
                             placeholder="Search (User, IP, Reason)...">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 0 15px;">
+                        <input type="checkbox" id="errorToggle" style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="errorToggle"
+                            style="font-size: 0.8rem; color: var(--accent-red); cursor: pointer; font-weight: 600;">ERRORS
+                            ONLY</label>
                     </div>
                     <div>
                         <button class="btn-glass btn-primary" id="loadBtn">REFRESH</button>
@@ -756,6 +779,7 @@
                     tbody: document.querySelector('#logTable tbody'),
                     status: document.getElementById('statusBadge'),
                     liveBtn: document.getElementById('liveBtn'),
+                    errorToggle: document.getElementById('errorToggle'),
                     modal: document.getElementById('detailModal'),
                     modalBody: document.getElementById('modalBody'),
                     // Stats
@@ -904,8 +928,12 @@
                     }
 
                     let filtered = fullData.filter(item => {
-                        if (!search) return true;
-                        return Object.values(item).some(v => String(v).toLowerCase().includes(search));
+                        const matchesSearch = !search || Object.values(item).some(v => String(v).toLowerCase().includes(search));
+                        const isError = item.resp_type.includes('Reject');
+                        const onlyErrors = els.errorToggle.checked;
+
+                        if (onlyErrors && !isError) return false;
+                        return matchesSearch;
                     });
 
                     // Local Sort
@@ -1027,6 +1055,10 @@
                 };
 
                 els.searchInput.oninput = () => {
+                    renderData();
+                };
+
+                els.errorToggle.onchange = () => {
                     renderData();
                 };
 
