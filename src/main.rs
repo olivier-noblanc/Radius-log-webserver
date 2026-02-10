@@ -25,6 +25,7 @@ use windows::Win32::Security::Cryptography::{
     CERT_STORE_PROV_SYSTEM_A, PKCS_7_ASN_ENCODING, X509_ASN_ENCODING
 };
 use windows::core::PCWSTR;
+use anyhow::{Context, Result};
 
 // Include generated build info
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
@@ -86,10 +87,7 @@ static REASON_MAP: OnceLock<HashMap<String, String>> = OnceLock::new();
 fn get_reason_map() -> &'static HashMap<String, String> {
     REASON_MAP.get_or_init(|| {
         let json_content = include_str!("reason_codes.json");
-        match serde_json::from_str(json_content) {
-            Ok(map) => map,
-            Err(_) => HashMap::new(),
-        }
+        serde_json::from_str(json_content).unwrap_or_default()
     })
 }
 
@@ -155,7 +153,16 @@ fn process_group(group: &[RadiusEvent]) -> RadiusRequest {
 
 // Fonction de parsing générique (buffer ou fichier entier)
 fn parse_xml_bytes(content: &str) -> Vec<RadiusRequest> {
+    // SECURITY: Limit XML logic to avoid bombs
+    if content.len() > 500 * 1024 * 1024 { // 500 MB Limit
+        log::error!("SECURITY: XML File too large (>500MB), parsing aborted.");
+        return Vec::new();
+    }
+
     let mut reader = Reader::from_str(content);
+    reader.config_mut().check_end_names = false; // Perf optimization
+    // DTD processing is disabled by default in quick-xml, which prevents XXE.
+    
     let mut buf = Vec::new();
     let mut event_blobs = Vec::new();
 
@@ -414,6 +421,39 @@ struct LogFile {
     modified_ts: u64,
 }
 
+// --- BULLETPROOF SECURITY HELPERS ---
+
+/// Valide que le fichier demandé est bien dans le dossier autorisé (sandbox).
+/// Empêche le "Path Traversal" (ex: ../..).
+pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
+    // 1. Construire le chemin complet
+    let base = Path::new(base_dir);
+    let requested = Path::new(user_input);
+    
+    // Si le chemin est absolu (ex: "C:\Windows\..."), on le refuse immédiatement
+    if requested.is_absolute() {
+        return Err(anyhow::anyhow!("Chemin absolu interdit."));
+    }
+
+    let full_path = base.join(requested);
+
+    // 2. Canonicalize (La magie de la sécurité)
+    // Cette fonction transforme "toto/../titi" en "titi" et résout les liens symboliques.
+    let canonical = full_path.canonicalize()
+        .with_context(|| format!("Fichier introuvable ou invalide: {:?}", user_input))?;
+
+    // 3. Vérifier que le canonicalisé commence bien par le dossier de base
+    let canonical_base = base.canonicalize()
+        .context("Impossible de résoudre le dossier de base des logs")?;
+
+    if !canonical.starts_with(&canonical_base) {
+        log::warn!("SECURITY ALERT: Path Traversal Attempt blocked: {:?}", user_input);
+        return Err(anyhow::anyhow!("Tentative d'accès en dehors du dossier autorisé !"));
+    }
+
+    Ok(canonical)
+}
+
 // --- SECURITY HELPERS ---
 fn is_authorized(req: &HttpRequest) -> bool {
     // 1. Check custom Auth Header (Session Bridge from Human Gate)
@@ -539,7 +579,7 @@ async fn list_files(req: HttpRequest) -> impl Responder {
                 }
             }
             // Sort by modification time descending (newest first)
-            files.sort_by(|a, b| b.modified_ts.cmp(&a.modified_ts));
+            files.sort_by_key(|b| std::cmp::Reverse(b.modified_ts));
             HttpResponse::Ok().json(files)
         }
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
@@ -560,17 +600,20 @@ struct ParseQuery {
 async fn parse_file(req: HttpRequest, query: web::Query<ParseQuery>) -> impl Responder {
     if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let file_path = &query.file;
-    if file_path.contains("..") || !file_path.ends_with(".log") { 
-        return HttpResponse::Forbidden().json("Invalid request: Path traversal or non-log file blocked."); 
-    }
-    
-    // Ensure file is within the intended log directory
+
+    // BULLETPROOF SECURITY: Sandboxing
     let log_dir = get_log_path_from_registry();
-    if !file_path.starts_with(&log_dir) {
-        return HttpResponse::Forbidden().json("Access Denied: Resource out of scope.");
+    let safe_path = match resolve_safe_path(&log_dir, file_path) {
+        Ok(p) => p,
+        Err(e) => return HttpResponse::Forbidden().json(format!("Security Error: {}", e)),
+    };
+
+    // Extension check (Double verify)
+    if safe_path.extension().and_then(|e| e.to_str()) != Some("log") {
+        return HttpResponse::Forbidden().json("Invalid file type.");
     }
 
-    match fs::read_to_string(file_path) {
+    match fs::read_to_string(safe_path) {
         Ok(content) => {
             let mut reqs = parse_xml_bytes(&content);
             // Search
@@ -620,16 +663,19 @@ struct ExportQuery {
 async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> impl Responder {
     if !is_authorized(&req) { return HttpResponse::Forbidden().finish(); }
     let file_path = &query.file;
-    if file_path.contains("..") || !file_path.ends_with(".log") { 
-        return HttpResponse::Forbidden().body("Invalid request: Path traversal or non-log file blocked."); 
-    }
-    
+
+    // BULLETPROOF SECURITY: Sandboxing
     let log_dir = get_log_path_from_registry();
-    if !file_path.starts_with(&log_dir) {
-        return HttpResponse::Forbidden().body("Access Denied: Resource out of scope.");
+    let safe_path = match resolve_safe_path(&log_dir, file_path) {
+        Ok(p) => p,
+        Err(e) => return HttpResponse::Forbidden().body(format!("Security Error: {}", e)),
+    };
+
+    if safe_path.extension().and_then(|e| e.to_str()) != Some("log") {
+        return HttpResponse::Forbidden().body("Invalid file type.");
     }
 
-    match fs::read_to_string(file_path) {
+    match fs::read_to_string(safe_path) {
         Ok(content) => {
             let mut reqs = parse_xml_bytes(&content);
             let search_lower = query.search.trim().to_lowercase();
@@ -728,7 +774,7 @@ async fn get_stats(req: HttpRequest) -> impl Responder {
     rejections_by_hour.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut top_users: Vec<_> = user_failures.into_iter().collect();
-    top_users.sort_by(|a, b| b.1.cmp(&a.1));
+    top_users.sort_by_key(|b| std::cmp::Reverse(b.1));
     top_users.truncate(10);
 
     HttpResponse::Ok().json(Stats { 
@@ -786,10 +832,9 @@ fn fetch_schannel_details(_timestamp_str: &str) -> Vec<String> {
                     // 36888: Fatal alert
                     // 36874: TLS protocol error
                     // 36871: Fatal error
-                    if r.EventType == windows::Win32::System::EventLog::EVENTLOG_ERROR_TYPE || r.EventType == windows::Win32::System::EventLog::EVENTLOG_WARNING_TYPE {
-                        if r.EventID == 36888 || r.EventID == 36874 || r.EventID == 36871 || r.EventID == 36887 {
+                    if (r.EventType == windows::Win32::System::EventLog::EVENTLOG_ERROR_TYPE || r.EventType == windows::Win32::System::EventLog::EVENTLOG_WARNING_TYPE)
+                        && (r.EventID == 36888 || r.EventID == 36874 || r.EventID == 36871 || r.EventID == 36887) {
                              errors.push(format!("SChannel Event ID {}: Possible TLS/SSL Handshake Failure", r.EventID));
-                        }
                     }
                     
                     offset += r.Length;
@@ -859,6 +904,7 @@ struct SecurityConfig {
     protocols: Vec<ProtocolInfo>,
     ciphers: Vec<CipherInfo>,
     certificates: Vec<CertInfo>,
+    logging_level: u32,
 }
 
 fn get_cipher_name(id: &str) -> String {
@@ -879,11 +925,28 @@ async fn get_security_config(req: HttpRequest) -> impl Responder {
     let mut certificates = Vec::new();
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    
+    // --- 0. Detect Logging Level ---
+    let logging_level = hklm.open_subkey(r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL")
+        .ok()
+        .and_then(|k| k.get_value::<u32, _>("EventLogging").ok())
+        .unwrap_or(0);
+
     let base_path = r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols";
 
     // --- 1. Parsing TLS & Ciphers (Registre) ---
     if let Ok(ssl_key) = hklm.open_subkey_with_flags(base_path, KEY_READ) {
-        for protocol_name in ssl_key.enum_keys().filter_map(Result::ok) {
+        let keys: Vec<_> = ssl_key.enum_keys().filter_map(Result::ok).collect();
+        
+        if keys.is_empty() {
+             // If key exists but empty, it often means OS defaults are used
+             protocols.push(ProtocolInfo {
+                name: "System Defaults (Managed by Windows)".to_string(),
+                enabled: true,
+            });
+        }
+
+        for protocol_name in keys {
             // On s'assure qu'on regarde les Protocoles TLS/SSL
             if protocol_name.contains("TLS") || protocol_name.contains("SSL") {
                 // État du protocole (Client & Server subkeys)
@@ -956,6 +1019,7 @@ async fn get_security_config(req: HttpRequest) -> impl Responder {
         protocols,
         ciphers,
         certificates,
+        logging_level,
     })
 }
 
@@ -1011,9 +1075,9 @@ async fn main() -> std::io::Result<()> {
 
     println!("Server running at http://0.0.0.0:{} (Access from LAN allowed)", port);
 
-    // Rate Limit Config: 10 req/s per IP
+    // Rate Limit Config: 10 req/s per IP (100ms period)
     let governor_conf = GovernorConfigBuilder::default()
-        .per_second(10)
+        .period(Duration::from_millis(100))
         .burst_size(20)
         .finish()
         .unwrap();

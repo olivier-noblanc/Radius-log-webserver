@@ -29,6 +29,7 @@
         }
 
         :root {
+            /* CYBERPUNK (DEFAULT) */
             --bg-deep: #050505;
             --bg-panel: rgba(20, 20, 25, 0.6);
             --border-glass: rgba(255, 255, 255, 0.08);
@@ -37,9 +38,37 @@
             --accent-red: #ff4757;
             --text-main: #e0e0e0;
             --text-muted: #8b9bb4;
-            /* MODERN FONTS (Google Fonts with System Fallbacks) */
             --font-ui: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
             --font-code: "JetBrains Mono", "Consolas", "Monaco", "Courier New", monospace;
+
+            /* SIZING VARIABLES FOR COMPACT MODE */
+            --spacing-container: 2rem;
+            --spacing-panel: 1.5rem;
+            --font-size-base: 14px;
+            --font-size-table: 0.85rem;
+            --header-height: auto;
+        }
+
+        /* DSFR - FRENCH GOV THEME */
+        [data-theme="dsfr"] {
+            --bg-deep: #f6f6f6;
+            --bg-panel: #ffffff;
+            --border-glass: #dddddd;
+            --accent-cyan: #000091;
+            /* Bleu France */
+            --accent-green: #18753c;
+            --accent-red: #ce0500;
+            --text-main: #161616;
+            --text-muted: #666666;
+            --font-ui: "Inter", "Marianne", Arial, sans-serif;
+        }
+
+        /* COMPACT THEME */
+        [data-theme="compact"] {
+            --spacing-container: 0.75rem;
+            --spacing-panel: 0.75rem;
+            --font-size-base: 12px;
+            --font-size-table: 0.75rem;
         }
 
         body {
@@ -51,14 +80,14 @@
             font-family: var(--font-ui);
             min-height: 100vh;
             overflow-x: hidden;
-            font-size: 14px;
+            font-size: var(--font-size-base);
         }
 
         /* --- LAYOUT UTILS --- */
         .container {
             max-width: 1800px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: var(--spacing-container);
         }
 
         .flex {
@@ -130,7 +159,7 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--border-glass);
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: var(--spacing-panel);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             transition: border-color 0.3s ease;
         }
@@ -239,7 +268,7 @@
             width: 100%;
             border-collapse: collapse;
             font-family: var(--font-code);
-            font-size: 0.85rem;
+            font-size: var(--font-size-table);
         }
 
         th {
@@ -264,7 +293,6 @@
             border-bottom: 1px solid var(--border-glass);
             color: var(--text-main);
             white-space: nowrap;
-            font-size: 0.8rem;
         }
 
         tr:hover td {
@@ -436,6 +464,13 @@
                 </nav>
 
                 <div class="flex items-center">
+                    <select id="themeSelect" class="btn-glass"
+                        style="margin-right: 15px; background: transparent; border-color: var(--border-glass);">
+                        <option value="neon">Néon Core</option>
+                        <option value="dsfr">Gouvernement (DSFR)</option>
+                        <option value="compact">Compact Mode</option>
+                    </select>
+
                     <button class="btn-glass" onclick="openSecurityAudit()"
                         style="margin-right: 15px; border-color: var(--accent-cyan); color: var(--accent-cyan);">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -528,6 +563,15 @@
                             onclick="document.getElementById('securityModal').classList.remove('open')">CLOSE</button>
                     </div>
 
+                    <div id="schannelWarning" class="glass-panel"
+                        style="margin-bottom: 1rem; border-color: var(--accent-red); color: var(--accent-red); display: none;">
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">⚠️ DIAGNOSTIC SCHANNEL LIMITÉ</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">
+                            Le logging SChannel n'est pas activé sur ce serveur (EventLogging = 0).
+                            L'analyse des erreurs de handshake dans le flux de logs sera indisponible.
+                        </div>
+                    </div>
+
                     <div class="grid-3">
                         <!-- Column 1: Protocols -->
                         <div class="glass-panel">
@@ -574,6 +618,21 @@
 
             <!-- LOGIC -->
             <script>
+                // --- THEME SWITCHER LOGIC ---
+                const themeSelect = document.getElementById('themeSelect');
+                let savedTheme = localStorage.getItem('radius_theme') || 'neon';
+                if (savedTheme === 'cyberpunk') savedTheme = 'neon'; // Migration
+
+                // Init theme
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                themeSelect.value = savedTheme;
+
+                themeSelect.addEventListener('change', (e) => {
+                    const theme = e.target.value;
+                    document.documentElement.setAttribute('data-theme', theme);
+                    localStorage.setItem('radius_theme', theme);
+                });
+
                 // Use native WebSocket
                 // ... (Previous Logic) ...
 
@@ -585,6 +644,10 @@
                     })
                         .then(r => r.json())
                         .then(data => {
+                            // Show warning if logging is disabled
+                            const warning = document.getElementById('schannelWarning');
+                            warning.style.display = data.logging_level === 0 ? 'block' : 'none';
+
                             // Render Protocols
                             const protoDiv = document.getElementById('protocolList');
                             if (data.protocols.length === 0) protoDiv.innerHTML = '<div class="text-muted">No TLS keys found in Registry</div>';

@@ -1680,6 +1680,7 @@ dependencies = [
  "actix-governor",
  "actix-web",
  "actix-web-actors",
+ "anyhow",
  "chrono",
  "csv",
  "human-panic",
