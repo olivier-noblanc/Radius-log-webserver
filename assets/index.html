@@ -70,12 +70,12 @@
             --font-ui: "Inter", "Marianne", Arial, sans-serif;
         }
 
-        /* COMPACT THEME */
+        /* COMPACT THEME (INDUSTRIAL DENSITY) */
         [data-theme="compact"] {
-            --spacing-container: 0.25rem;
-            --spacing-panel: 0.4rem;
-            --font-size-base: 11px;
-            --font-size-table: 0.75rem;
+            --spacing-container: 0.1rem;
+            --spacing-panel: 0.15rem;
+            --font-size-base: 10px;
+            --font-size-table: 11px;
         }
 
         [data-theme="compact"] body {
@@ -85,13 +85,15 @@
         }
 
         [data-theme="compact"] .container {
+            max-width: none !important;
+            width: 100vw;
             height: 100vh;
             max-height: 100vh;
             display: grid;
             grid-template-rows: auto 1fr auto;
-            /* Header, Content, Footer */
             overflow: hidden;
-            padding: 0.25rem 0.5rem;
+            padding: 0.1rem;
+            margin: 0;
             box-sizing: border-box;
         }
 
@@ -109,27 +111,54 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+            padding: 0;
         }
 
         [data-theme="compact"] .table-container {
             flex: 1;
             overflow-y: auto;
             min-height: 0;
+            border-radius: 0;
+            border: none;
         }
 
-        [data-theme="compact"] header,
-        [data-theme="compact"] footer {
-            padding: 0.1rem 0;
-            margin-bottom: 0.1rem !important;
-            flex-shrink: 0;
+        [data-theme="compact"] th {
+            padding: 0.2rem 0.25rem;
+            font-size: 0.75rem;
+            border-bottom: 1px solid var(--border-glass);
         }
 
-        [data-theme="compact"] .stat-value {
-            font-size: 1.25rem;
+        [data-theme="compact"] td {
+            padding: 0.1rem 0.25rem;
+            font-size: 11px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            line-height: 1.1;
+        }
+
+        [data-theme="compact"] .grid-3,
+        [data-theme="compact"] .grid-2 {
+            gap: 0.15rem;
         }
 
         [data-theme="compact"] .glass-panel {
-            padding: 0.4rem;
+            padding: 0.15rem;
+            margin-bottom: 0.1rem;
+            border-radius: 0;
+            box-shadow: none;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="compact"] .input-glass,
+        [data-theme="compact"] .btn-glass {
+            padding: 0 0.3rem;
+            height: 18px;
+            font-size: 0.75rem;
+            border-radius: 1px;
+        }
+
+        [data-theme="compact"] .brand-logo {
+            font-size: 1rem;
         }
 
         body {
