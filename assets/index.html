@@ -986,10 +986,273 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+
+        /* GLOBAL LOADER */
+        #loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+
+        #loader-overlay.active {
+            display: flex;
+        }
+
+        .loader-content {
+            text-align: center;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* NEON (Default) */
+        .neon-ring {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 242, 255, 0.1);
+            border-top: 3px solid var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* DSFR */
+        [data-theme="dsfr"] #loader-overlay {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: none;
+        }
+
+        .dsfr-spinner {
+            width: 30px;
+            height: 30px;
+            border: 4px solid #eee;
+            border-top: 4px solid #000091;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* XP */
+        .xp-pulse {
+            display: flex;
+            gap: 4px;
+        }
+
+        .xp-pulse div {
+            width: 10px;
+            height: 15px;
+            background: linear-gradient(to bottom, #28ca41, #1a9c2d);
+            border-radius: 2px;
+            opacity: 0.3;
+            animation: xp-pulse 1s infinite;
+        }
+
+        .xp-pulse div:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .xp-pulse div:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes xp-pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* WIN 3.1 */
+        .win31-hourglass {
+            font-size: 30px;
+            animation: win31-flip 1s steps(2) infinite;
+        }
+
+        @keyframes win31-flip {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(180deg);
+            }
+        }
+
+        /* DOS */
+        .dos-spin {
+            font-family: var(--font-code);
+            font-size: 24px;
+            color: #fff;
+        }
+
+        .dos-spin::after {
+            content: "|";
+            animation: dos-load 0.4s steps(4) infinite;
+        }
+
+        @keyframes dos-load {
+            0% {
+                content: "|";
+            }
+
+            25% {
+                content: "/";
+            }
+
+            50% {
+                content: "-";
+            }
+
+            75% {
+                content: "\\";
+            }
+        }
+
+        /* MACOS */
+        .macos-watch {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #000;
+            border-radius: 50%;
+            position: relative;
+            background: #fff;
+        }
+
+        .macos-watch::before {
+            content: "";
+            position: absolute;
+            top: 11px;
+            left: 11px;
+            width: 8px;
+            height: 2px;
+            background: #000;
+            transform-origin: left center;
+            animation: spin 2s linear infinite;
+        }
+
+        /* TERMINAL */
+        .terminal-bar {
+            font-family: var(--font-code);
+            color: var(--accent-green);
+        }
+
+        .terminal-bar::after {
+            content: "[          ]";
+            animation: term-load 1s steps(11) infinite;
+        }
+
+        @keyframes term-load {
+            0% {
+                content: "[          ]";
+            }
+
+            10% {
+                content: "[#         ]";
+            }
+
+            20% {
+                content: "[##        ]";
+            }
+
+            30% {
+                content: "[###       ]";
+            }
+
+            40% {
+                content: "[####      ]";
+            }
+
+            50% {
+                content: "[#####     ]";
+            }
+
+            60% {
+                content: "[######    ]";
+            }
+
+            70% {
+                content: "[#######   ]";
+            }
+
+            80% {
+                content: "[########  ]";
+            }
+
+            90% {
+                content: "[######### ]";
+            }
+
+            100% {
+                content: "[##########]";
+            }
+        }
+
+        .loader-label {
+            margin-top: 15px;
+            font-family: var(--font-ui);
+            font-size: 0.8rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: white;
+        }
+
+        [data-theme="dsfr"] .loader-label {
+            color: #000;
+        }
+
+        [data-theme="terminal"] .loader-label {
+            color: var(--accent-green);
+            font-family: var(--font-code);
+        }
+
+        [data-theme="dos"] .loader-label {
+            font-family: var(--font-code);
+            text-transform: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
 <body>
+    <div id="loader-overlay">
+        <div class="loader-content">
+            <div id="loader-icon">
+                <div class="neon-ring"></div>
+                <div class="dsfr-spinner"></div>
+                <div class="terminal-bar"></div>
+                <div class="xp-pulse">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+                <div class="win31-hourglass">⏳</div>
+                <div class="dos-spin"></div>
+                <div class="macos-watch"></div>
+            </div>
+            <div id="loader-label" class="loader-label">INITIALIZING...</div>
+        </div>
+    </div>
     <div id="human-gate">
         <div class="scanlines"></div>
         <div class="gate-logo">// RADIUS SECURITY CORE</div>
@@ -1419,6 +1682,32 @@
                     });
                 }
 
+                function showLoader() {
+                    const theme = document.documentElement.getAttribute('data-theme') || 'neon';
+                    const overlay = document.getElementById('loader-overlay');
+                    const iconContainer = document.getElementById('loader-icon');
+                    const label = document.getElementById('loader-label');
+
+                    // Hide all top-level icons
+                    Array.from(iconContainer.children).forEach(el => el.style.display = 'none');
+
+                    let activeIcon;
+                    if (theme === 'dsfr') { activeIcon = iconContainer.querySelector('.dsfr-spinner'); label.textContent = 'CHARGEMENT EN COURS...'; }
+                    else if (theme === 'terminal') { activeIcon = iconContainer.querySelector('.terminal-bar'); label.textContent = '[SYSTEM] READING LOG...'; }
+                    else if (theme === 'xp') { activeIcon = iconContainer.querySelector('.xp-pulse'); label.textContent = 'Loading...'; activeIcon.style.display = 'flex'; }
+                    else if (theme === 'win31') { activeIcon = iconContainer.querySelector('.win31-hourglass'); label.textContent = 'Please wait...'; }
+                    else if (theme === 'dos') { activeIcon = iconContainer.querySelector('.dos-spin'); label.textContent = 'C:\\> LOAD LOG.DAT /S'; }
+                    else if (theme === 'macos') { activeIcon = iconContainer.querySelector('.macos-watch'); label.textContent = 'Reading...'; }
+                    else { activeIcon = iconContainer.querySelector('.neon-ring'); label.textContent = 'SYNCING DATABLOCKS...'; }
+
+                    if (activeIcon && theme !== 'xp') activeIcon.style.display = 'block';
+                    overlay.classList.add('active');
+                }
+
+                function hideLoader() {
+                    document.getElementById('loader-overlay').classList.remove('active');
+                }
+
                 function fetchData() {
                     const path = els.fileSelect.value;
                     if (!path || path.startsWith("NO LOG")) return;
@@ -1428,6 +1717,7 @@
                     // Fetching all data without search/sort params to cache it locally
                     const url = `/api/parse?file=${encodeURIComponent(path)}`;
 
+                    showLoader();
                     fetch(url, {
                         headers: { 'X-Radius-Auth': 'authorized' }
                     })
@@ -1438,11 +1728,13 @@
                         .then(data => {
                             fullData = Array.isArray(data) ? data : [];
                             renderData();
+                            hideLoader();
                         })
                         .catch(err => {
                             console.error("Fetch Error:", err);
                             els.tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--accent-red);">// SECURITY ALERT: ${err.message}. ACCESS DENIED OR FILE CORRUPTION.</td></tr>`;
                             fullData = [];
+                            hideLoader();
                         });
                 }
 
