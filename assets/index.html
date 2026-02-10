@@ -79,19 +79,17 @@
         }
 
         [data-theme="compact"] body {
-            overflow: hidden;
-            height: 100vh;
-            max-height: 100vh;
+            overflow-y: auto;
+            height: auto;
+            max-height: none;
         }
 
         [data-theme="compact"] .container {
             max-width: none !important;
             width: 100vw;
-            height: 100vh;
-            max-height: 100vh;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-            overflow: hidden;
+            height: auto;
+            max-height: none;
+            display: block;
             padding: 0.1rem;
             margin: 0;
             box-sizing: border-box;
@@ -99,25 +97,23 @@
 
         [data-theme="compact"] #view-logs,
         [data-theme="compact"] #view-dashboard {
-            overflow: hidden;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+            overflow: visible;
+            height: auto;
+            display: block;
         }
 
         [data-theme="compact"] .main-content {
-            flex: 1;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
+            flex: none;
+            overflow: visible;
+            display: block;
+            min-height: auto;
             padding: 0;
         }
 
         [data-theme="compact"] .table-container {
-            flex: 1;
-            overflow-y: auto;
-            min-height: 0;
+            flex: none;
+            overflow-y: visible;
+            min-height: auto;
             border-radius: 0;
             border: none;
         }
