@@ -215,10 +215,102 @@
             opacity: 0.3;
         }
 
+        /* WINDOWS XP (LUNA) THEME */
+        [data-theme="xp"] {
+            --bg-deep: #ece9d8;
+            --bg-panel: #ffffff;
+            --border-glass: #0058e6;
+            --accent-cyan: #0058e6;
+            --accent-green: #5a8c2d;
+            --accent-red: #d32f2f;
+            --text-main: #000000;
+            --text-muted: #4d4d4d;
+            --font-ui: "Tahoma", "Segoe UI", sans-serif;
+            --font-code: "Lucida Console", monospace;
+        }
+
+        [data-theme="xp"] body {
+            background-image: none;
+            background-color: #0058e6;
+            /* Bliss-like background color */
+        }
+
+        [data-theme="xp"] .container {
+            max-width: 1200px !important;
+            margin: 20px auto !important;
+            background: #ece9d8;
+            border: 3px solid #0058e6;
+            border-radius: 8px 8px 0 0;
+            padding: 4px;
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="xp"] .main-header {
+            background: linear-gradient(to bottom, #0058e6 0%, #2572ff 10%, #0058e6 30%, #0058e6 80%, #003096 100%);
+            margin: -4px -4px 10px -4px;
+            padding: 8px 12px;
+            border-radius: 6px 6px 0 0;
+            color: white;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4);
+        }
+
+        [data-theme="xp"] .brand-logo,
+        [data-theme="xp"] .text-muted {
+            color: white !important;
+        }
+
+        [data-theme="xp"] .glass-panel {
+            background: white !important;
+            border: 1px solid #919b9c !important;
+            border-radius: 0 !important;
+            backdrop-filter: none !important;
+            box-shadow: inset 1px 1px 1px white !important;
+            padding: 10px;
+        }
+
+        [data-theme="xp"] .btn-glass {
+            background: linear-gradient(to bottom, #ffffff 0%, #ebebeb 50%, #dbdbdb 51%, #fefefe 100%) !important;
+            border: 1px solid #003c74 !important;
+            border-radius: 3px !important;
+            color: #003c74 !important;
+            font-weight: bold;
+            text-shadow: none !important;
+            box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        [data-theme="xp"] .btn-glass:hover {
+            background: linear-gradient(to bottom, #fffadb 0%, #ffe79b 50%, #ffcc5a 51%, #fffadb 100%) !important;
+            border-color: #ff9d00 !important;
+        }
+
+        [data-theme="xp"] .btn-primary {
+            background: linear-gradient(to bottom, #5a8c2d 0%, #74b042 50%, #4a7226 51%, #5a8c2d 100%) !important;
+            border-color: #3b5c1d !important;
+            color: white !important;
+        }
+
+        [data-theme="xp"] th {
+            background: linear-gradient(to bottom, #f9f9f9 0%, #d6d6d6 100%);
+            border: 1px solid #ffffff !important;
+            border-right: 1px solid #919b9c !important;
+            border-bottom: 1px solid #919b9c !important;
+            color: #000 !important;
+            padding: 4px 8px;
+        }
+
+        [data-theme="xp"] td {
+            border-right: 1px solid #ece9d8;
+            border-bottom: 1px solid #ece9d8;
+            font-size: 0.8rem;
+        }
+
+        [data-theme="xp"] .scanlines {
+            display: none !important;
+        }
+
         body {
             background-color: var(--bg-deep);
-            background-image:
-                radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.03) 0%, transparent 40%),
+            background-image: radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.03) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
             color: var(--text-main);
             font-family: var(--font-ui);
@@ -650,6 +742,7 @@
                         <option value="dsfr">RÉPUBLIQUE // FR</option>
                         <option value="compact">INDUSTRIAL // DENSE</option>
                         <option value="terminal">TERMINAL // SSH</option>
+                        <option value="xp">WINDOWS XP // LUNA</option>
                     </select>
 
                     <button class="btn-glass" onclick="openSecurityAudit()"
