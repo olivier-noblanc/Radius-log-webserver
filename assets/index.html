@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap"
         rel="stylesheet">
 
     <!-- OFFLINE MODE: System Fonts meta -->
@@ -76,6 +76,8 @@
             --spacing-panel: 0.15rem;
             --font-size-base: 10px;
             --font-size-table: 11px;
+            --font-ui: "Roboto Condensed", sans-serif;
+            --font-code: "Roboto Condensed", monospace;
         }
 
         [data-theme="compact"] body {
@@ -134,6 +136,11 @@
         [data-theme="compact"] .grid-3,
         [data-theme="compact"] .grid-2 {
             gap: 0.15rem;
+        }
+
+        [data-theme="compact"] table {
+            letter-spacing: -0.2px;
+            font-stretch: condensed;
         }
 
         [data-theme="compact"] .glass-panel {
