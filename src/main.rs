@@ -568,9 +568,10 @@ async fn list_files(req: HttpRequest) -> impl Responder {
                             .unwrap_or(0);
 
                         if let Ok(name) = p.strip_prefix(&path) {
+                            let rel_path = name.to_string_lossy().to_string();
                             files.push(LogFile {
-                                name: name.to_string_lossy().to_string(),
-                                path: p.to_string_lossy().to_string(),
+                                name: rel_path.clone(),
+                                path: rel_path,
                                 size: metadata.len(),
                                 modified_ts: modified,
                             });

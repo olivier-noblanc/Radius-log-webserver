@@ -14,7 +14,9 @@
         rel="stylesheet">
 
     <!-- OFFLINE MODE: System Fonts meta -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Radius Log">
+    <meta name="theme-color" content="#0a0a0c">
     <!-- Chart.js (Local) -->
     <script src="/chart.js"></script>
 
@@ -834,15 +836,30 @@
 
                     fetch(url, {
                         headers: { 'X-Radius-Auth': 'authorized' }
-                    }).then(r => r.json()).then(data => {
-                        fullData = data;
-                        renderData();
-                    });
+                    })
+                        .then(r => {
+                            if (!r.ok) throw new Error(`HTTP Error: ${r.status}`);
+                            return r.json();
+                        })
+                        .then(data => {
+                            fullData = Array.isArray(data) ? data : [];
+                            renderData();
+                        })
+                        .catch(err => {
+                            console.error("Fetch Error:", err);
+                            els.tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--accent-red);">// SECURITY ALERT: ${err.message}. ACCESS DENIED OR FILE CORRUPTION.</td></tr>`;
+                            fullData = [];
+                        });
                 }
 
                 function renderData() {
                     els.tbody.innerHTML = '';
                     const search = els.searchInput.value.toLowerCase();
+
+                    if (!Array.isArray(fullData)) {
+                        els.tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--accent-red);">// DATA ERROR: INVALID RESPONSE FORMAT</td></tr>';
+                        return;
+                    }
 
                     let filtered = fullData.filter(item => {
                         if (!search) return true;
