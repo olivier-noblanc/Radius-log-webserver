@@ -554,6 +554,7 @@
             border: 1px solid #000 !important;
             border-radius: 0 !important;
             background: #fff !important;
+            color: #000 !important;
         }
 
         /* Standardized Dropdown Readability */
@@ -987,19 +988,23 @@
             background: #555;
         }
 
-        /* GLOBAL LOADER */
+        /* GLOBAL LOADER (SUBTLE REDESIGN) */
         #loader-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.7);
+            bottom: 20px;
+            right: 20px;
+            width: auto;
+            height: auto;
+            background: rgba(0, 0, 0, 0.85);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
-            backdrop-filter: blur(4px);
+            z-index: 10000;
+            backdrop-filter: blur(8px);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
         #loader-overlay.active {
@@ -1007,11 +1012,12 @@
         }
 
         .loader-content {
-            text-align: center;
+            text-align: left;
             color: white;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
+            gap: 12px;
         }
 
         /* NEON (Default) */
@@ -1200,7 +1206,7 @@
         }
 
         .loader-label {
-            margin-top: 15px;
+            margin-top: 0;
             font-family: var(--font-ui);
             font-size: 0.8rem;
             font-weight: bold;
