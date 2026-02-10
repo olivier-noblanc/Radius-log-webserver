@@ -327,186 +327,218 @@
 
         .btn-nav.active {
             color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
 
-        /* Live Indicator */
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #444;
-            transition: all 0.3s;
-        }
-
-        .live-active .live-dot {
-            background: var(--accent-green);
-            box-shadow: 0 0 8px var(--accent-green);
-        }
-
-        /* --- TABLE --- */
-        .table-container {
-            overflow-x: auto;
-            border-radius: 8px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: var(--font-code);
-            font-size: var(--font-size-table);
-        }
-
-        th {
-            text-align: left;
-            padding: 0.75rem 0.5rem;
-            color: var(--text-muted);
-            font-weight: 600;
-            border-bottom: 2px solid var(--border-glass);
-            cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
-            font-size: 0.75rem;
-            letter-spacing: 0.5px;
-        }
-
-        th:hover {
-            color: var(--accent-cyan);
-        }
-
-        td {
-            padding: 0.5rem;
-            border-bottom: 1px solid var(--border-glass);
-            color: var(--text-main);
-            white-space: nowrap;
-        }
-
-        tr:hover td {
-            background: rgba(255, 255, 255, 0.02);
-            color: #fff;
-        }
-
-        /* Status Colors */
-        .status-success {
-            color: var(--accent-green);
-        }
-
-        .status-fail {
-            color: var(--accent-red);
-        }
-
-        .row-new {
-            animation: flash 1.5s ease-out;
-        }
-
-        @keyframes flash {
-            0% {
-                background-color: rgba(0, 242, 255, 0.2);
+            .resizing {
+                cursor: col-resize;
             }
 
-            100% {
-                background-color: transparent;
+            .resizing * {
+                user-select: none !important;
             }
-        }
 
-        /* --- MODAL --- */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 5, 10, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 2000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.2s;
-        }
+            /* Live Indicator */
+            .live-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #444;
+                transition: all 0.3s;
+            }
 
-        .modal-overlay.open {
-            display: flex;
-            opacity: 1;
-            pointer-events: auto;
-        }
+            .live-active .live-dot {
+                background: var(--accent-green);
+                box-shadow: 0 0 8px var(--accent-green);
+            }
 
-        /* --- HUMAN GATE --- */
-        #human-gate {
-            position: fixed;
-            inset: 0;
-            background: var(--bg-deep);
-            z-index: 3000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            transition: opacity 0.5s;
-        }
+            /* --- TABLE --- */
+            .table-container {
+                overflow-x: auto;
+                border-radius: 8px;
+            }
 
-        #human-gate.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-family: var(--font-code);
+                font-size: var(--font-size-table);
+                table-layout: fixed;
+            }
 
-        .gate-logo {
-            font-size: 3rem;
-            font-weight: 800;
-            letter-spacing: -2px;
-            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 2rem;
-        }
+            th {
+                position: relative;
+                text-align: left;
+                padding: 0.75rem 0.5rem;
+                color: var(--text-muted);
+                font-weight: 600;
+                border-bottom: 2px solid var(--border-glass);
+                cursor: pointer;
+                user-select: none;
+                white-space: nowrap;
+                font-size: 0.75rem;
+                letter-spacing: 0.5px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-        #app-root {
-            display: none;
-        }
+            th:hover {
+                color: var(--accent-cyan);
+            }
 
-        #app-root.visible {
-            display: block;
-        }
+            .resizer {
+                position: absolute;
+                right: 0;
+                top: 0;
+                height: 100%;
+                width: 5px;
+                background: rgba(255, 255, 255, 0.05);
+                cursor: col-resize;
+                user-select: none;
+                z-index: 10;
+            }
 
-        .modal-content {
-            background: #101014;
-            border: 1px solid var(--border-glass);
-            border-radius: 12px;
-            padding: 2rem;
-            width: 90%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-        }
+            .resizer:hover,
+            .resizing .resizer {
+                background: var(--accent-cyan);
+                opacity: 1;
+            }
 
-        .code-block {
-            background: #0a0a0c;
-            padding: 1rem;
-            border-radius: 6px;
-            border: 1px solid var(--border-glass);
-            color: #a9b7c6;
-            white-space: pre-wrap;
-            font-family: var(--font-code);
-            font-size: 0.85rem;
-        }
+            td {
+                padding: 0.5rem;
+                border-bottom: 1px solid var(--border-glass);
+                color: var(--text-main);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 0;
+                /* Required for ellipsis in flexible cells */
+            }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
+            tr:hover td {
+                background: rgba(255, 255, 255, 0.02);
+                color: #fff;
+            }
 
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
+            /* Status Colors */
+            .status-success {
+                color: var(--accent-green);
+            }
 
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 4px;
-        }
+            .status-fail {
+                color: var(--accent-red);
+            }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
+            .row-new {
+                animation: flash 1.5s ease-out;
+            }
+
+            @keyframes flash {
+                0% {
+                    background-color: rgba(0, 242, 255, 0.2);
+                }
+
+                100% {
+                    background-color: transparent;
+                }
+            }
+
+            /* --- MODAL --- */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 5, 10, 0.95);
+                backdrop-filter: blur(10px);
+                z-index: 2000;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                transition: opacity 0.2s;
+            }
+
+            .modal-overlay.open {
+                display: flex;
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            /* --- HUMAN GATE --- */
+            #human-gate {
+                position: fixed;
+                inset: 0;
+                background: var(--bg-deep);
+                z-index: 3000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                transition: opacity 0.5s;
+            }
+
+            #human-gate.hidden {
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .gate-logo {
+                font-size: 3rem;
+                font-weight: 800;
+                letter-spacing: -2px;
+                background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                margin-bottom: 2rem;
+            }
+
+            #app-root {
+                display: none;
+            }
+
+            #app-root.visible {
+                display: block;
+            }
+
+            .modal-content {
+                background: #101014;
+                border: 1px solid var(--border-glass);
+                border-radius: 12px;
+                padding: 2rem;
+                width: 90%;
+                max-width: 800px;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            }
+
+            .code-block {
+                background: #0a0a0c;
+                padding: 1rem;
+                border-radius: 6px;
+                border: 1px solid var(--border-glass);
+                color: #a9b7c6;
+                white-space: pre-wrap;
+                font-family: var(--font-code);
+                font-size: 0.85rem;
+            }
+
+            /* Scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #333;
+                border-radius: 4px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
     </style>
 </head>
 
@@ -600,15 +632,24 @@
                     <table id="logTable">
                         <thead>
                             <tr>
-                                <th onclick="sort('timestamp')">TIMESTAMP</th>
-                                <th onclick="sort('req_type')">TYPE</th>
-                                <th onclick="sort('server')">SERVER</th>
-                                <th onclick="sort('ap_ip')">AP IP</th>
-                                <th onclick="sort('ap_name')">AP NAME</th>
-                                <th onclick="sort('mac')">MAC</th>
-                                <th onclick="sort('user')">USER</th>
-                                <th onclick="sort('resp_type')">RESULT</th>
-                                <th onclick="sort('reason')">REASON / DIAGNOSTICS</th>
+                                <th onclick="sort('timestamp')">TIMESTAMP<div class="resizer"></div>
+                                </th>
+                                <th onclick="sort('req_type')">TYPE<div class="resizer"></div>
+                                </th>
+                                <th onclick="sort('server')">SERVER<div class="resizer"></div>
+                                </th>
+                                <th onclick="sort('ap_ip')">AP IP<div class="resizer"></div>
+                                </th>
+                                <th onclick="sort('ap_name')">AP NAME<div class="resizer"></div>
+                                </th>
+                                <th onclick="sort('mac')">MAC<div class="resizer"></div>
+                                </th>
+                                <th onclick="sort('user')">USER<div class="resizer"></div>
+                                </th>
+                                <th onclick="sort('resp_type')">RESULT<div class="resizer"></div>
+                                </th>
+                                <th onclick="sort('reason')">REASON / DIAGNOSTICS<div class="resizer"></div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -849,21 +890,21 @@
                     }
 
                     tr.innerHTML = `
-                <td>${safe(data.timestamp)}</td>
-                <td>${safe(data.req_type)}</td>
-                <td>${safe(data.server)}</td>
-                <td>${safe(data.ap_ip)}</td>
-                <td>${safe(data.ap_name)}</td>
-                <td style="font-family: var(--font-code); color: var(--accent-cyan);">${safe(data.mac)}</td>
-                <td style="font-weight: 600;">${safe(data.user)}</td>
-                <td class="${statusClass}">${safe(data.resp_type)}</td>
-                <td>
+                <td title="${safe(data.timestamp)}">${safe(data.timestamp)}</td>
+                <td title="${safe(data.req_type)}">${safe(data.req_type)}</td>
+                <td title="${safe(data.server)}">${safe(data.server)}</td>
+                <td title="${safe(data.ap_ip)}">${safe(data.ap_ip)}</td>
+                <td title="${safe(data.ap_name)}">${safe(data.ap_name)}</td>
+                <td title="${safe(data.mac)}" style="font-family: var(--font-code); color: var(--accent-cyan);">${safe(data.mac)}</td>
+                <td title="${safe(data.user)}" style="font-weight: 600;">${safe(data.user)}</td>
+                <td title="${safe(data.resp_type)}" class="${statusClass}">${safe(data.resp_type)}</td>
+                <td title="${safe(data.reason)}">
                     ${safe(data.reason)}
                     ${actionHtml}
                 </td>
             `;
                     tr.onclick = (e) => {
-                        if (!e.target.closest('button')) openModal(data);
+                        if (!e.target.closest('button') && !e.target.closest('.resizer')) openModal(data);
                     };
                     return tr;
                 }
@@ -1092,6 +1133,58 @@
                     els.liveBtn.classList.toggle('live-active');
                 };
 
+
+                // --- COLUMN RESIZING ---
+                function initResizing() {
+                    const table = document.getElementById('logTable');
+                    const cols = table.querySelectorAll('th');
+                    let startX, startWidth, currentTh;
+
+                    const savedWidths = JSON.parse(localStorage.getItem('radius_col_widths') || '{}');
+
+                    cols.forEach((th, idx) => {
+                        if (savedWidths[idx]) {
+                            th.style.width = savedWidths[idx] + 'px';
+                        }
+
+                        const resizer = th.querySelector('.resizer');
+                        if (!resizer) return;
+
+                        resizer.addEventListener('mousedown', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            currentTh = th;
+                            startX = e.pageX;
+                            startWidth = th.offsetWidth;
+                            document.addEventListener('mousemove', onMouseMove);
+                            document.addEventListener('mouseup', onMouseUp);
+                            document.body.classList.add('resizing');
+                        });
+                    });
+
+                    function onMouseMove(e) {
+                        if (!currentTh) return;
+                        const width = startWidth + (e.pageX - startX);
+                        if (width > 50) {
+                            currentTh.style.width = width + 'px';
+                        }
+                    }
+
+                    function onMouseUp() {
+                        if (!currentTh) return;
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        document.body.classList.remove('resizing');
+
+                        const widths = {};
+                        cols.forEach((th, idx) => {
+                            widths[idx] = th.offsetWidth;
+                        });
+                        localStorage.setItem('radius_col_widths', JSON.stringify(widths));
+                        currentTh = null;
+                    }
+                }
+                initResizing();
 
                 // --- INIT ---
                 function authorize() {
