@@ -1092,18 +1092,6 @@
                     els.liveBtn.classList.toggle('live-active');
                 };
 
-                // Navigation Keys (Arrow Down/Up) for scrolling
-                window.addEventListener('keydown', (e) => {
-                    const step = 60;
-                    const container = document.querySelector('.table-container');
-                    if (e.key === 'ArrowDown') {
-                        container.scrollBy({ top: step, behavior: 'smooth' });
-                        e.preventDefault();
-                    } else if (e.key === 'ArrowUp') {
-                        container.scrollBy({ top: -step, behavior: 'smooth' });
-                        e.preventDefault();
-                    }
-                });
 
                 // --- INIT ---
                 function authorize() {
