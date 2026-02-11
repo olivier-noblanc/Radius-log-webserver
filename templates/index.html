@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="neon">
+<html lang="en" data-theme="{{ theme }}">
 
 <head>
     <meta charset="UTF-8">
@@ -22,16 +22,6 @@
 
     <!-- JavaScript -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-    <script src="/js/app.js?v={{ git_sha }}" defer></script>
-    <script>
-        document.addEventListener('htmx:configRequest', (event) => {
-            const auth = localStorage.getItem('radius_auth');
-            if (auth === 'authorized') {
-                event.detail.headers['X-Radius-Auth'] = 'authorized';
-            }
-        });
-    </script>
 
     <!-- SVG PATTERNS -->
     <svg width="0" height="0" style="position: absolute;">
@@ -101,67 +91,89 @@
         </div>
     </div>
 
-    <div id="human-gate">
-        <div class="scanlines"></div>
-        <div class="gate-logo"> // RADIUS SECURITY CORE</div>
-        <div class="auth-text">
-            HIGH-PERFORMANCE LOG ANALYTICS INTERFACE.<br>
-            SECURE SESSION INITIALIZATION REQUIRED.
+    <!-- HUMAN GATE (Initial Authorization) -->
+    <div id="human-gate" class="human-gate {% if is_authorized %}hidden{% endif %}">
+        <div class="lock-container">
+            <div class="glitch-text" data-text="AUTHORIZATION REQUIRED">AUTHORIZATION REQUIRED</div>
+            <button class="btn-lock" id="authBtn" hx-post="/api/login" hx-swap="none"
+                hx-on:htmx:after-request="document.getElementById('human-gate').classList.add('hidden'); document.getElementById('app-root').classList.add('visible'); document.body.style.overflow = 'auto';">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span>IDENTITY VERIFIED</span>
+            </button>
         </div>
-        <button id="authBtn" class="btn-glass btn-primary btn-auth">
-            AUTHORIZE SESSION
-        </button>
     </div>
 
-    <div id="app-root">
+    <!-- APP ROOT -->
+    <div id="app-root" class="app-root {% if is_authorized %}visible{% endif %}">
+        <div class="crt-overlay"></div>
         <div class="scanlines"></div>
-        <div class="container">
-            <!-- Header -->
-            <header class="flex justify-between items-center mb-4 main-header">
-                <div class="flex flex-col"><a href="#" class="brand-logo"><svg width="24" height="24"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                            <path d="M12 8v8" />
-                            <path d="M8 12h8" />
-                        </svg>RADIUS // LOG CORE
-                    </a>
-                    <div class="architect-info">
-                        SYSTEM ARCHITECT: <span class="architect-name">OLIVIER NOBLANC</span> // {{ build_version }}
-                    </div>
+
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon"></div>
+                <span>RADIUS // LOGS</span>
+            </div>
+            <nav class="sidebar-nav">
+                <button hx-get="/api/logs/rows" hx-target="#logTableBody" hx-push-url="true" class="btn-nav active"
+                    hx-on:click="document.querySelectorAll('.btn-nav').forEach(el => el.classList.remove('active')); this.classList.add('active'); document.getElementById('view-logs').classList.remove('hidden'); document.getElementById('view-dashboard').classList.add('hidden');">
+                    <i class="bi bi-terminal me-2"></i>LOG STREAM
+                </button>
+                <button hx-get="/api/dashboard" hx-target="#view-dashboard" hx-push-url="true" class="btn-nav"
+                    hx-on:click="document.querySelectorAll('.btn-nav').forEach(el => el.classList.remove('active')); this.classList.add('active'); document.getElementById('view-logs').classList.add('hidden'); document.getElementById('view-dashboard').classList.remove('hidden');">
+                    <i class="bi bi-speedometer2 me-2"></i>ANALYTICS
+                </button>
+                <div class="sidebar-spacer"></div>
+                <div class="sidebar-footer">
+                    <div class="text-xxs opacity-40 mb-2">CONNECTED AS ROOT</div>
+                    <div class="text-xxs opacity-20 uppercase">{{ build_version }}</div>
                 </div>
-                <nav class="flex glass-panel nav-main">
-                    <button id="navLogsBtn" data-view="logs" class="btn-glass btn-nav active">LOG STREAM</button>
-                    <button id="navDashBtn" data-view="dashboard" class="btn-glass btn-nav">ANALYTICS</button>
-                </nav>
-                <div class="flex items-center"><select id="themeSelect" class="btn-glass theme-select">
-                        <option value="neon">NÉON // CORE</option>
-                        <option value="dsfr">RÉPUBLIQUE // FR</option>
-                        <option value="compact">INDUSTRIAL // DENSE</option>
-                        <option value="terminal">TERMINAL // SSH</option>
-                        <option value="xp">WINDOWS XP // LUNA</option>
-                        <option value="win31">WINDOWS 3.1 // LEGACY</option>
-                        <option value="win95">WINDOWS 95 // CHICAGO</option>
-                        <option value="macos">MACINTOSH // CLASSIC</option>
-                        <option value="dos">MS-DOS // COMSPEC</option>
-                        <option value="c64">COMMODORE // 64</option>
-                        <option value="nes">NINTENDO // 8-BIT</option>
-                        <option value="snes">S-NINTENDO // 16-BIT</option>
-                    </select><button class="btn-glass btn-audit" id="auditBtn"><svg width="16" height="16"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            </nav>
+        </div>
+
+        <main class="main-content">
+            <header class="top-bar glass-panel flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <select id="themeSelect" class="input-glass theme-select"
+                        hx-on:change="document.documentElement.setAttribute('data-theme', this.value); document.cookie = 'theme=' + this.value + '; path=/; max-age=31536000'">
+                        <option value="neon" {% if theme=="neon" %}selected{% endif %}>NEON // 2077</option>
+                        <option value="win31" {% if theme=="win31" %}selected{% endif %}>MICROSOFT // 3.1</option>
+                        <option value="win95" {% if theme=="win95" %}selected{% endif %}>MICROSOFT // 95</option>
+                        <option value="xp" {% if theme=="xp" %}selected{% endif %}>MICROSOFT // XP</option>
+                        <option value="macos" {% if theme=="macos" %}selected{% endif %}>APPLE // MACOS</option>
+                        <option value="terminal" {% if theme=="terminal" %}selected{% endif %}>TERMINAL // MATRIX
+                        </option>
+                        <option value="c64" {% if theme=="c64" %}selected{% endif %}>COMMODORE // 64</option>
+                        <option value="nes" {% if theme=="nes" %}selected{% endif %}>NINTENDO // 8-BIT</option>
+                        <option value="snes" {% if theme=="snes" %}selected{% endif %}>S-NINTENDO // 16-BIT</option>
+                        <option value="dos" {% if theme=="dos" %}selected{% endif %}>MS-DOS // COMSPEC</option>
+                        <option value="compact" {% if theme=="compact" %}selected{% endif %}>INDUSTRIAL // COMPACT
+                        </option>
+                        <option value="dsfr" {% if theme=="dsfr" %}selected{% endif %}>GOUV.FR // DSFR</option>
+                    </select><button class="btn-glass btn-audit" id="auditBtn"
+                        hx-on:click="document.getElementById('securityModal').classList.add('visible')"><svg width="16"
+                            height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                         </svg>SECURITY AUDIT </button>
                     <div id="statusBadge" class="status-badge">DISCONNECTED</div>
-                    <button class="btn-glass" id="liveBtn">
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="btn-glass" id="liveBtn"
+                        hx-on:click="this.querySelector('.live-dot').classList.toggle('active')">
                         <div class="live-dot"></div><span class="live-label">LIVE</span>
                     </button>
                 </div>
             </header>
 
             <div id="view-logs">
-                <div class="flex items-center mb-4 glass-panel panel-main">
+                <form id="log-filters" hx-get="/api/logs/rows" hx-target="#logTableBody"
+                    hx-trigger="change, input delay:500ms" class="flex items-center mb-4 glass-panel panel-main">
                     <div class="flex-grow"><select id="fileSelect" name="file" class="input-glass">
                             {% for file in files %}
-                            <option value="{{ file.path }}">{{ file.name }} ({{ file.formatted_size }})</option>
+                            <option value="{{ file.path }}" {% if file.path==current_file %}selected{% endif %}>{{
+                                file.name }} ({{ file.formatted_size }})</option>
                             {% endfor %}
                             {% if files.is_empty() %}
                             <option>Aucun fichier</option>
@@ -178,47 +190,96 @@
                             class="cursor-pointer w-18 h-18"><label for="errorToggle" class="error-only-label">ERRORS
                             ONLY</label>
                     </div>
-                    <div><button class="btn-glass btn-primary" id="loadBtn">REFRESH</button><button class="btn-glass"
-                            id="exportBtn">EXPORT CSV</button></div>
-                </div>
+                    <!-- Hidden inputs for sorting -->
+                    <input type="hidden" id="sort_by" name="sort_by" value="{{ sort_by }}">
+                    <input type="hidden" id="sort_desc" name="sort_desc" value="{{ sort_desc }}">
+
+                    <div><button type="submit" class="btn-glass btn-primary" id="loadBtn">REFRESH</button><button
+                            type="button" class="btn-glass" id="exportBtn"
+                            hx-on:click="window.location.href='/api/export?file=' + encodeURIComponent(document.getElementById('fileSelect').value) + '&search=' + encodeURIComponent(document.getElementById('searchInput').value)">EXPORT
+                            CSV</button></div>
+                </form>
                 <div class="glass-panel table-container">
-                    <input type="hidden" id="sort_by" name="sort_by" value="timestamp">
-                    <input type="hidden" id="sort_desc" name="sort_desc" value="true">
                     <table id="logTable">
                         <thead>
                             <tr>
-                                <th class="sortable" data-col="timestamp">TIMESTAMP<i
-                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=timestamp&sort_desc={% if sort_by == "
+                                    timestamp" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif
+                                    %}" hx-target="#logTableBody">
+                                    TIMESTAMP <i class="bi {% if sort_by == " timestamp" %}{% if sort_desc
+                                        %}bi-arrow-down{% else %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{%
+                                        endif %} small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="req_type">TYPE<i
-                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=req_type&sort_desc={% if sort_by == "
+                                    req_type" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif
+                                    %}" hx-target="#logTableBody">
+                                    TYPE <i class="bi {% if sort_by == " req_type" %}{% if sort_desc %}bi-arrow-down{%
+                                        else %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{% endif %} small
+                                        ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="server">SERVER<i
-                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=server&sort_desc={% if sort_by == "
+                                    server" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif %}"
+                                    hx-target="#logTableBody">
+                                    SERVER <i class="bi {% if sort_by == " server" %}{% if sort_desc %}bi-arrow-down{%
+                                        else %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{% endif %} small
+                                        ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="ap_ip">AP IP<i
-                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=ap_ip&sort_desc={% if sort_by == "
+                                    ap_ip" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif %}"
+                                    hx-target="#logTableBody">
+                                    AP IP <i class="bi {% if sort_by == " ap_ip" %}{% if sort_desc %}bi-arrow-down{%
+                                        else %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{% endif %} small
+                                        ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="ap_name">AP NAME<i
-                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=ap_name&sort_desc={% if sort_by == "
+                                    ap_name" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif
+                                    %}" hx-target="#logTableBody">
+                                    AP NAME <i class="bi {% if sort_by == " ap_name" %}{% if sort_desc %}bi-arrow-down{%
+                                        else %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{% endif %} small
+                                        ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="mac">MAC<i class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=mac&sort_desc={% if sort_by == "
+                                    mac" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif %}"
+                                    hx-target="#logTableBody">
+                                    MAC <i class="bi {% if sort_by == " mac" %}{% if sort_desc %}bi-arrow-down{% else
+                                        %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{% endif %} small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="user">USER<i class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=user&sort_desc={% if sort_by == "
+                                    user" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif %}"
+                                    hx-target="#logTableBody">
+                                    USER <i class="bi {% if sort_by == " user" %}{% if sort_desc %}bi-arrow-down{% else
+                                        %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{% endif %} small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="resp_type">RESULT<i
-                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=resp_type&sort_desc={% if sort_by == "
+                                    resp_type" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif
+                                    %}" hx-target="#logTableBody">
+                                    RESULT <i class="bi {% if sort_by == " resp_type" %}{% if sort_desc
+                                        %}bi-arrow-down{% else %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{%
+                                        endif %} small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="reason">REASON /
-                                    DIAGNOSTICS<i class="bi bi-arrow-down-up small ms-1"></i>
+                                <th class="sortable"
+                                    hx-get="/api/logs/rows?file={{ current_file }}&sort_by=reason&sort_desc={% if sort_by == "
+                                    reason" %}{% if sort_desc %}false{% else %}true{% endif %}{% else %}true{% endif %}"
+                                    hx-target="#logTableBody">
+                                    DIAGNOSTICS <i class="bi {% if sort_by == " reason" %}{% if sort_desc
+                                        %}bi-arrow-down{% else %}bi-arrow-up{% endif %}{% else %}bi-arrow-down-up{%
+                                        endif %} small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
                             </tr>
@@ -240,23 +301,44 @@
                 </div>
             </div>
 
-            <!-- Detail Modal -->
-            <div class="modal-overlay" id="detailModal">
-                <div class="modal-content">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="modal-title-cyan">EVENT DETAILS</h3>
-                        <button class="btn-glass btn-modal-close" data-modal="detailModal">CLOSE</button>
-                    </div>
-                    <div id="modalBody" class="modal-body-log"></div>
+            <!-- Security Modal (New "SECURITY LOCK" modal as per instruction) -->
+            <div id="securityModal" class="modal-overlay">
+                <div class="modal-content glass-panel p-6 max-w-md w-full animate-pop">
+                    <h2 class="text-xl font-bold mb-4">SECURITY LOCK</h2>
+                    <p class="mb-6 opacity-80">Access restricted. Verify identity to unlock control center.</p>
+                    <button class="btn-lock w-full" hx-post="/api/login" hx-swap="none"
+                        hx-on:htmx:after-request="document.getElementById('human-gate').classList.add('hidden'); document.getElementById('app-root').classList.add('visible'); document.body.style.overflow = 'auto';">
+                        VALIDATE IDENTITY
+                    </button>
                 </div>
             </div>
 
-            <!-- Security Modal -->
-            <div class="modal-overlay" id="securityModal">
+            <!-- Detail Modal -->
+            <div id="detailModal" class="modal-overlay"
+                hx-on:click="if(event.target === this) this.classList.remove('visible')">
+                <div
+                    class="modal-content glass-panel p-0 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-pop">
+                    <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
+                        <h3 class="text-sm font-bold tracking-widest uppercase flex items-center">
+                            <i class="bi bi-file-earmark-text text-primary me-2"></i> Log Entry Details
+                        </h3>
+                        <button class="btn-modal-close"
+                            hx-on:click="document.getElementById('detailModal').classList.remove('visible')">&times;</button>
+                    </div>
+                    <div id="modalBody" class="p-6 overflow-y-auto custom-scrollbar">
+                        <!-- Content loaded via HTMX -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Original Security Modal (renamed to avoid conflict and kept for context, though instruction implies replacement) -->
+            <!-- If the instruction meant to *replace* the original security modal, this block should be removed.
+                 Keeping it here as the instruction's provided code snippet for securityModal is a different modal entirely. -->
+            <div class="modal-overlay" id="originalSecurityModal" style="display: none;">
                 <div class="modal-content modal-content-lg">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="modal-title-green">SERVER SECURITY CONFIGURATION</h3>
-                        <button class="btn-glass btn-modal-close" data-modal="securityModal">CLOSE</button>
+                        <button class="btn-glass btn-modal-close" data-modal="originalSecurityModal">CLOSE</button>
                     </div>
                     <div id="schannelWarning" class="glass-panel security-warning" style="display: none;">
                         <div class="security-warning-title">⚠️ DIAGNOSTIC SCHANNEL LIMITÉ</div>
@@ -284,7 +366,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+    </div>
     </div>
 
 

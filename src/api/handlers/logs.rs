@@ -2,11 +2,12 @@ use actix_web::{web, HttpResponse, HttpRequest, Responder};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::path::PathBuf;
-use crate::core::models::{RadiusRequest};
+use crate::core::models::RadiusRequest;
 use quick_xml::reader::Reader;
 use crate::core::parser::parse_xml_bytes;
 use crate::utils::security::{is_authorized, resolve_safe_path};
 use crate::infrastructure::win32::get_log_path_from_registry;
+use askama::Template;
 
 #[derive(Serialize)]
 pub struct LogFile {
@@ -19,6 +20,7 @@ pub struct LogFile {
 
 #[derive(Deserialize)]
 pub struct ParseQuery {
+    #[serde(default)]
     pub file: String,
     #[serde(default)]
     pub search: String,
@@ -32,6 +34,8 @@ pub struct ParseQuery {
     pub error_only: bool,
     #[serde(default = "default_limit")]
     pub limit: usize,
+    #[serde(default)]
+    pub index: usize,
 }
 
 fn default_limit() -> usize { 1000 }
@@ -43,7 +47,7 @@ pub struct ExportQuery {
     pub search: String,
 }
 
-pub async fn list_files(req: HttpRequest) -> impl Responder {
+pub async fn list_logs(req: HttpRequest) -> impl Responder {
     if !is_authorized(&req) {
         return HttpResponse::Forbidden().body("Access Denied");
     }
@@ -169,12 +173,44 @@ pub async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> imp
     }
 }
 
-use askama::Template;
-
 #[derive(Template)]
 #[template(path = "log_rows.html")]
 pub struct LogRowsTemplate {
     pub logs: Vec<RadiusRequest>,
+}
+
+#[derive(Template)]
+#[template(path = "log_detail.html")]
+pub struct LogDetailTemplate {
+    pub log: RadiusRequest,
+    pub raw_json: String,
+}
+
+pub async fn log_detail_htmx(
+    req: HttpRequest, 
+    query: web::Query<ParseQuery>, 
+    cache: web::Data<std::sync::Arc<crate::infrastructure::cache::LogCache>>
+) -> impl Responder {
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().body("Access Denied");
+    }
+
+    let index = query.index;
+    let logs = cache.get_latest(1000); 
+    
+    if let Some(log) = logs.get(index) {
+        let raw_json = serde_json::to_string_pretty::<crate::core::models::RadiusRequest>(log).unwrap_or_default();
+        let tmpl = LogDetailTemplate { 
+            log: log.clone(),
+            raw_json
+        };
+        match tmpl.render() {
+            Ok(h) => HttpResponse::Ok().content_type("text/html").body(h),
+            Err(e) => HttpResponse::InternalServerError().body(format!("Template error: {}", e)),
+        }
+    } else {
+        HttpResponse::NotFound().body("Log not found")
+    }
 }
 
 pub async fn log_rows_htmx(req: HttpRequest, query: web::Query<ParseQuery>) -> impl Responder {

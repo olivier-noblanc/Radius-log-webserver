@@ -13,6 +13,9 @@ pub struct Stats {
     pub rejections_by_hour: Vec<(String, u32)>,
     pub top_users: Vec<(String, u32)>,
     pub top_reasons: Vec<(String, u32)>,
+    pub svg_line_points: String,
+    pub pie_gradient: String,
+    pub reasons_legend: Vec<(String, String, u32)>,
 }
 
 pub async fn get_stats(req: HttpRequest, cache: web::Data<Arc<LogCache>>) -> impl Responder {
@@ -70,6 +73,31 @@ pub fn get_stats_data(cache: &LogCache) -> Stats {
     top_reasons.sort_by_key(|b| std::cmp::Reverse(b.1));
     top_reasons.truncate(10);
 
+    // --- CALCULS SVG / CSS POUR SSR ---
+    let max_rejects = rejections_by_hour.iter().map(|x| x.1).max().unwrap_or(1) as f32;
+    let mut svg_line_points = String::new();
+    for (i, (_hour, count)) in rejections_by_hour.iter().enumerate() {
+        let x = i as f32 * (400.0 / 23.0);
+        let y = 100.0 - (*count as f32 / max_rejects * 100.0);
+        svg_line_points.push_str(&format!("{:.1},{:.1} ", x, y));
+    }
+
+    let colors = ["#dc3545", "#fd7e14", "#ffc107", "#198754", "#0dcaf0", "#6f42c1", "#6610f2", "#e83e8c"];
+    let mut pie_gradient = String::new();
+    let mut current_percent = 0.0;
+    let total_reasons_count: u32 = top_reasons.iter().map(|x| x.1).sum();
+    let mut reasons_legend = Vec::new();
+
+    for (i, (reason, count)) in top_reasons.iter().enumerate() {
+        let color = colors[i % colors.len()];
+        let percent = (*count as f32 / total_reasons_count as f32) * 100.0;
+        let next_percent = current_percent + percent;
+        if i > 0 { pie_gradient.push_str(", "); }
+        pie_gradient.push_str(&format!("{} {:.1}% {:.1}%", color, current_percent, next_percent));
+        reasons_legend.push((reason.clone(), color.to_string(), *count));
+        current_percent = next_percent;
+    }
+
     Stats {
         total_requests,
         success_rate,
@@ -77,5 +105,8 @@ pub fn get_stats_data(cache: &LogCache) -> Stats {
         rejections_by_hour,
         top_users,
         top_reasons,
+        svg_line_points,
+        pie_gradient,
+        reasons_legend,
     }
 }

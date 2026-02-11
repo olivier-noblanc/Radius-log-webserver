@@ -1,0 +1,25 @@
+<div class="space-y-4">
+    <div class="grid grid-cols-2 gap-4 text-xs">
+        <div class="glass-panel p-2">
+            <span class="opacity-50 block uppercase">Timestamp</span>
+            <span class="font-bold text-primary">{{ log.timestamp }}</span>
+        </div>
+        <div class="glass-panel p-2">
+            <span class="opacity-50 block uppercase">Server</span>
+            <span class="font-bold text-success">{{ log.server }}</span>
+        </div>
+        <div class="glass-panel p-2">
+            <span class="opacity-50 block uppercase">User</span>
+            <span class="font-bold text-warning">{{ log.user }}</span>
+        </div>
+        <div class="glass-panel p-2">
+            <span class="opacity-50 block uppercase">MAC</span>
+            <span class="font-bold text-info">{{ log.mac }}</span>
+        </div>
+    </div>
+
+    <div class="glass-panel p-4">
+        <h4 class="text-xs uppercase opacity-50 mb-2">Detailed XML/JSON Payload</h4>
+        <pre class="code-block text-xxs overflow-x-auto"><code>{{ raw_json }}</code></pre>
+    </div>
+</div>

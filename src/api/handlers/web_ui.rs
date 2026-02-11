@@ -53,10 +53,29 @@ pub struct IndexTemplate {
     pub files: Vec<LogFile>,
     pub build_version: String,
     pub git_sha: String,
+    pub theme: String,
+    pub is_authorized: bool,
+    pub sort_by: String,
+    pub sort_desc: bool,
+    pub current_file: String,
 }
 
-pub async fn index(cache: web::Data<Arc<LogCache>>) -> impl Responder {
+pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web::Query<crate::api::handlers::logs::ParseQuery>) -> impl Responder {
     let mut logs = cache.get_latest(100);
+
+    let is_authorized_val = is_authorized(&req);
+    let theme = req.cookie("theme").map(|c| c.value().to_string()).unwrap_or_else(|| "neon".into());
+
+    let current_file = if query.file.is_empty() {
+        get_latest_log_file()
+            .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+            .unwrap_or_default()
+    } else {
+        query.file.clone()
+    };
+
+    let sort_by = if query.sort_by.is_empty() { "timestamp".to_string() } else { query.sort_by.clone() };
+    let sort_desc = query.sort_desc;
 
     if logs.is_empty() {
         if let Some(path) = get_latest_log_file() {
@@ -82,6 +101,11 @@ pub async fn index(cache: web::Data<Arc<LogCache>>) -> impl Responder {
         files,
         build_version,
         git_sha: GIT_SHA.to_string(),
+        theme,
+        is_authorized: is_authorized_val,
+        sort_by,
+        sort_desc,
+        current_file,
     };
 
     match tmpl.render() {
@@ -93,6 +117,17 @@ pub async fn index(cache: web::Data<Arc<LogCache>>) -> impl Responder {
             .body(body),
         Err(e) => HttpResponse::InternalServerError().body(format!("Template error: {}", e)),
     }
+}
+
+pub async fn login() -> impl Responder {
+    HttpResponse::Ok()
+        .cookie(
+            actix_web::cookie::Cookie::build("radius_auth", "authorized")
+                .path("/")
+                .max_age(actix_web::cookie::time::Duration::days(30))
+                .finish()
+        )
+        .body("Login successful")
 }
 
 fn handle_static_asset(req: HttpRequest, content: &'static [u8], content_type: &str) -> HttpResponse {
@@ -113,9 +148,6 @@ fn handle_static_asset(req: HttpRequest, content: &'static [u8], content_type: &
 }
 
 
-pub async fn serve_app_js(req: HttpRequest) -> impl Responder {
-    handle_static_asset(req, include_bytes!("../../../assets/js/app.js"), "application/javascript")
-}
 
 pub async fn serve_style_css(req: HttpRequest) -> impl Responder {
     handle_static_asset(req, include_bytes!("../../../assets/css/style.css"), "text/css")

@@ -16,8 +16,7 @@ pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
 
     let full_path = base.join(requested);
 
-    // 2. Canonicalize (La magie de la sécurité)
-    // Cette fonction transforme "toto/../titi" en "titi" et résout les liens symboliques.
+    // 2. Canonicalize
     let canonical = full_path
         .canonicalize()
         .with_context(|| format!("Fichier introuvable ou invalide: {:?}", user_input))?;
@@ -41,29 +40,31 @@ pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
 }
 
 pub fn get_auth_status(req: &HttpRequest) -> (bool, String) {
-    let auth = req.headers().get("X-Radius-Auth").and_then(|h| h.to_str().ok()).unwrap_or("");
+    let auth_cookie = req.cookie("radius_auth").map(|c| c.value().to_string()).unwrap_or_default();
+    let auth_header = req.headers().get("X-Radius-Auth").and_then(|h| h.to_str().ok()).unwrap_or("");
+    
+    let is_authorized_token = auth_header == "authorized" || auth_cookie == "authorized";
+
     let referer = req.headers().get("Referer").and_then(|h| h.to_str().ok()).unwrap_or("");
     let origin = req.headers().get("Origin").and_then(|h| h.to_str().ok()).unwrap_or("");
     let host = req.connection_info().host().to_string();
 
     let origin_safe = if !referer.is_empty() {
-        if referer.contains(&host) { true } else {
-            log::warn!("SECURITY: Referer mismatch. Referer: {}, Host: {}", referer, host);
-            false
-        }
+        referer.contains(&host)
     } else if !origin.is_empty() {
-        if origin.contains(&host) { true } else {
-            log::warn!("SECURITY: Origin mismatch. Origin: {}, Host: {}", origin, host);
-            false
-        }
+        origin.contains(&host)
     } else {
         true
     };
 
+    if !origin_safe {
+        log::warn!("SECURITY: Origin/Referer mismatch. Referer: {}, Origin: {}, Host: {}", referer, origin, host);
+    }
+
     if req.path() == "/ws" {
         if origin_safe { (true, "OK".into()) } else { (false, "Insecure Origin".into()) }
-    } else if auth != "authorized" {
-        (false, "Missing or invalid X-Radius-Auth header".into())
+    } else if !is_authorized_token {
+        (false, "Missing or invalid authorization (header or cookie)".into())
     } else if !origin_safe {
         (false, "Insecure Origin/Referer".into())
     } else {
@@ -78,6 +79,7 @@ pub fn is_authorized(req: &HttpRequest) -> bool {
         .peer_addr()
         .map(|a| a.to_string())
         .unwrap_or_else(|| "unknown".to_string());
+        
     if authorized {
         log::info!(
             "AUDIT: Authorized access to {} from IP: {}",

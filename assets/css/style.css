@@ -540,6 +540,34 @@ td[data-status="fail"] {
     overflow-y: auto;
 }
 
+.chart-container-ssr {
+    height: 150px;
+    position: relative;
+}
+
+.pie-chart-ssr {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.pie-hole {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50%;
+    height: 50%;
+    background: var(--bg-card);
+    border-radius: 50%;
+}
+
+.text-xxs {
+    font-size: 0.65rem;
+}
+
 .modal-title-cyan {
     color: var(--accent-cyan);
     font-family: var(--font-code);
@@ -569,6 +597,20 @@ td[data-status="fail"] {
     color: var(--accent-red);
     cursor: pointer;
     font-weight: 600;
+}
+
+@keyframes rowFlash {
+    0% {
+        background: rgba(0, 242, 255, 0.2);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+.row-flash {
+    animation: rowFlash 2s ease-out;
 }
 
 .code-block {

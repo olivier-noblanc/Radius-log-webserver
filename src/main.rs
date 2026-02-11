@@ -13,9 +13,9 @@ use windows_service::{
 
 use radius_log_webserver::api::handlers::{
     audit::{get_debug_info, get_security_config},
-    logs::{export_csv, list_files, parse_file, log_rows_htmx},
+    logs::{export_csv, log_rows_htmx, list_logs, log_detail_htmx},
     stats::get_stats,
-    web_ui::{index, robots_txt, serve_app_js, serve_favicon, serve_style_css, dashboard_htmx},
+    web_ui::{index, robots_txt, serve_favicon, serve_style_css, dashboard_htmx, login},
     websocket::{ws_route, Broadcaster},
 };
 use radius_log_webserver::infrastructure::{
@@ -113,7 +113,7 @@ async fn run_app() -> std::io::Result<()> {
             .wrap(tracing_actix_web::TracingLogger::default())
             .wrap(
                 middleware::DefaultHeaders::new()
-                    .add(("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://raw.githubusercontent.com; img-src 'self' data: blob:; connect-src 'self' ws: wss:;"))
+                    .add(("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://raw.githubusercontent.com; img-src 'self' data: blob:; connect-src 'self' ws: wss:;"))
                     .add(("X-Content-Type-Options", "nosniff")),
             )
             .app_data(broadcaster_data.clone())
@@ -122,18 +122,22 @@ async fn run_app() -> std::io::Result<()> {
             .route("/", web::get().to(index))
             .route("/ws", web::get().to(ws_route))
 
-            .route("/js/app.js", web::get().to(serve_app_js))
+
             .route("/css/style.css", web::get().to(serve_style_css))
             .route("/favicon.svg", web::get().to(serve_favicon))
             .route("/favicon.ico", web::get().to(serve_favicon))
-            .route("/api/files", web::get().to(list_files))
-            .route("/api/parse", web::get().to(parse_file))
-            .route("/api/logs/rows", web::get().to(log_rows_htmx))
+            .service(
+                web::scope("/api/logs")
+                    .route("/list", web::get().to(list_logs))
+                    .route("/rows", web::get().to(log_rows_htmx))
+                    .route("/detail", web::get().to(log_detail_htmx))
+            )
             .route("/api/dashboard", web::get().to(dashboard_htmx))
             .route("/api/export", web::get().to(export_csv))
             .route("/api/stats", web::get().to(get_stats))
             .route("/api/debug", web::get().to(get_debug_info))
             .route("/api/security-config", web::get().to(get_security_config))
+            .route("/api/login", web::post().to(login))
             .route("/robots.txt", web::get().to(robots_txt))
     })
     .bind(format!("0.0.0.0:{}", port))?
