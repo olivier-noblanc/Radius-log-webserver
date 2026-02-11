@@ -21,17 +21,40 @@ pub async fn get_debug_info(req: HttpRequest, query: web::Query<DebugQuery>) -> 
     if !authorized {
         return HttpResponse::Forbidden().body(format!("Security Rejection: {}", reason));
     }
+    
+    tracing::info!("Audit request for timestamp: {}", query.timestamp);
+    
     let schannel_errors = fetch_schannel_details(&query.timestamp);
-
-    let report = if schannel_errors.is_empty() {
-        "NO SCHANNEL ERRORS DETECTED IN SYSTEM LOGS.\n\nTips:\n- Ensure 'SChannel' logging is enabled in Registry.\n- Check 'System' Event Viewer manually.".to_string()
+    
+    let report = if schannel_errors.len() == 1 && schannel_errors[0].contains("No SChannel errors") {
+        format!(
+            "✅ NO SCHANNEL ERRORS DETECTED\n\n\
+            Search period: Last 24 hours from {}\n\
+            Events scanned: System Event Log\n\n\
+            TIPS:\n\
+            - Ensure 'EventLogging' DWORD is set in:\n\
+              HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\n\
+            - Valid values: 1 (Errors only), 3 (All events)\n\
+            - Check Event Viewer > Windows Logs > System manually",
+            query.timestamp
+        )
     } else {
-        schannel_errors.join("\n")
+        format!(
+            "⚠️ SCHANNEL ERRORS DETECTED ({} events)\n\n{}\n\n\
+            RECOMMENDATIONS:\n\
+            - Review certificate validity and trust chain\n\
+            - Verify TLS protocol versions (disable SSLv3, TLS 1.0)\n\
+            - Check cipher suite compatibility\n\
+            - Ensure system time is synchronized",
+            schannel_errors.len(),
+            schannel_errors.join("\n")
+        )
     };
 
     HttpResponse::Ok().json(serde_json::json!({
         "schannel_analysis": report,
-        "timestamp": query.timestamp
+        "timestamp": query.timestamp,
+        "events_found": schannel_errors.len()
     }))
 }
 

@@ -18,12 +18,26 @@ pub struct Stats {
     pub reasons_legend: Vec<(String, String, u32)>,
 }
 
-pub async fn get_stats(req: HttpRequest, cache: web::Data<Arc<LogCache>>) -> impl Responder {
+use crate::infrastructure::cache::StatsCache;
+
+pub async fn get_stats(
+    req: HttpRequest, 
+    cache: web::Data<Arc<LogCache>>,
+    stats_cache: web::Data<Arc<StatsCache>>,
+) -> impl Responder {
     if !is_authorized(&req) {
         return HttpResponse::Forbidden().body("Access Denied");
     }
-    let stats = get_stats_data(&cache);
-    HttpResponse::Ok().json(stats)
+    
+    // Utiliser le cache avec TTL 30s
+    let stats = stats_cache.get_or_compute(|| {
+        tracing::debug!("Computing fresh stats...");
+        get_stats_data(&cache)
+    });
+    
+    HttpResponse::Ok()
+        .insert_header(("Cache-Control", "public, max-age=30"))
+        .json(stats)
 }
 
 pub fn get_stats_data(cache: &LogCache) -> Stats {

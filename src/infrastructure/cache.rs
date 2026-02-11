@@ -57,3 +57,58 @@ impl Default for LogCache {
         Self::new()
     }
 }
+
+use std::sync::RwLock;
+use std::time::{Duration, Instant};
+use crate::api::handlers::stats::Stats;
+
+pub struct StatsCache {
+    data: RwLock<Option<(Stats, Instant)>>,
+    ttl: Duration,
+}
+
+impl StatsCache {
+    pub fn new(ttl_seconds: u64) -> Self {
+        Self {
+            data: RwLock::new(None),
+            ttl: Duration::from_secs(ttl_seconds),
+        }
+    }
+    
+    pub fn get_or_compute<F>(&self, compute_fn: F) -> Stats
+    where
+        F: FnOnce() -> Stats,
+    {
+        // Try read first (fast path)
+        {
+            let read = self.data.read().unwrap();
+            if let Some((stats, timestamp)) = read.as_ref() {
+                if timestamp.elapsed() < self.ttl {
+                    return stats.clone();
+                }
+            }
+        }
+        
+        // Compute new stats (slow path)
+        let new_stats = compute_fn();
+        
+        // Write to cache
+        {
+            let mut write = self.data.write().unwrap();
+            *write = Some((new_stats.clone(), Instant::now()));
+        }
+        
+        new_stats
+    }
+    
+    pub fn invalidate(&self) {
+        let mut write = self.data.write().unwrap();
+        *write = None;
+    }
+}
+
+impl Default for StatsCache {
+    fn default() -> Self {
+        Self::new(30) // 30 secondes par défaut
+    }
+}

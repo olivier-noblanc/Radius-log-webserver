@@ -15,17 +15,20 @@ pub struct FileWatcher {
     broadcaster: Arc<dyn MessageBroadcaster>,
     file_sizes: Arc<DashMap<String, u64>>,
     cache: Arc<LogCache>,
+    stats_cache: Arc<crate::infrastructure::cache::StatsCache>,
 }
 
 impl FileWatcher {
     pub fn new(
         broadcaster: Arc<dyn MessageBroadcaster>,
         cache: Arc<LogCache>,
+        stats_cache: Arc<crate::infrastructure::cache::StatsCache>,
     ) -> Self {
         Self {
             broadcaster,
             file_sizes: Arc::new(DashMap::new()),
             cache,
+            stats_cache: stats_cache,
         }
     }
 
@@ -44,6 +47,7 @@ impl FileWatcher {
         let broadcaster = self.broadcaster.clone();
         let file_sizes = self.file_sizes.clone();
         let cache = self.cache.clone();
+        let stats_cache = self.stats_cache.clone();
 
         thread::spawn(move || {
             let (tx, rx) = std::sync::mpsc::channel();
@@ -60,7 +64,7 @@ impl FileWatcher {
                         if event.kind.is_modify() {
                             for p in event.paths {
                                 if p.extension().is_some_and(|e| e == "log") {
-                                    process_file_change(&p, &broadcaster, &file_sizes, &cache);
+                                    process_file_change(&p, &broadcaster, &file_sizes, &cache, &stats_cache);
                                 }
                             }
                         }
@@ -77,6 +81,7 @@ fn process_file_change(
     broadcaster: &Arc<dyn MessageBroadcaster>,
     file_sizes: &Arc<DashMap<String, u64>>,
     cache: &Arc<LogCache>,
+    stats_cache: &Arc<crate::infrastructure::cache::StatsCache>,
 ) {
     let path_str = path.to_string_lossy().to_string();
     let old_size = file_sizes.get(&path_str).map(|r| *r.value()).unwrap_or(0);
@@ -91,6 +96,9 @@ fn process_file_change(
                     if !new_reqs.is_empty() {
                         // Update cache
                         cache.extend(new_reqs.clone());
+
+                        // Invalidate stats cache
+                        stats_cache.invalidate();
 
                         // Broadcast fragment
                         let html_fragment: String = new_reqs
