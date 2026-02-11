@@ -137,6 +137,27 @@ pub fn Layout(props: LayoutProps) -> Element {
         }
         body {
             "data-theme": "{props.theme}",
+            
+            if !props.is_authorized {
+                div { 
+                    id: "human-gate",
+                    div { class: "gate-content",
+                        h1 { 
+                            class: "glitch-text gate-logo", 
+                            "data-text": "HUMAN GATE",
+                            "HUMAN GATE" 
+                        }
+                        p { class: "gate-subtitle", "SECURED ACCESS ONLY // IDENTITY VERIFICATION REQUIRED" }
+                        a { 
+                            href: "/api/login", 
+                            class: "btn-glass btn-primary mt-6",
+                            style: "padding: 0.8rem 2.5rem; font-size: 1rem; border-width: 2px;",
+                            "INITIALIZE AUTHENTICATION" 
+                        }
+                    }
+                }
+            }
+
             div { 
                 id: "app-root", 
                 class: "app-root",

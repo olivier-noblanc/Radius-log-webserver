@@ -62,12 +62,6 @@ pub fn get_auth_status(req: &HttpRequest) -> (bool, String) {
         log::warn!("SECURITY: Origin/Referer mismatch. Referer: {}, Origin: {}, Host: {}", referer, origin, host);
     }
 
-    // Check for loopback (Bypass auth for local development)
-    let is_localhost = req.peer_addr().map(|a| a.ip().is_loopback()).unwrap_or(false);
-    if is_localhost {
-        return (true, "OK (localhost bypass)".into());
-    }
-
     if req.path() == "/ws" {
         if origin_safe { (true, "OK".into()) } else { (false, "Insecure Origin".into()) }
     } else if !is_authorized_token {
