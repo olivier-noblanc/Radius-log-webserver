@@ -8,38 +8,6 @@ pub struct HeaderProps {
 
 #[component]
 pub fn Header(props: HeaderProps) -> Element {
-    let theme_data = format!(r#"{{ 
-                theme: '{}', 
-                liveConnected: false,
-                ws: null,
-                
-                init() {{
-                    this.connectWs();
-                }},
-                
-                connectWs() {{
-                    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    this.ws = new WebSocket(`${{proto}}//${{location.host}}/ws`);
-                    
-                    this.ws.onopen = () => {{ this.liveConnected = true; }};
-                    this.ws.onclose = () => {{
-                        this.liveConnected = false;
-                        setTimeout(() => this.connectWs(), 5000);
-                    }};
-                    this.ws.onmessage = () => {{
-                        htmx.ajax('GET', '/api/logs/rows', '#logTableBody');
-                    }};
-                }},
-                
-                toggleLive() {{
-                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {{
-                        this.ws.close();
-                    }} else {{
-                        this.connectWs();
-                    }}
-                }}
-            }}"#, props.theme);
-
     let nav_logs_click = r#"
         document.getElementById('view-logs').style.display = 'block';
         document.getElementById('view-dashboard').style.display = 'none';
@@ -54,21 +22,10 @@ pub fn Header(props: HeaderProps) -> Element {
         document.getElementById('btn-nav-logs').classList.remove('active');
     "#;
 
-    let theme_change = r#"
-        fetch('/api/theme?theme=' + theme)
-            .then(r => r.text())
-            .then(html => {
-                document.getElementById('theme-css').innerHTML = html;
-                document.documentElement.setAttribute('data-theme', theme);
-            });
-    "#;
-
-    let live_dot_class = "{ 'active': liveConnected }";
-
     rsx! {
         header { 
             class: "main-header glass-panel mb-6",
-            "x-data": theme_data,
+            "x-data": "themeHandler('{props.theme}')",
             
             div { class: "flex flex-col",
                 a { href: "/", class: "brand-logo",
@@ -117,7 +74,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     name: "theme", 
                     class: "input-glass theme-select",
                     "x-model": "theme",
-                    "@change": theme_change,
+                    "@change": "changeTheme()",
                     
                     option { value: "onyx-glass", selected: props.theme == "onyx-glass", "FLAGSHIP // ONYX GLASS" }
                     option { value: "cyber-tactical", selected: props.theme == "cyber-tactical", "FLAGSHIP // CYBER TACTICAL" }
@@ -151,8 +108,8 @@ pub fn Header(props: HeaderProps) -> Element {
                 div { 
                     id: "statusBadge", 
                     class: "status-badge",
-                    "x-text": "liveConnected ? 'CONNECTED' : 'DISCONNECTED'",
-                    ":style": "liveConnected ? 'color: #39ff14' : 'color: #ff3131'"
+                    "x-text": "statusText",
+                    ":style": "statusStyle"
                 }
 
                 button { 
@@ -160,12 +117,12 @@ pub fn Header(props: HeaderProps) -> Element {
                     "@click": "toggleLive()",
                     div { 
                         class: "live-dot",
-                        ":class": live_dot_class
+                        ":class": "liveDotClass"
                     }
                     span { 
                         class: "live-label",
-                        "x-text": "liveConnected ? 'LIVE' : 'OFFLINE'",
-                        ":style": "liveConnected ? 'color: #39ff14' : 'color: var(--text-muted)'"
+                        "x-text": "liveLabel",
+                        ":style": "liveStyle"
                     }
                 }
             }

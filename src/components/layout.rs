@@ -42,6 +42,59 @@ pub fn Layout(props: LayoutProps) -> Element {
                 src: "https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.14.1/dist/cdn.min.js",
                 crossorigin: "anonymous"
             }
+            script {
+                r#type: "text/javascript",
+                dangerous_inner_html: r#"
+                    document.addEventListener('alpine:init', () => {{
+                        Alpine.data('themeHandler', (initialTheme) => ({{
+                            theme: initialTheme,
+                            liveConnected: false,
+                            ws: null,
+                            
+                            init() {{
+                                this.connectWs();
+                            }},
+                            
+                            get statusText() {{ return this.liveConnected ? 'CONNECTED' : 'DISCONNECTED'; }},
+                            get statusStyle() {{ return this.liveConnected ? 'color: #39ff14' : 'color: #ff3131'; }},
+                            get liveLabel() {{ return this.liveConnected ? 'LIVE' : 'OFFLINE'; }},
+                            get liveStyle() {{ return this.liveConnected ? 'color: #39ff14' : 'color: var(--text-muted)'; }},
+                            get liveDotClass() {{ return this.liveConnected ? 'active' : ''; }},
+
+                            connectWs() {{
+                                const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                                this.ws = new WebSocket(`${{proto}}//${{location.host}}/ws`);
+                                
+                                this.ws.onopen = () => {{ this.liveConnected = true; }};
+                                this.ws.onclose = () => {{
+                                    this.liveConnected = false;
+                                    setTimeout(() => this.connectWs(), 5000);
+                                }};
+                                this.ws.onmessage = () => {{
+                                    htmx.ajax('GET', '/api/logs/rows', '#logTableBody');
+                                }};
+                            }},
+                            
+                            toggleLive() {{
+                                if (this.ws && this.ws.readyState === WebSocket.OPEN) {{
+                                    this.ws.close();
+                                }} else {{
+                                    this.connectWs();
+                                }}
+                            }},
+
+                            changeTheme() {{
+                                fetch('/api/theme?theme=' + this.theme)
+                                    .then(r => r.text())
+                                    .then(html => {{
+                                        document.getElementById('theme-css').innerHTML = html;
+                                        document.documentElement.setAttribute('data-theme', this.theme);
+                                    }});
+                            }}
+                        }}));
+                    }});
+                "#
+            }
 
             for css in props.css_files {
                 link { 
