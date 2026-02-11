@@ -115,15 +115,17 @@ async fn run_app() -> std::io::Result<()> {
                     // CSP CONFIGURÉE POUR ASSETS LOCAUX + GOOGLE FONTS
                     .add(("Content-Security-Policy", 
                         [
-                            "default-src 'self';",
-                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;",
-                            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;",
-                            "font-src 'self' https://fonts.gstatic.com https://raw.githubusercontent.com;",
-                            "img-src 'self' data: blob:;",
-                            "connect-src 'self' ws: wss:;",
-                            "object-src 'none';",
-                            "base-uri 'self';",
-                        ].join(" ")
+                            "default-src 'self'",
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+                            "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+                            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+                            "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+                            "font-src 'self' https://fonts.gstatic.com https://raw.githubusercontent.com",
+                            "img-src 'self' data: blob:",
+                            "connect-src 'self' ws: wss:",
+                            "object-src 'none'",
+                            "base-uri 'self'",
+                        ].join("; ")
                     ))
                     .add(("X-Content-Type-Options", "nosniff")),
             )

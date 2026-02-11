@@ -38,7 +38,7 @@ pub fn Layout(props: LayoutProps) -> Element {
             script { 
                 defer: true,
                 src: "https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js",
-                integrity: "sha384-Y20W0lLHFC0iv4LKd9pqFVBxBMQzblHWmjj+eBEMcH7q3hPd+W4pE3xMaJH6b2WN",
+                integrity: "sha384-l8f0VcPi/M1iHPv8egOnY/15TDwqgbOR1anMIJWvU6nLRgZVLTLSaNqi/TOoT5Fh",
                 crossorigin: "anonymous"
             }
 
