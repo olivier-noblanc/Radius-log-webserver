@@ -1,0 +1,62 @@
+/* =========================================
+   C64 - COMMODORE 64
+   ========================================= */
+
+:root {
+    --bg-deep: #4040ff;
+    --accent-cyan: #ffffff;
+    --font-ui: 'C64', monospace;
+    --status-success-bg: #40ff40;
+    --status-danger-bg: #ff4040;
+    --status-success-text: #000;
+    --status-danger-text: #000;
+}
+
+/* THEME C64 : Effet Rainbow */
+[data-theme="c64"] #human-gate h1.glitch-text {
+    animation: rainbow-shift 3s linear infinite;
+}
+
+@keyframes rainbow-shift {
+    0% {
+        color: #4040ff;
+    }
+
+    20% {
+        color: #ff4040;
+    }
+
+    40% {
+        color: #40ff40;
+    }
+
+    60% {
+        color: #ffff40;
+    }
+
+    80% {
+        color: #ff40ff;
+    }
+
+    100% {
+        color: #4040ff;
+    }
+}
+
+/* C64 Loader Adaptation */
+.theme-c64.loader-box {
+    background: #4040ff !important;
+    border: 4px solid #ffffff !important;
+    border-radius: 0 !important;
+}
+
+.theme-c64 .loader-title,
+.theme-c64 .loader-sub {
+    color: #ffffff !important;
+    font-family: 'C64', monospace !important;
+}
+
+[data-theme="c64"] .loader-progress-bar {
+    background: linear-gradient(90deg, #ff4040, #40ff40, #ffff40, #ff40ff, #4040ff) !important;
+    box-shadow: none !important;
+}

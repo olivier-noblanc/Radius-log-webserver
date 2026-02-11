@@ -1,0 +1,103 @@
+/* =========================================
+   THEME WINDOWS 3.1 (Win31)
+   ========================================= */
+
+:root {
+    --bg-deep: #008080;
+    --bg-panel: #c0c0c0;
+    --text-main: #000000;
+    --accent-cyan: #000080;
+    --font-ui: 'Arial', 'MS Sans Serif', sans-serif;
+    --border-glass: #808080;
+    --status-success-bg: #c0ffc0;
+    --status-danger-bg: #ffc0c0;
+    --status-success-text: #000;
+    --status-danger-text: #000;
+}
+
+[data-theme="win31"] body {
+    background-color: #008080;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucgpZD4cGF0aQkAAAAiJ0RU5ErkJggg==");
+    /* Subtle grain */
+}
+
+[data-theme="win31"] .main-header {
+    background-color: #c0c0c0 !important;
+    color: #000000 !important;
+    border-bottom: 2px solid #808080 !important;
+    padding: 4px 8px !important;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
+    font-weight: bold !important;
+    text-shadow: none !important;
+}
+
+[data-theme="win31"] .architect-info,
+[data-theme="win31"] .architect-name,
+[data-theme="win31"] .brand-logo {
+    color: #000 !important;
+    text-shadow: none !important;
+}
+
+[data-theme="win31"] .glass-panel {
+    background: #c0c0c0 !important;
+    border: 2px solid !important;
+    border-color: #fff #000 #000 #fff !important;
+    /* Double border relief */
+    box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.6) !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+}
+
+[data-theme="win31"] .btn-glass {
+    background: #c0c0c0 !important;
+    border: 2px solid !important;
+    border-color: #fff #808080 #808080 #fff !important;
+    box-shadow: inset 1px 1px 1px #dfdfdf !important;
+    color: #000 !important;
+    border-radius: 0 !important;
+    font-weight: bold !important;
+}
+
+[data-theme="win31"] .btn-glass:active {
+    border-color: #808080 #fff #fff #808080 !important;
+    box-shadow: inset 1px 1px 1px #000 !important;
+}
+
+[data-theme="win31"] ::-webkit-scrollbar {
+    width: 16px;
+}
+
+[data-theme="win31"] ::-webkit-scrollbar-track {
+    background: #c0c0c0;
+    border-left: 1px solid #808080;
+}
+
+[data-theme="win31"] ::-webkit-scrollbar-thumb {
+    background: #dfdfdf;
+    border: 1px solid #000;
+}
+
+[data-theme="win31"] select option {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Win31 Loader Adaptation */
+.theme-win31.loader-box {
+    background: #fff !important;
+    border: 1px solid #000 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
+.theme-win31 .loader-title,
+.theme-win31 .loader-sub {
+    color: #000 !important;
+    font-family: 'Arial', sans-serif !important;
+}
+
+[data-theme="win31"] .loader-progress-bar {
+    background: #000 !important;
+    box-shadow: none !important;
+}

@@ -1,5 +1,6 @@
 use crate::core::parser::parse_xml_bytes;
 use crate::infrastructure::cache::LogCache;
+use crate::core::models::RadiusRequest;
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use quick_xml::reader::Reader;
 use std::fs::{self, File};
@@ -9,8 +10,6 @@ use std::sync::Arc;
 use std::thread;
 use dashmap::DashMap;
 use crate::infrastructure::MessageBroadcaster;
-use crate::api::handlers::logs::LogRowsTemplate;
-use askama::Template;
 
 pub struct FileWatcher {
     broadcaster: Arc<dyn MessageBroadcaster>,
@@ -93,16 +92,13 @@ fn process_file_change(
                         // Update cache
                         cache.extend(new_reqs.clone());
 
-                        // Broadcast fragment with HTMX OOB swap
-                        let tmpl = LogRowsTemplate { logs: new_reqs };
-                        if let Ok(rendered) = tmpl.render() {
-                            // Envelopper dans un div avec hx-swap-oob pour cibler le tableau
-                            let oob_fragment = format!(
-                                r#"<tbody id="logTableBody" hx-swap-oob="afterbegin">{}</tbody>"#,
-                                rendered
-                            );
-                            broadcaster.broadcast(oob_fragment);
-                        }
+                        // Broadcast fragment
+                        let html_fragment: String = new_reqs
+                            .iter()
+                            .map(render_row)
+                            .collect();
+
+                        broadcaster.broadcast(html_fragment);
                         file_sizes.insert(path_str, new_size);
                     }
                 }
@@ -116,3 +112,11 @@ fn process_file_change(
     }
 }
 
+fn render_row(r: &RadiusRequest) -> String {
+    let status_val = r.status.as_deref().unwrap_or("");
+    format!(
+        "<tr class='row-flash' style='cursor: pointer;' onclick='showDetails({})'><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td data-status='{}'>{}</td><td>{}</td></tr>",
+        serde_json::to_string(r).unwrap_or_default().replace('\'', "\\'"),
+        r.timestamp, r.req_type, r.server, r.ap_ip, r.ap_name, r.mac, r.user, status_val, r.resp_type, r.reason
+    )
+}

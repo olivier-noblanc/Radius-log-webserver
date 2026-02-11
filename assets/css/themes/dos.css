@@ -1,0 +1,61 @@
+/* =========================================
+   DOS - MS-DOS COMSPEC (VINTAGE)
+   ========================================= */
+
+:root {
+    --bg-deep: #0000aa;
+    --bg-panel: #0000aa;
+    --text-main: #ffffff;
+    /* Passé de #aaaaaa à #ffffff pour lisibilité */
+    --text-muted: #55ffff;
+    /* Cyan clair pour les textes secondaires */
+    --accent-cyan: #ffffff;
+    --font-ui: "Press Start 2P", "VT323", monospace;
+    --font-code: "VT323", monospace;
+    image-rendering: pixelated;
+    --status-success-bg: rgba(0, 255, 0, 0.3);
+    --status-danger-bg: rgba(255, 0, 0, 0.3);
+    --status-success-text: #fff;
+    --status-danger-text: #fff;
+}
+
+[data-theme="dos"] body {
+    background-color: #0000aa;
+}
+
+[data-theme="dos"] table td::after {
+    content: "█";
+    animation: blink-dos 0.8s infinite;
+    margin-left: 4px;
+}
+
+@keyframes blink-dos {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+[data-theme="dos"] .glass-panel {
+    border: 2px solid #aaaaaa !important;
+    box-shadow: 4px 4px 0 #ffffff !important;
+    border-radius: 0 !important;
+}
+
+[data-theme="dos"] select option {
+    background-color: #0000aa;
+    color: #ffffff;
+}
+
+/* THEME DOS : Curseur underscore */
+[data-theme="dos"] #human-gate h1.glitch-text::after {
+    content: "_";
+    color: var(--accent-cyan);
+    animation: blink-cursor 0.8s step-end infinite;
+    margin-left: 0.1em;
+}

@@ -1,0 +1,94 @@
+/* =========================================
+   WINDOWS XP - LUNA BLUE
+   ========================================= */
+
+:root {
+    --bg-deep: #ece9d8;
+    --bg-panel: #ffffff;
+    --accent-cyan: #003399;
+    --text-main: #000;
+    --font-ui: 'Tahoma', sans-serif;
+    --status-success-bg: #d4f7d4;
+    --status-danger-bg: #fcdcdc;
+    --status-success-text: #000;
+    --status-danger-text: #000;
+}
+
+[data-theme="xp"] body {
+    background-color: #ece9d8;
+    background-image: none;
+}
+
+[data-theme="xp"] .main-header {
+    background: linear-gradient(180deg,
+            #245edb 0%,
+            #3f8cf3 40%,
+            #0054e6 50%,
+            #003399 100%) !important;
+    color: #ffffff !important;
+    border-radius: 8px 8px 0 0 !important;
+    border-bottom: 1px solid #001a4f !important;
+    padding: 8px 15px !important;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+}
+
+[data-theme="xp"] .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #919b9c !important;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2) !important;
+    border-radius: 0 !important;
+}
+
+[data-theme="xp"] .btn-primary {
+    background: linear-gradient(180deg,
+            #ffcc00 0%,
+            #ff9900 50%,
+            #ff6600 100%) !important;
+    border: 1px solid #336600 !important;
+    border-radius: 3px !important;
+    color: #000 !important;
+    font-weight: bold !important;
+    box-shadow: 0 0 2px rgba(255, 255, 255, 0.4) !important;
+}
+
+[data-theme="xp"] .btn-primary:hover {
+    background: linear-gradient(180deg,
+            #ffe680 0%,
+            #ffcc00 50%,
+            #ff9900 100%) !important;
+}
+
+[data-theme="xp"] .btn-glass {
+    background: linear-gradient(to bottom, #ffffff 0%, #ece9d8 100%) !important;
+    border: 1px solid #003399 !important;
+    color: #000 !important;
+}
+
+[data-theme="xp"] select option {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* XP Loader Adaptation */
+.theme-xp.loader-box {
+    background: #fff !important;
+    border: 1px solid #003399 !important;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2) !important;
+    border-radius: 4px !important;
+}
+
+.theme-xp .loader-title {
+    color: #003399 !important;
+    font-family: 'Tahoma', sans-serif !important;
+}
+
+[data-theme="xp"] .loader-progress-bar {
+    background: linear-gradient(to right, #245edb, #ffcc00) !important;
+    box-shadow: 0 0 5px rgba(36, 94, 219, 0.4) !important;
+}
+
+[data-theme="xp"] #human-gate {
+    /* Override l'animation par défaut pour un effet plus lent */
+    animation: xp-fade-in 0.8s ease-out forwards;
+}

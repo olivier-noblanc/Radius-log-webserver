@@ -17,16 +17,22 @@ impl LogCache {
 
     pub fn read(&self) -> Vec<RadiusRequest> {
         let mut v: Vec<_> = self.items.iter().map(|entry| entry.value().clone()).collect();
-        // DashMap iter is unordered. If we need order, we should sort by timestamp or use the keys.
-        v.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        v.sort_by(|a, b| b.timestamp.cmp(&a.timestamp)); // Tri décroissant pour l'affichage
         v
     }
 
     pub fn extend(&self, new_items: Vec<RadiusRequest>) {
-        for item in new_items {
+        for mut item in new_items {
             let id = self.next_id.fetch_add(1, Ordering::SeqCst);
+            // FIX: On assigne l'ID ici
+            item.id = Some(id);
             self.items.insert(id, item);
         }
+    }
+
+    // FIX: Méthode pour récupérer un log par son ID unique
+    pub fn get_by_id(&self, id: usize) -> Option<RadiusRequest> {
+        self.items.get(&id).map(|r| r.value().clone())
     }
 
     pub fn clear(&self) {
@@ -40,16 +46,9 @@ impl LogCache {
     }
 
     pub fn get_latest(&self, count: usize) -> Vec<RadiusRequest> {
-        let total = self.next_id.load(Ordering::SeqCst);
-        let start = total.saturating_sub(count);
-        
-        let mut result = Vec::with_capacity(count);
-        for i in start..total {
-            if let Some(item) = self.items.get(&i) {
-                result.push(item.value().clone());
-            }
-        }
-        result
+        let mut v = self.read();
+        v.truncate(count);
+        v
     }
 }
 

@@ -1,0 +1,156 @@
+/* =========================================
+   WINDOWS 95 - CHICAGO STYLE
+   ========================================= */
+
+:root {
+    --bg-deep: #008080;
+    --bg-panel: #c0c0c0;
+    --text-main: #000;
+    --text-muted: #444;
+    --accent-cyan: #000080;
+    --accent-green: #008000;
+    --accent-red: #800000;
+    --font-ui: 'MS Sans Serif', 'Tahoma', Arial, sans-serif;
+    --font-code: 'Fixedsys', 'Lucida Console', monospace;
+    --border-glass: #808080;
+    --status-success-bg: #c0ffc0;
+    --status-danger-bg: #ffc0c0;
+    --status-success-text: #000;
+    --status-danger-text: #000;
+}
+
+[data-theme="win95"] body {
+    background-image: none;
+    background-color: #008080;
+}
+
+/* Win95 3D Border Helpers */
+[data-theme="win95"] .win95-outset {
+    border-top: 2px solid #dfdfdf;
+    border-left: 2px solid #dfdfdf;
+    border-right: 2px solid #000000;
+    border-bottom: 2px solid #000000;
+}
+
+[data-theme="win95"] .win95-inset {
+    border-top: 2px solid #000000;
+    border-left: 2px solid #000000;
+    border-right: 2px solid #dfdfdf;
+    border-bottom: 2px solid #dfdfdf;
+    background: #fff !important;
+}
+
+[data-theme="win95"] .main-header {
+    background: #000080 !important;
+    color: #ffffff !important;
+    padding: 3px 10px !important;
+    margin-bottom: 1.5rem !important;
+    /* Retrait des marges négatives qui décalent tout */
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    align-items: center;
+    border-bottom: 1px solid #000 !important;
+    font-family: 'MS Sans Serif', 'Segoe UI', sans-serif !important;
+}
+
+[data-theme="win95"] .brand-logo,
+[data-theme="win95"] .architect-info,
+[data-theme="win95"] .brand-logo svg {
+    color: #fff !important;
+    text-shadow: none !important;
+    filter: none !important;
+}
+
+[data-theme="win95"] .glass-panel {
+    background: #c0c0c0 !important;
+    border-top: 2px solid #dfdfdf !important;
+    border-left: 2px solid #dfdfdf !important;
+    border-right: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+}
+
+[data-theme="win95"] .btn-glass {
+    background: #c0c0c0 !important;
+    border-top: 2px solid #dfdfdf !important;
+    border-left: 2px solid #dfdfdf !important;
+    border-right: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+    color: #000 !important;
+    border-radius: 0 !important;
+    padding: 3px 12px !important;
+    font-size: 13px !important;
+    font-family: 'MS Sans Serif', 'Segoe UI', sans-serif !important;
+    box-shadow: none !important;
+}
+
+[data-theme="win95"] .btn-glass:active {
+    border-top: 2px solid #000000 !important;
+    border-left: 2px solid #000000 !important;
+    border-right: 2px solid #dfdfdf !important;
+    border-bottom: 2px solid #dfdfdf !important;
+    padding: 4px 11px 2px 13px !important;
+}
+
+/* Inputs & Tables in Win95 */
+[data-theme="win95"] .input-glass,
+[data-theme="win95"] .table-container,
+[data-theme="win95"] select.theme-select {
+    background: #fff !important;
+    color: #000 !important;
+    border-top: 2px solid #000000 !important;
+    border-left: 2px solid #000000 !important;
+    border-right: 2px solid #dfdfdf !important;
+    border-bottom: 2px solid #dfdfdf !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+[data-theme="win95"] th {
+    background: #c0c0c0 !important;
+    border-top: 2px solid #dfdfdf !important;
+    border-left: 2px solid #dfdfdf !important;
+    border-right: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+    color: #000 !important;
+    padding: 4px 8px !important;
+    font-family: 'MS Sans Serif', 'Segoe UI', sans-serif !important;
+    text-align: left;
+}
+
+[data-theme="win95"] td {
+    border-bottom: 1px solid #dfdfdf !important;
+    color: #000 !important;
+    font-family: 'MS Sans Serif', 'Segoe UI', sans-serif !important;
+}
+
+/* Win95 Loader Adaptation */
+.theme-win95.loader-box {
+    background: #c0c0c0 !important;
+    border-top: 2px solid #000000 !important;
+    border-left: 2px solid #000000 !important;
+    border-right: 2px solid #dfdfdf !important;
+    border-bottom: 2px solid #dfdfdf !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
+.theme-win95 .loader-title,
+.theme-win95 .loader-sub {
+    color: #000 !important;
+    font-family: 'MS Sans Serif', 'Tahoma', sans-serif !important;
+}
+
+[data-theme="win95"] .loader-progress-bar {
+    background: #000080 !important;
+    box-shadow: none !important;
+}
+
+/* Appliquer l'animation au contenu principal (Human Gate ou App) */
+[data-theme="win95"] #human-gate {
+    /* Override l'animation par défaut pour un effet plus lent */
+    animation: xp-fade-in 0.8s ease-out forwards;
+}

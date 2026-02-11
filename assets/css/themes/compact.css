@@ -1,0 +1,54 @@
+/* =========================================
+   COMPACT - INDUSTRIAL
+   ========================================= */
+
+:root {
+    --spacing-container: 0.2rem;
+    --spacing-panel: 0.2rem;
+    --font-size-base: 11px;
+    --font-size-table: 10px;
+    --bg-deep: #1a1c1e;
+    --bg-panel: rgba(30, 32, 35, 0.9);
+    --accent-cyan: #f2a100;
+}
+
+[data-theme="compact"] .glass-panel {
+    padding: 0.25rem !important;
+}
+
+[data-theme="compact"] th,
+[data-theme="compact"] td {
+    padding: 2px 4px !important;
+    line-height: 1.1;
+    border-width: 1px;
+}
+
+[data-theme="compact"] .brand-logo {
+    font-size: 1rem !important;
+    letter-spacing: -0.5px !important;
+}
+
+[data-theme="compact"] th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-panel);
+    z-index: 10;
+}
+
+/* Compact Loader Adaptation */
+.theme-compact.loader-box {
+    background: #1a1c1e !important;
+    border: 1px solid #333 !important;
+    padding: 0.25rem 0.75rem !important;
+    border-radius: 4px !important;
+}
+
+.theme-compact .loader-title,
+.theme-compact .loader-sub {
+    font-size: 0.65rem !important;
+}
+
+[data-theme="compact"] .loader-progress-bar {
+    background: #f2a100 !important;
+    box-shadow: none !important;
+}

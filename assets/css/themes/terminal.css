@@ -1,0 +1,91 @@
+/* =========================================
+   TERMINAL - MATRIX GREEN
+   ========================================= */
+
+:root {
+    --bg-deep: #0c0c0c;
+    --bg-panel: #000000;
+    --accent-cyan: #33ff00;
+    --accent-green: #33ff00;
+    --text-main: #33ff00;
+    --font-ui: "Fira Code", "Courier New", monospace;
+    --font-code: "Fira Code", "Courier New", monospace;
+}
+
+[data-theme="terminal"] body {
+    background-color: #0c0f0c;
+    color: #33ff00;
+    text-shadow: 0 0 2px rgba(0, 255, 0, 0.7);
+}
+
+[data-theme="terminal"] .app-root {
+    border-radius: 40px;
+    box-shadow: inset 0 0 100px rgba(0, 255, 0, 0.2);
+    overflow: hidden;
+    position: relative;
+}
+
+[data-theme="terminal"] .main-header {
+    border-bottom: 1px solid #33ff00 !important;
+    background: rgba(0, 20, 0, 0.8) !important;
+}
+
+[data-theme="terminal"] table td::after {
+    content: "▋";
+    animation: blink 1s step-end infinite;
+    margin-left: 4px;
+    font-size: 0.8em;
+}
+
+[data-theme="terminal"] .scanlines {
+    display: block;
+    pointer-events: none;
+    background: linear-gradient(rgba(18, 16, 16, 0.1) 50%, rgba(0, 0, 0, 0.2) 50%);
+    background-size: 100% 4px;
+    z-index: 10;
+}
+
+[data-theme="terminal"] .glass-panel {
+    background: rgba(0, 10, 0, 0.9) !important;
+    border: 1px solid #33ff00 !important;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.2) !important;
+    backdrop-filter: blur(2px) !important;
+}
+
+[data-theme="terminal"] select option {
+    background-color: #000000;
+    color: #33ff00;
+}
+
+[data-theme="terminal"] .btn-glass {
+    border: 1px solid #33ff00 !important;
+    color: #33ff00 !important;
+    background: transparent !important;
+    text-transform: uppercase;
+}
+
+[data-theme="terminal"] .btn-glass:hover {
+    background: #33ff00 !important;
+    color: #000 !important;
+    box-shadow: 0 0 10px #33ff00 !important;
+}
+
+/* Terminal Loader Adaptation */
+.theme-terminal.loader-box {
+    background: rgba(0, 20, 0, 0.9) !important;
+    border: 1px solid #33ff00 !important;
+    border-radius: 0 !important;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2) !important;
+}
+
+.theme-terminal .loader-title,
+.theme-terminal .loader-sub {
+    color: #33ff00 !important;
+    font-family: "Fira Code", monospace !important;
+    text-shadow: 0 0 5px #33ff00 !important;
+}
+
+[data-theme="terminal"] .loader-progress-bar {
+    background: #33ff00 !important;
+    box-shadow: 0 0 10px #33ff00 !important;
+}

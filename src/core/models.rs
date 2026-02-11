@@ -13,13 +13,10 @@ pub struct RadiusEvent {
     pub acct_session_id: Option<String>,
     #[serde(rename = "Computer-Name")]
     pub server: Option<String>,
-    
-    // FIX: Added NAS-IP-Address to capture AP IP when Client-IP-Address is missing
     #[serde(rename = "Client-IP-Address")]
     pub ap_ip: Option<String>,
     #[serde(rename = "NAS-IP-Address")]
     pub nas_ip: Option<String>,
-
     #[serde(rename = "NAS-Identifier")]
     pub ap_name: Option<String>,
     #[serde(rename = "Client-Friendly-Name")]
@@ -32,14 +29,16 @@ pub struct RadiusEvent {
     pub sam_account: Option<String>,
     #[serde(rename = "Reason-Code")]
     pub reason_code: Option<String>,
-
-    // FIX: Catch-all for unexpected text content preventing crashes
     #[serde(rename = "$text", default)]
     pub _text: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct RadiusRequest {
+    // FIX: ID Unique pour éviter le bug d'indexation
+    #[serde(skip_deserializing)]
+    pub id: Option<usize>,
+    
     pub timestamp: String,
     pub req_type: String,
     pub server: String,

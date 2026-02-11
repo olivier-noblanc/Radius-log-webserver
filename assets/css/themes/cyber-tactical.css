@@ -1,0 +1,157 @@
+/* assets/css/themes/cyber-tactical.css */
+
+:root {
+    /* Fonds : Gris Anthracite technique */
+    --bg-deep: #050505;
+    --bg-panel: #111111;
+
+    /* Typographie : Vert Matrix et Gris Terminal */
+    --text-main: #e5e7eb;
+    --text-muted: #6b7280;
+
+    /* Accents : Néon agressif pour l'alerte */
+    --accent-primary: #0ea5e9;
+    /* Cyan électrique */
+    --accent-success: #10b981;
+    /* Vert binaire */
+    --accent-danger: #ef4444;
+    /* Rouge Alerte */
+    --accent-warn: #f59e0b;
+    /* Orange Avertissement */
+
+    /* Borders : Grille visible */
+    --border-glass: #333333;
+    --border-active: var(--accent-primary);
+
+    /* Fonts : Tout en code */
+    --font-ui: 'JetBrains Mono', monospace;
+    --font-code: 'JetBrains Mono', monospace;
+
+    /* Effets */
+    --grid-line: 1px solid #1f2937;
+}
+
+/* RENDU GPU & SUPPRESSION RADIUS */
+* {
+    transform: translateZ(0);
+    border-radius: 0 !important;
+    /* Force les angles droits */
+}
+
+body {
+    background-color: var(--bg-deep);
+    background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center top;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+}
+
+/* Header Spécifique */
+.main-header {
+    background: #111;
+    border: none;
+    border-bottom: 2px solid var(--accent-primary);
+    backdrop-filter: none;
+}
+
+.architect-name {
+    color: var(--accent-primary);
+}
+
+/* Panels */
+.glass-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glass);
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+/* Table Design (Grille Strict) */
+table {
+    border: 1px solid var(--border-glass);
+}
+
+th {
+    background: #1a1a1a;
+    border: 1px solid var(--border-glass);
+    color: var(--accent-primary);
+    font-size: 0.75rem;
+    padding: 0.5rem;
+}
+
+td {
+    border: 1px solid var(--border-glass);
+    padding: 0.4rem 0.5rem;
+}
+
+/* Zebrage (Lignes paires/impaires) */
+.log-row:nth-child(even) {
+    background-color: #0d0d0d;
+}
+
+.log-row:nth-child(odd) {
+    background-color: #111;
+}
+
+.log-row:hover td {
+    background: rgba(14, 165, 233, 0.1) !important;
+    color: #fff;
+}
+
+/* Status Colors override for higher contrast */
+td[data-status="success"] {
+    color: var(--accent-success) !important;
+    font-weight: bold;
+}
+
+td[data-status="fail"] {
+    color: var(--accent-danger) !important;
+    font-weight: bold;
+}
+
+/* Buttons & Controls */
+.btn-glass,
+.input-glass {
+    border: 1px solid var(--border-glass);
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background: var(--accent-primary);
+    color: #000;
+}
+
+.btn-primary:hover {
+    background: #38bdf8;
+    box-shadow: 0 0 10px var(--accent-primary);
+}
+
+/* Loader Cyber Tactical */
+@keyframes cyber-scan {
+    0% {
+        transform: translateY(-100%);
+    }
+
+    100% {
+        transform: translateY(200%);
+    }
+}
+
+.theme-cyber-tactical .loader-box {
+    background: #000 !important;
+    border: 1px solid var(--accent-success);
+    border-radius: 0 !important;
+}
+
+.theme-cyber-tactical .loader-box::after {
+    display: none;
+}
+
+.theme-cyber-tactical .loader-title,
+.theme-cyber-tactical .loader-sub {
+    color: var(--accent-success);
+    text-shadow: 0 0 5px var(--accent-success);
+}

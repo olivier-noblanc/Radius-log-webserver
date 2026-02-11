@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="neon">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RADIUS // SYSTEM BOOT</title>
+
+    <!-- FONTS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@700&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- FAVICON -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+
+    <!-- HTMX 2.0.7 -->
+    <script src="https://unpkg.com/htmx.org@2.0.7"></script>
+
+    <!-- NOTRE JS EXTERNE (PAS D'INLINE POUR EVITER LES ERREURS SES) -->
+    <script src="/js/app.js"></script>
+</head>
+
+<body>
+    <!-- HUMAN GATE : Overlay plein écran -->
+    <div id="human-gate" class="human-gate">
+        <div class="lock-container">
+            <h1 class="glitch-text" data-text="SYSTEM BOOT">SYSTEM BOOT</h1>
+            <p class="text-muted mb-6">SELECT INTERFACE PROTOCOL</p>
+
+            <!-- Formulaire HTMX pur : pas de hx-on: pour éviter SES -->
+            <!-- Le JS externe écoutera 'htmx:afterRequest' pour rediriger -->
+            <form id="loginForm" hx-post="/api/login" class="flex flex-col gap-4 w-full max-w-sm">
+
+                <select id="gate-theme" name="theme" class="input-glass text-lg p-3 text-center">
+                    <option value="onyx-glass">FLAGSHIP // ONYX GLASS</option>
+                    <option value="cyber-tactical">FLAGSHIP // CYBER TACTICAL</option>
+                    <option value="aero">AERO // MILLENNIUM</option>
+                    <option value="amber">AMBER // MONOCHROME</option>
+                    <option value="neon">NEON // 2077</option>
+                    <option value="win31">MICROSOFT // 3.1</option>
+                    <option value="win95">MICROSOFT // 95</option>
+                    <option value="xp">MICROSOFT // XP</option>
+                    <option value="macos">APPLE // MACOS</option>
+                    <option value="terminal">TERMINAL // MATRIX</option>
+                    <option value="c64">COMMODORE // 64</option>
+                    <option value="nes">NINTENDO // 8-BIT</option>
+                    <option value="snes">S-NINTENDO // 16-BIT</option>
+                    <option value="dos">MS-DOS // COMSPEC</option>
+                    <option value="compact">INDUSTRIAL // COMPACT</option>
+                    <option value="dsfr">GOUV.FR // DSFR</option>
+                </select>
+
+                <button type="submit" class="btn-glass btn-primary w-full text-lg">
+                    BOOT SYSTEM
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

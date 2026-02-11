@@ -1,5 +1,5 @@
 {% for log in logs %}
-<tr class="log-row" hx-get="/api/logs/detail?index={{ loop.index0 }}" hx-target="#modalBody" hx-trigger="click">
+<tr class="log-row" hx-get="/api/logs/detail?id={{ log.id.unwrap_or(0) }}" hx-target="#modalBody" hx-trigger="click">
     <td>{{ log.timestamp }}</td>
     <td>{{ log.req_type }}</td>
     <td>{{ log.server }}</td>

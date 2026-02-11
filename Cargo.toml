@@ -2,40 +2,43 @@
 name = "radius-log-webserver"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
-actix-web = "4"
-actix-web-actors = "4"
-actix-files = "0.6"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-notify = "8.0.0" 
-chrono = { version = "0.4", features = ["serde"] }
-csv = "1.3"
-quick-xml = { version = "0.39", features = ["serialize"] }
-winreg = "0.55"
-rand = "0.10" 
-rayon = "1.10"
-actix = "0.13" 
-windows = { version = "0.61", features = ["Win32_System_EventLog", "Win32_Foundation", "Win32_Security_Cryptography", "Win32_System_Registry", "Win32_System_Services"] }
-human-panic = "2.0"
-log = "0.4"
-actix-governor = "0.6"
-regex = "1.10"
-anyhow = "1.0"
-askama = "0.12"
-askama_actix = "0.14"
-parking_lot = "0.12"
-dashmap = "6"
-memmap2 = "0.9"
-aho-corasick = "1.1"
-windows-service = "0.7"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing-actix-web = "0.7"
+actix-web = "4.12.1"
+actix-web-actors = "4.3.1"
+actix-files = "0.6.10"
+tokio = { version = "1.43.0", features = ["full"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+notify = "8.2.0" 
+chrono = { version = "0.4.43", features = ["serde"] }
+csv = "1.4.0"
+quick-xml = { version = "0.39.0", features = ["serialize"] }
+winreg = "0.55.0"
+rand = "0.10.0" 
+rayon = "1.11.0"
+actix = "0.13.5" 
+windows = { version = "0.61.0", features = ["Win32_System_EventLog", "Win32_Foundation", "Win32_Security_Cryptography", "Win32_System_Registry", "Win32_System_Services"] }
+human-panic = "2.0.6"
+log = "0.4.29"
+actix-governor = "0.6.0"
+regex = "1.12.3"
+anyhow = "1.0.101"
+askama = "0.12.1"
+askama_actix = "0.14.0"
+parking_lot = "0.12.5"
+dashmap = "6.1.0"
+memmap2 = "0.9.9"
+aho-corasick = "1.1.4"
+windows-service = "0.7.0"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-actix-web = "0.7.15"  # lock says 0.7.15? wait let's check
+rust-embed = "8.11.0"
+mime_guess = "2.0.5"
 
 [build-dependencies]
-winres = "0.1"
-chrono = "0.4"
-vergen-git2 = { version = "9.0", features = ["build"] }
+winres = "0.1.12"
+chrono = "0.4.43"
+vergen-git2 = { version = "9.1.0", features = ["build"] }

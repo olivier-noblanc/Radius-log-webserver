@@ -1,0 +1,177 @@
+/* assets/css/themes/onyx-glass.css */
+
+:root {
+    /* Fonds : Profond mais pas noir absolu pour adoucir */
+    --bg-deep: #0f172a;
+    /* Slate 900 très foncé */
+    --bg-panel: rgba(30, 41, 59, 0.7);
+    /* Slate 800 semi-transparent */
+
+    /* Typographie : Blanc cassé pour éviter l'éblouissement */
+    --text-main: #f8fafc;
+    /* Slate 50 */
+    --text-muted: #94a3b8;
+    /* Slate 400 */
+
+    /* Accents : L'Or et l'Émeraude (Luxe et Validation) */
+    --accent-primary: #38bdf8;
+    /* Sky 400 (Bleu doux) */
+    --accent-success: #34d399;
+    /* Emerald 400 */
+    --accent-danger: #fb7185;
+    /* Rose 400 */
+    --accent-warn: #fbbf24;
+    /* Amber 400 */
+
+    /* Borders : Subtils */
+    --border-glass: rgba(255, 255, 255, 0.08);
+
+    /* Fonts */
+    --font-ui: 'Inter', system-ui, sans-serif;
+    --font-code: 'JetBrains Mono', monospace;
+
+    /* Glassmorphism Effect */
+    --glass-blur: blur(12px);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* RENDU GPU ACCÉLÉRÉ */
+* {
+    transform: translateZ(0);
+}
+
+body {
+    background-color: var(--bg-deep);
+    background-image: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(52, 211, 153, 0.05) 0%, transparent 40%);
+    font-family: var(--font-ui);
+}
+
+/* Panels .glass-panel */
+.glass-panel {
+    background: var(--bg-panel);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(30, 41, 59, 0.8);
+}
+
+/* Table Design */
+table {
+    border-collapse: collapse;
+}
+
+th {
+    border-bottom: 1px solid var(--border-glass);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 1rem 0.5rem;
+}
+
+td {
+    border-bottom: 1px solid var(--border-glass);
+    padding: 0.75rem 0.5rem;
+}
+
+/* Row Hover Effect */
+.log-row {
+    transition: background 0.3s ease;
+}
+
+.log-row:hover td {
+    background: linear-gradient(to top, rgba(56, 189, 248, 0.08), transparent) !important;
+    color: var(--text-main);
+}
+
+/* Inputs & Buttons */
+.input-glass,
+.btn-glass {
+    border-radius: 8px;
+    border: 1px solid var(--border-glass);
+}
+
+.btn-primary {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.btn-primary:hover {
+    background: rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
+/* Brand Logo Adjustment */
+.brand-logo {
+    color: var(--text-main);
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+.brand-logo svg {
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.4));
+}
+
+/* Custom Scrollbar for Glass */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Pulse Animation for Loader */
+@keyframes glass-pulse {
+    0% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+}
+
+.theme-onyx-glass .loader-box {
+    animation: glass-pulse 2s infinite ease-in-out;
+    background: rgba(30, 41, 59, 0.8) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 50px !important;
+}
+
+.theme-onyx-glass .loader-title {
+    color: #f8fafc !important;
+}
+
+.theme-onyx-glass .loader-sub {
+    color: #94a3b8 !important;
+}
+
+[data-theme="onyx-glass"] .loader-progress-bar {
+    background: #38bdf8 !important;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.5) !important;
+}

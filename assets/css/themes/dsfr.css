@@ -1,0 +1,53 @@
+/* =========================================
+   DSFR - RÉPUBLIQUE FRANÇAISE
+   ========================================= */
+
+:root {
+    --bg-deep: #f5f5fe;
+    --bg-panel: #ffffff;
+    --accent-cyan: #000091;
+    --accent-red: #e1000f;
+    --text-main: #161616;
+    --text-muted: #3a3a3a;
+    --font-ui: 'Marianne', sans-serif;
+    --status-success-bg: #e3f6ea;
+    --status-danger-bg: #fde8e8;
+    --status-success-text: #1f8d49;
+    --status-danger-text: #d64d4d;
+}
+
+[data-theme="dsfr"] .main-header {
+    background: #000091 !important;
+    color: #fff !important;
+    padding: 0.5rem 1.5rem !important;
+    font-weight: 700 !important;
+    font-family: 'Marianne', sans-serif !important;
+    border-bottom: 4px solid #e1000f !important;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
+}
+
+[data-theme="dsfr"] .btn-primary {
+    background: #000091 !important;
+    color: #fff !important;
+    border-radius: 0 !important;
+    font-weight: 700 !important;
+    border: 2px solid transparent !important;
+}
+
+/* DSFR Loader Adaptation */
+.theme-dsfr.loader-box {
+    background: #fff !important;
+    border: 1px solid #000091 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.theme-dsfr .loader-title {
+    color: #000091 !important;
+    font-family: 'Marianne', sans-serif !important;
+}
+
+[data-theme="dsfr"] .loader-progress-bar {
+    background: #000091 !important;
+    box-shadow: none !important;
+}
