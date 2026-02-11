@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 use crate::components::header::Header;
-// use crate::components::footer::{Footer, GlobalLoader}; removed in phase 1
 use crate::components::modals::{SecurityModal, DetailModal};
 
 #[derive(Props, Clone, PartialEq)]
@@ -24,6 +23,9 @@ pub fn Layout(props: LayoutProps) -> Element {
             meta { name: "author", content: "Radius Log Team" }
             meta { name: "theme-color", content: "#050505" }
             meta { name: "robots", content: "noindex, nofollow" }
+            meta { name: "referrer", content: "no-referrer" }
+            // Tentative de déblocage SES : Lockdown provient souvent d'une extension (MetaMask)
+            // qui gèle les intrinsèques. On s'assure que rien dans nos headers ne l'encourage.
             title { "{props.title}" }
 
             link { rel: "preconnect", href: "https://fonts.googleapis.com" }
@@ -37,8 +39,7 @@ pub fn Layout(props: LayoutProps) -> Element {
 
             script { 
                 defer: true,
-                src: "https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js",
-                integrity: "sha384-l8f0VcPi/M1iHPv8egOnY/15TDwqgbOR1anMIJWvU6nLRgZVLTLSaNqi/TOoT5Fh",
+                src: "https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.14.1/dist/cdn.min.js",
                 crossorigin: "anonymous"
             }
 
