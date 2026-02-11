@@ -19,7 +19,7 @@ use radius_log_webserver::api::handlers::{
     websocket::{ws_route, Broadcaster},
 };
 use radius_log_webserver::infrastructure::{
-    cache::LogCache, file_watcher::FileWatcher, win32::get_log_path_from_registry,
+    cache::LogCache, file_watcher::FileWatcher, win32::get_log_path_from_registry, cache::StatsCache,
 };
 use radius_log_webserver::utils::logging::init_logging;
 // Retrait de LiveView
@@ -89,11 +89,13 @@ async fn run_app() -> std::io::Result<()> {
 
     let broadcaster_data = web::Data::new(broadcaster.clone());
     let cache_data = web::Data::new(cache.clone());
+    let stats_cache = Arc::new(StatsCache::new(30));
+    let stats_cache_data = web::Data::new(stats_cache.clone());
 
     let log_path = get_log_path_from_registry();
     tracing::info!("Watching log directory: {}", log_path);
 
-    let watcher = FileWatcher::new(broadcaster.clone(), cache.clone());
+    let watcher = FileWatcher::new(broadcaster.clone(), cache.clone(), stats_cache.clone());
     watcher.start(log_path.clone());
 
     let port: u16 = std::env::var("PORT")
@@ -127,6 +129,7 @@ async fn run_app() -> std::io::Result<()> {
             )
             .app_data(broadcaster_data.clone())
             .app_data(cache_data.clone())
+            .app_data(stats_cache_data.clone())
             .wrap(middleware::Compress::default())
             .route("/", web::get().to(index))
             .route("/ws", web::get().to(ws_route))

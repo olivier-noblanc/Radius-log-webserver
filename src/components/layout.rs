@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::components::header::Header;
-use crate::components::footer::{Footer, GlobalLoader};
+// use crate::components::footer::{Footer, GlobalLoader}; removed in phase 1
 use crate::components::modals::{SecurityModal, DetailModal};
 
 #[derive(Props, Clone, PartialEq)]
@@ -35,15 +35,21 @@ pub fn Layout(props: LayoutProps) -> Element {
             link { rel: "stylesheet", href: "/css/bootstrap-icons.min.css" }
             link { rel: "icon", r#type: "image/svg+xml", href: "/favicon.svg" }
 
-            div { id: "theme-css", style: "display: contents;",
-                for css in props.css_files {
-                    link { 
-                        id: if css.contains("/themes/") { "theme-link" } else { "" },
-                        rel: "stylesheet", 
-                        href: "{css}?v={props.git_sha}" 
-                    }
+            script { 
+                defer: true,
+                src: "https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js",
+                integrity: "sha384-Y20W0lLHFC0iv4LKd9pqFVBxBMQzblHWmjj+eBEMcH7q3hPd+W4pE3xMaJH6b2WN",
+                crossorigin: "anonymous"
+            }
+
+            for css in props.css_files {
+                link { 
+                    id: if css.contains("/themes/") { "theme-link" } else { "" },
+                    rel: "stylesheet", 
+                    href: "{css}?v={props.git_sha}"
                 }
             }
+            div { id: "theme-css" }
 
             svg { width: "0", height: "0", style: "position: absolute;",
                 defs {
@@ -70,7 +76,7 @@ pub fn Layout(props: LayoutProps) -> Element {
 
                 Header { 
                     build_version: props.build_version.clone(), 
-                    theme: props.theme.clone() 
+                    theme: props.theme.clone()
                 }
 
                 {props.children}
@@ -79,8 +85,6 @@ pub fn Layout(props: LayoutProps) -> Element {
 
                 SecurityModal {}
                 DetailModal {}
-                GlobalLoader {}
-                Footer {}
             }
             script { src: "/js/htmx.min.js" }
             script { src: "/js/app.js", defer: "true" }

@@ -17,7 +17,7 @@ chrono = { version = "0.4.43", features = ["serde"] }
 csv = "1.4.0"
 quick-xml = { version = "0.39.0", features = ["serialize"] }
 winreg = "0.55.0"
-rand = "0.10.0" 
+# rand = "0.10.0" 
 rayon = "1.11.0"
 actix = "0.13.5" 
 windows = { version = "0.61.0", features = ["Win32_System_EventLog", "Win32_Foundation", "Win32_Security_Cryptography", "Win32_System_Registry", "Win32_System_Services"] }
@@ -26,8 +26,6 @@ log = "0.4.29"
 actix-governor = "0.6.0"
 regex = "1.12.3"
 anyhow = "1.0.101"
-# askama supprimé
-# askama_actix supprimé
 parking_lot = "0.12.5"
 dashmap = "6.1.0"
 memmap2 = "0.9.9"
@@ -38,8 +36,8 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing-actix-web = "0.7.15"  # lock says 0.7.15? wait let's check
 rust-embed = "8.11.0"
 mime_guess = "2.0.5"
-dioxus = { version = "0.6", features = ["ssr"] }
-dioxus-ssr = "0.6"
+dioxus = { version = "0.7", features = ["ssr"] }
+dioxus-ssr = "0.7"
 web-sys = "0.3"
 
 [build-dependencies]

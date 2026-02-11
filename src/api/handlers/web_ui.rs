@@ -177,7 +177,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
     HttpResponse::Ok()
         .content_type("text/html")
         .insert_header(("Cache-Control", cache_header))
-        .body(html)
+        .body(format!("<!DOCTYPE html><html lang=\"fr\">{}</html>", html))
 }
 
 pub async fn login(query: web::Form<LoginQuery>) -> impl Responder {
