@@ -1,0 +1,45 @@
+<div id="view-dashboard">
+    <!-- Dashboard Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="glass-panel p-4 text-center">
+            <h4 class="text-sm font-bold opacity-75 mb-1">SUCCÈS</h4>
+            <div class="text-3xl font-bold text-success">{{ success_rate_rounded }}%</div>
+        </div>
+        <div class="glass-panel p-4 text-center">
+            <h4 class="text-sm font-bold opacity-75 mb-1">REJETS (TOTAL)</h4>
+            <div class="text-3xl font-bold text-danger">{{ rejection_count }}</div>
+        </div>
+        <div class="glass-panel p-4 text-center">
+            <h4 class="text-sm font-bold opacity-75 mb-1">UTILISATEURS ACTIFS</h4>
+            <div class="text-3xl font-bold text-info">{{ active_users }}</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-panel p-6 shadow-glow">
+            <h3 class="text-lg font-bold mb-4 flex items-center">
+                <i class="bi bi-graph-up me-2 text-primary"></i>TENDANCE DES REJETS (24H)
+            </h3>
+            <canvas id="chartRejects" height="200"></canvas>
+        </div>
+        <div class="glass-panel p-6 shadow-glow">
+            <h3 class="text-lg font-bold mb-4 flex items-center">
+                <i class="bi bi-pie-chart me-2 text-warning"></i>CAUSES DE REJET PRINCIPALES
+            </h3>
+            <canvas id="chartReasons" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart.js initialization script -->
+    <script>
+        (function () {
+            // We pass the stats via a data attribute or inline script
+            // Using a simple JSON serialization for now
+            const stats = JSON.parse('{{ serde_json::to_string(stats).unwrap()|safe }}');
+            if (window.renderDashboardCharts) {
+                window.renderDashboardCharts(stats);
+            }
+        })();
+    </script>
+</div>

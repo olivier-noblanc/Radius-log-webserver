@@ -1,5 +1,7 @@
+use vergen_git2::{Emitter, Git2Builder};
+
 fn main() {
-    if std::env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows" {
+    if std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default() == "windows" {
         let mut res = winres::WindowsResource::new();
         res.set_language(0x0409); // English (US)
         res.set("ProductName", "Radius Log Webserver");
@@ -13,16 +15,19 @@ fn main() {
         res.compile().unwrap();
     }
 
-    // Generate Build Info
+    // Use vergen to generate Git info
+    match Emitter::default()
+        .add_instructions(&Git2Builder::all_git().unwrap())
+        .unwrap()
+        .emit() {
+            Ok(_) => println!("vergen emitted instructions"),
+            Err(e) => eprintln!("vergen failed: {}", e),
+        }
+
+    // Generate Legacy Build Info (Fallback or additional info)
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let dest_path = std::path::Path::new(&out_dir).join("build_info.rs");
 
-    let commit = std::env::var("GITHUB_SHA").unwrap_or_else(|_| "LOCAL_BUILD".to_string());
-    let short_commit = if commit.len() > 7 {
-        &commit[0..7]
-    } else {
-        &commit
-    };
     let timestamp = chrono::Utc::now()
         .format("%Y-%m-%d %H:%M:%S UTC")
         .to_string();
@@ -30,11 +35,11 @@ fn main() {
     std::fs::write(
         &dest_path,
         format!(
-            "pub const BUILD_VERSION: &str = \"{}\";\npub const BUILD_COMMIT: &str = \"{}\";\n",
-            timestamp, short_commit
+            "pub const BUILD_VERSION: &str = \"{}\";\n",
+            timestamp
         ),
     )
     .unwrap();
 
-    println!("cargo:rerun-if-env-changed=GITHUB_SHA");
+    println!("cargo:rerun-if-changed=build.rs");
 }

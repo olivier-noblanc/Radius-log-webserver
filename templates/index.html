@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="neon">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>RADIUS // LOG CORE</title>
+    <!-- ONLINE FONTS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Orbitron:wght@400;700&family=Rajdhani:wght@400;700&family=Fira+Code:wght@400;700&family=Press+Start+2P&family=VT323&display=swap"
+        rel="stylesheet">
+
+    <!-- FAVICON -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" type="image/png" href="/favicon.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/style.css?v={{ git_sha }}">
+
+    <!-- JavaScript -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="/js/app.js?v={{ git_sha }}" defer></script>
+    <script>
+        document.addEventListener('htmx:configRequest', (event) => {
+            const auth = localStorage.getItem('radius_auth');
+            if (auth === 'authorized') {
+                event.detail.headers['X-Radius-Auth'] = 'authorized';
+            }
+        });
+    </script>
+
+    <!-- SVG PATTERNS -->
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <pattern id="nes-pixels" x="4" y="4" width="4" height="4" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="2" height="2" fill="#ff0000" opacity="0.1" />
+                <rect x="2" y="2" width="2" height="2" fill="#ff0000" opacity="0.1" />
+            </pattern>
+            <pattern id="snes-bevel" x="2" y="2" width="2" height="2" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="1" height="1" fill="#ffffff" opacity="0.1" />
+                <rect x="1" y="1" width="1" height="1" fill="#000000" opacity="0.2" />
+            </pattern>
+            <pattern id="c64-scanlines" x="1" y="2" width="1" height="2" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="1" stroke="#4040ff" stroke-width="1" opacity="0.3" />
+            </pattern>
+            <pattern id="dos-scanlines" x="1" y="2" width="1" height="2" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="1" stroke="#aaaaaa" stroke-width="1" opacity="0.2" />
+            </pattern>
+            <pattern id="terminal-scanlines" x="1" y="2" width="1" height="2" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="1" stroke="#00ff41" stroke-width="1" opacity="0.15" />
+            </pattern>
+            <linearGradient id="xp-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.1" />
+                <stop offset="50%" style="stop-color:#0058e6;stop-opacity:0.05" />
+                <stop offset="100%" style="stop-color:#000000;stop-opacity:0.1" />
+            </linearGradient>
+            <pattern id="win31-bevel" x="2" y="2" width="2" height="2" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="1" height="1" fill="#ffffff" opacity="0.3" />
+                <rect x="1" y="1" width="1" height="1" fill="#000000" opacity="0.3" />
+            </pattern>
+            <pattern id="macos-stripe" x="1" y="0" width="1" height="1" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="1" stroke="#000000" stroke-width="0.5" opacity="0.05" />
+            </pattern>
+        </defs>
+    </svg>
+</head>
+
+<body>
+    <noscript>
+        WARNING: JAVASCRIPT IS DISABLED. THIS INTERFACE REQUIRES JAVASCRIPT FOR LOG STREAMING AND ANALYTICS.
+    </noscript>
+    <div id="error-overlay">
+        <h1>CRITICAL ENGINE FAILURE</h1>
+        <p>A fatal JavaScript error has occurred. The system has been halted.</p>
+        <pre id="error-details"></pre>
+    </div>
+    <div id="loader-overlay">
+        <div class="loader-content">
+            <div id="loader-icon">
+                <div class="neon-ring"></div>
+                <div class="dsfr-spinner"></div>
+                <div class="terminal-bar"></div>
+                <div class="xp-pulse">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+                <div class="win31-hourglass">⏳</div>
+                <div class="w32-hourglass">⏳</div>
+                <div class="c64-cursor">READY.</div>
+                <div class="nes-pixel-pulse"></div>
+                <div class="snes-star">★</div>
+                <div class="dos-spin"></div>
+                <div class="macos-watch"></div>
+            </div>
+            <div id="loader-label" class="loader-label loader-text-shimmer">INITIALIZING...</div>
+        </div>
+    </div>
+
+    <div id="human-gate">
+        <div class="scanlines"></div>
+        <div class="gate-logo"> // RADIUS SECURITY CORE</div>
+        <div class="auth-text">
+            HIGH-PERFORMANCE LOG ANALYTICS INTERFACE.<br>
+            SECURE SESSION INITIALIZATION REQUIRED.
+        </div>
+        <button id="authBtn" class="btn-glass btn-primary btn-auth">
+            AUTHORIZE SESSION
+        </button>
+    </div>
+
+    <div id="app-root">
+        <div class="scanlines"></div>
+        <div class="container">
+            <!-- Header -->
+            <header class="flex justify-between items-center mb-4 main-header">
+                <div class="flex flex-col"><a href="#" class="brand-logo"><svg width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
+                            <path d="M12 8v8" />
+                            <path d="M8 12h8" />
+                        </svg>RADIUS // LOG CORE
+                    </a>
+                    <div class="architect-info">
+                        SYSTEM ARCHITECT: <span class="architect-name">OLIVIER NOBLANC</span> // {{ build_version }}
+                    </div>
+                </div>
+                <nav class="flex glass-panel nav-main">
+                    <button id="navLogsBtn" data-view="logs" class="btn-glass btn-nav active">LOG STREAM</button>
+                    <button id="navDashBtn" data-view="dashboard" class="btn-glass btn-nav">ANALYTICS</button>
+                </nav>
+                <div class="flex items-center"><select id="themeSelect" class="btn-glass theme-select">
+                        <option value="neon">NÉON // CORE</option>
+                        <option value="dsfr">RÉPUBLIQUE // FR</option>
+                        <option value="compact">INDUSTRIAL // DENSE</option>
+                        <option value="terminal">TERMINAL // SSH</option>
+                        <option value="xp">WINDOWS XP // LUNA</option>
+                        <option value="win31">WINDOWS 3.1 // LEGACY</option>
+                        <option value="win95">WINDOWS 95 // CHICAGO</option>
+                        <option value="macos">MACINTOSH // CLASSIC</option>
+                        <option value="dos">MS-DOS // COMSPEC</option>
+                        <option value="c64">COMMODORE // 64</option>
+                        <option value="nes">NINTENDO // 8-BIT</option>
+                        <option value="snes">S-NINTENDO // 16-BIT</option>
+                    </select><button class="btn-glass btn-audit" id="auditBtn"><svg width="16" height="16"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>SECURITY AUDIT </button>
+                    <div id="statusBadge" class="status-badge">DISCONNECTED</div>
+                    <button class="btn-glass" id="liveBtn">
+                        <div class="live-dot"></div><span class="live-label">LIVE</span>
+                    </button>
+                </div>
+            </header>
+
+            <div id="view-logs">
+                <div class="flex items-center mb-4 glass-panel panel-main">
+                    <div class="flex-grow"><select id="fileSelect" name="file" class="input-glass">
+                            {% for file in files %}
+                            <option value="{{ file.path }}">{{ file.name }} ({{ file.formatted_size }})</option>
+                            {% endfor %}
+                            {% if files.is_empty() %}
+                            <option>Aucun fichier</option>
+                            {% endif %}
+                        </select></div>
+                    <div class="flex-grow"><input type="text" id="searchInput" name="search" class="input-glass"
+                            placeholder="Search (User, IP, Reason)..."></div>
+                    <div class="flex items-center ml-4" style="gap: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                        <input type="checkbox" id="regexToggle" name="use_regex" value="true"
+                            style="cursor: pointer;"><label for="regexToggle" style="cursor: pointer;">REGEX</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 0 15px;"><input type="checkbox"
+                            id="errorToggle" name="error_only" value="true"
+                            style="width: 18px; height: 18px; cursor: pointer;"><label for="errorToggle"
+                            style="font-size: 0.8rem; color: var(--accent-red); cursor: pointer; font-weight: 600;">ERRORS
+                            ONLY</label></div>
+                    <div><button class="btn-glass btn-primary" id="loadBtn">REFRESH</button><button class="btn-glass"
+                            id="exportBtn">EXPORT CSV</button></div>
+                </div>
+                <div class="glass-panel table-container">
+                    <input type="hidden" id="sort_by" name="sort_by" value="timestamp">
+                    <input type="hidden" id="sort_desc" name="sort_desc" value="true">
+                    <table id="logTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-col="timestamp" onclick="updateSort('timestamp')">TIMESTAMP<i
+                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="req_type" onclick="updateSort('req_type')">TYPE<i
+                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="server" onclick="updateSort('server')">SERVER<i
+                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="ap_ip" onclick="updateSort('ap_ip')">AP IP<i
+                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="ap_name" onclick="updateSort('ap_name')">AP NAME<i
+                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="mac" onclick="updateSort('mac')">MAC<i
+                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="user" onclick="updateSort('user')">USER<i
+                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="resp_type" onclick="updateSort('resp_type')">RESULT<i
+                                        class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="reason" onclick="updateSort('reason')">REASON /
+                                    DIAGNOSTICS<i class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody">
+                            {% include "log_rows.html" %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- ... rest of the file remains same but adapted to Askama variables if needed ... -->
+            <!-- Note: views like view-dashboard and modals are kept identical to assets/index.html but SSR'd -->
+
+            <!-- View: Dashboard -->
+            <div id="view-dashboard" class="hidden">
+                <div class="flex items-center justify-center py-20">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <span class="ms-3">Chargement du Dashboard...</span>
+                </div>
+            </div>
+
+            <!-- Detail Modal -->
+            <div class="modal-overlay" id="detailModal">
+                <div class="modal-content" style="max-width: 800px;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 style="color: var(--accent-cyan); font-family: var(--font-code);">EVENT DETAILS</h3>
+                        <button class="btn-glass btn-modal-close" data-modal="detailModal">CLOSE</button>
+                    </div>
+                    <div id="modalBody"
+                        style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 6px; font-family: var(--font-code); font-size: 0.85rem; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; color: var(--accent-green);">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Modal -->
+            <div class="modal-overlay" id="securityModal">
+                <div class="modal-content" style="max-width: 1000px;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 style="color: var(--accent-green); font-family: var(--font-code);">SERVER SECURITY
+                            CONFIGURATION </h3>
+                        <button class="btn-glass btn-modal-close" data-modal="securityModal">CLOSE</button>
+                    </div>
+                    <div id="schannelWarning" class="glass-panel"
+                        style="margin-bottom: 1rem; border-color: var(--accent-red); color: var(--accent-red); display: none;">
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">⚠️ DIAGNOSTIC SCHANNEL LIMITÉ</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Le logging SChannel n'est pas activé sur ce
+                            serveur (EventLogging = 0). L'analyse des erreurs de handshake dans le flux de logs sera
+                            indisponible.</div>
+                    </div>
+                    <div class="grid-3">
+                        <div class="glass-panel">
+                            <h4 class="text-muted mb-4">TLS PROTOCOLS</h4>
+                            <div id="protocolList" class="flex flex-col" style="gap: 0.5rem;"></div>
+                        </div>
+                        <div class="glass-panel">
+                            <h4 class="text-muted mb-4">CIPHER SUITES</h4>
+                            <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                                <table style="font-size: 0.75rem;">
+                                    <tbody id="cipherTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="glass-panel">
+                            <h4 class="text-muted mb-4">LOCAL CERTIFICATES</h4>
+                            <div id="certList" class="flex flex-col"
+                                style="gap: 1rem; max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>
