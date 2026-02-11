@@ -26,10 +26,13 @@
     <!-- FAVICON -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
-    <!-- DYNAMIC CSS INJECTION (SSR) -->
-    {% for css in css_files %}
-    <link rel="stylesheet" href="{{ css }}?v={{ git_sha }}">
-    {% endfor %}
+    <!-- DYNAMIC CSS INJECTION (SSR + HTMX SWAP) -->
+    <div id="theme-css" style="display: contents;">
+        {% for css in css_files %}
+        <link {% if css.contains("/themes/") %}id="theme-link" {% endif %} rel="stylesheet"
+            href="{{ css }}?v={{ git_sha }}">
+        {% endfor %}
+    </div>
 
     <!-- HTMX 2.0.7 (Local) -->
     <script src="/js/htmx.min.js"></script>

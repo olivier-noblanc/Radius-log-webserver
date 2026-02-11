@@ -85,6 +85,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const themeCssMapping = {
+        'win31': '/css/themes/win31.css',
+        'win95': '/css/themes/win95.css',
+        'xp': '/css/themes/xp.css',
+        'macos': '/css/themes/macos.css',
+        'dos': '/css/themes/dos.css',
+        'terminal': '/css/themes/terminal.css',
+        'c64': '/css/themes/c64.css',
+        'nes': '/css/themes/nes.css',
+        'snes': '/css/themes/snes.css',
+        'onyx-glass': '/css/themes/onyx-glass.css',
+        'cyber-tactical': '/css/themes/cyber-tactical.css',
+        'aero': '/css/themes/aero.css',
+        'amber': '/css/themes/amber.css',
+        'dsfr': '/css/themes/dsfr.css',
+        'compact': '/css/themes/compact.css'
+    };
+
     // --- 2. GESTION DU LOADER GLOBAL ---
     const loaderOverlay = document.getElementById('global-loader');
     const loaderBox = document.querySelector('.loader-box');
@@ -97,7 +115,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'neon';
         const config = themeConfig[currentTheme] || themeConfig['neon'];
 
-        // Reset classes
+        // --- NOUVELLE LOGIQUE D'ICONES ---
+        const iconContainer = document.getElementById('loader-icon');
+        if (iconContainer) {
+            // Cacher toutes les icônes
+            Array.from(iconContainer.children).forEach(el => el.style.display = 'none');
+
+            let activeIcon;
+            if (currentTheme === 'dsfr') {
+                activeIcon = iconContainer.querySelector('.dsfr-spinner');
+            } else if (currentTheme === 'terminal') {
+                activeIcon = iconContainer.querySelector('.terminal-bar');
+            } else if (currentTheme === 'xp') {
+                activeIcon = iconContainer.querySelector('.xp-pulse');
+                if (activeIcon) activeIcon.style.display = 'flex'; // XP utilise flex
+            } else if (currentTheme === 'win31') {
+                activeIcon = iconContainer.querySelector('.win31-hourglass');
+            } else if (currentTheme === 'dos') {
+                activeIcon = iconContainer.querySelector('.dos-spin');
+            } else if (currentTheme === 'macos') {
+                activeIcon = iconContainer.querySelector('.macos-watch');
+            } else {
+                activeIcon = iconContainer.querySelector('.neon-ring');
+            }
+
+            if (activeIcon && currentTheme !== 'xp') activeIcon.style.display = 'block';
+        }
+
+        // Reset classes pour le style de la boite
         loaderBox.className = 'loader-box';
         if (config.className) loaderBox.classList.add(config.className);
 
@@ -153,18 +198,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnLogs) btnLogs.addEventListener('click', () => showView('logs'));
     if (btnDash) btnDash.addEventListener('click', () => showView('dashboard'));
 
-    // --- 4. LOGIQUE THÈME ---
+    // --- 4. LOGIQUE THÈME (HTMX Trigger) ---
     const themeSelect = document.getElementById('themeSelect');
     const gateThemeSelect = document.getElementById('gate-theme');
 
+    // Réagir au changement de thème déclenché par HTMX
+    document.body.addEventListener('themeChanged', (evt) => {
+        const themeName = evt.detail.value;
+        document.documentElement.setAttribute('data-theme', themeName);
+        if (themeSelect) themeSelect.value = themeName;
+        if (gateThemeSelect) gateThemeSelect.value = themeName;
+    });
+
+    // Optionnel : Garder setTheme pour le boot selector si besoin, mais version light
     window.setTheme = (themeName) => {
         document.documentElement.setAttribute('data-theme', themeName);
         document.cookie = `theme=${themeName}; path=/; max-age=31536000`;
-        if (themeSelect) themeSelect.value = themeName;
-        if (gateThemeSelect) gateThemeSelect.value = themeName;
     };
-
-    if (themeSelect) themeSelect.addEventListener('change', (e) => window.setTheme(e.target.value));
 
     // --- 5. FILTRE ERRORS ONLY (Instantané) ---
     const errorToggle = document.getElementById('errorToggle');

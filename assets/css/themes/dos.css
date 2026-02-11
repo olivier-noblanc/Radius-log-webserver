@@ -59,3 +59,27 @@
     animation: blink-cursor 0.8s step-end infinite;
     margin-left: 0.1em;
 }
+
+/* DOS Loader adaptation */
+.theme-dos.loader-box {
+    background: #0000aa !important;
+    border: 2px solid #ffffff !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    font-family: "VT323", monospace !important;
+}
+
+.theme-dos .loader-title {
+    font-family: "VT323", monospace !important;
+    font-size: 1.2rem !important;
+}
+
+.theme-dos .loader-sub {
+    font-family: "VT323", monospace !important;
+    color: #55ffff !important;
+}
+
+[data-theme="dos"] .loader-progress-bar {
+    background: #ffffff !important;
+}

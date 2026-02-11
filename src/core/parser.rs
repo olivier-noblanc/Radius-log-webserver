@@ -190,7 +190,9 @@ pub fn process_group(group: &[RadiusEvent]) -> RadiusRequest {
             if let Some(val) = &event.class {
                 req.class_id.clone_from(val);
             }
-            req.req_type = map_packet_type(p_type);
+            if req.req_type.is_empty() {
+                req.req_type = map_packet_type(p_type);
+            }
 
             if let Some(user) = &event.sam_account {
                 req.user.clone_from(user);

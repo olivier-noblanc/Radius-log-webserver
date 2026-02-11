@@ -15,7 +15,7 @@ use radius_log_webserver::api::handlers::{
     audit::{get_debug_info, get_security_config},
     logs::{export_csv, log_rows_htmx, list_logs, log_detail_htmx},
     stats::get_stats,
-    web_ui::{index, robots_txt, serve_favicon, serve_static_asset, dashboard_htmx, login},
+    web_ui::{index, robots_txt, serve_favicon, serve_static_asset, dashboard_htmx, login, set_theme},
     websocket::{ws_route, Broadcaster},
 };
 use radius_log_webserver::infrastructure::{
@@ -146,6 +146,7 @@ async fn run_app() -> std::io::Result<()> {
             .route("/api/debug", web::get().to(get_debug_info))
             .route("/api/security-config", web::get().to(get_security_config))
             .route("/api/login", web::post().to(login))
+            .route("/api/theme", web::get().to(set_theme))
             .route("/robots.txt", web::get().to(robots_txt))
     })
     .bind(format!("0.0.0.0:{}", port))?

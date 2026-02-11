@@ -92,3 +92,29 @@
     /* Override l'animation par défaut pour un effet plus lent */
     animation: xp-fade-in 0.8s ease-out forwards;
 }
+
+/* XP Loader Refinement */
+.theme-xp.loader-box {
+    background: #fff !important;
+    border: 1px solid #003399 !important;
+    border-radius: 4px !important;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3) !important;
+    padding: 10px 20px !important;
+}
+
+.theme-xp .xp-pulse div {
+    width: 10px;
+    height: 16px;
+    background: linear-gradient(to bottom, #28ca41, #1a9c2d) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.theme-xp .loader-title {
+    color: #003399 !important;
+    font-weight: normal !important;
+    font-size: 14px !important;
+}
+
+[data-theme="xp"] .loader-progress-bar {
+    background: linear-gradient(to right, #245edb, #3f8cf3, #245edb) !important;
+}

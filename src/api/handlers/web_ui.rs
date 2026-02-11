@@ -42,6 +42,15 @@ pub struct IndexTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "partials/theme_css.html")]
+pub struct ThemeFragmentTemplate {
+    pub css_files: Vec<String>,
+    pub git_sha: String,
+    pub theme: String,
+    pub cache_buster: String,
+}
+
+#[derive(Template)]
 #[template(path = "dashboard_fragment.html")]
 pub struct DashboardTemplate {
     pub stats: Stats,
@@ -75,6 +84,8 @@ fn get_theme_css_files(theme: &str) -> Vec<String> {
         "cyber-tactical" => files.push("/css/themes/cyber-tactical.css".to_string()),
         "aero" => files.push("/css/themes/aero.css".to_string()),
         "amber" => files.push("/css/themes/amber.css".to_string()),
+        "dsfr" => files.push("/css/themes/dsfr.css".to_string()),
+        "compact" => files.push("/css/themes/compact.css".to_string()),
         _ => {} // Le thème par défaut (Neon) utilise juste style.css
     }
     
@@ -196,6 +207,40 @@ pub async fn login(query: web::Form<LoginQuery>) -> impl Responder {
         .insert_header(("HX-Redirect", "/"))
         .insert_header(("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"))
         .body("Login successful")
+}
+
+pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
+    let theme = query.theme.clone();
+    let css_files = get_theme_css_files(&theme);
+    
+    let theme_cookie = actix_web::cookie::Cookie::build("theme", theme.clone())
+        .path("/")
+        .max_age(actix_web::cookie::time::Duration::days(365))
+        .finish();
+
+    // Cache busting simple via timestamp
+    let cache_buster = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+        .to_string();
+
+    let tmpl = ThemeFragmentTemplate {
+        css_files,
+        git_sha: GIT_SHA.to_string(),
+        theme: theme.clone(),
+        cache_buster,
+    };
+
+    match tmpl.render() {
+        Ok(body) => HttpResponse::Ok()
+            .cookie(theme_cookie)
+            .content_type("text/html")
+            // On déclenche un événement personnalisé pour que le JS mette à jour data-theme
+            .insert_header(("HX-Trigger", format!("{{\"themeChanged\": \"{}\"}}", theme)))
+            .body(body),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Template error: {}", e)),
+    }
 }
 
 pub async fn dashboard_htmx(req: HttpRequest, cache: web::Data<Arc<LogCache>>) -> impl Responder {

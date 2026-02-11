@@ -33,7 +33,8 @@
 
         <!-- Sélecteur de Thème -->
         <label for="themeSelect" class="sr-only">Choose Theme</label>
-        <select id="themeSelect" name="theme" class="input-glass theme-select">
+        <select id="themeSelect" name="theme" class="input-glass theme-select" hx-get="/api/theme"
+            hx-target="#theme-css" hx-trigger="change">
             <option value="onyx-glass" {% if theme=="onyx-glass" %}selected{% endif %}>FLAGSHIP // ONYX GLASS</option>
             <option value="cyber-tactical" {% if theme=="cyber-tactical" %}selected{% endif %}>FLAGSHIP // CYBER
                 TACTICAL</option>

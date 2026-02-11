@@ -1,6 +1,7 @@
 use actix_web::HttpRequest;
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
+use tracing;
 
 /// Valide que le fichier demandé est bien dans le dossier autorisé (sandbox).
 /// Empêche le "Path Traversal" (ex: ../..).
@@ -27,7 +28,7 @@ pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
         .context("Impossible de résoudre le dossier de base des logs")?;
 
     if !canonical.starts_with(&canonical_base) {
-        log::warn!(
+        tracing::warn!(
             "SECURITY ALERT: Path Traversal Attempt blocked: {:?}",
             user_input
         );

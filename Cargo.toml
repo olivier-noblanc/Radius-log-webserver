@@ -3,6 +3,7 @@ name = "radius-log-webserver"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+default-run = "radius-log-webserver"
 
 [dependencies]
 actix-web = "4.12.1"

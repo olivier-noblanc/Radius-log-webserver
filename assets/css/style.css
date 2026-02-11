@@ -1,11 +1,3 @@
-@font-face {
-    font-family: 'Marianne';
-    src: url('https://raw.githubusercontent.com/DesignGouvFR/marianne-font/master/fonts/Marianne-Regular.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
 /* ========== DESIGN SYSTEM & VARIABLES ========== */
 :root {
     --bg-deep: #0a0a0c;
@@ -863,11 +855,17 @@ td[data-status="fail"] {
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
 }
 
 #global-loader.active .loader-box {
     transform: translateY(0);
+}
+
+.loader-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
 }
 
 .loader-title {
@@ -884,6 +882,200 @@ td[data-status="fail"] {
     opacity: 0.8;
     margin: 0;
     white-space: nowrap;
+}
+
+.loader-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loader-icon>div {
+    display: none;
+    /* Hidden by default, toggled by JS */
+}
+
+/* NEON (Default) */
+.neon-ring {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(0, 242, 255, 0.1);
+    border-top: 3px solid var(--accent-cyan);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* DSFR */
+.dsfr-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #eee;
+    border-top: 3px solid #000091;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* XP Pulse */
+.xp-pulse {
+    display: flex;
+    gap: 3px;
+}
+
+.xp-pulse div {
+    width: 8px;
+    height: 12px;
+    background: linear-gradient(to bottom, #28ca41, #1a9c2d);
+    border-radius: 1px;
+    opacity: 0.3;
+    animation: xp-pulse 1s infinite;
+}
+
+.xp-pulse div:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.xp-pulse div:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes xp-pulse {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* WIN 3.1 Hourglass */
+.win31-hourglass {
+    font-size: 20px;
+    line-height: 1;
+    animation: win31-flip 1s steps(2) infinite;
+}
+
+@keyframes win31-flip {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(180deg);
+    }
+}
+
+/* DOS Spin */
+.dos-spin {
+    font-family: var(--font-code);
+    font-size: 18px;
+    color: #fff;
+    min-width: 1ch;
+}
+
+.dos-spin::after {
+    content: "|";
+    animation: dos-load 0.4s steps(4) infinite;
+}
+
+@keyframes dos-load {
+    0% {
+        content: "|";
+    }
+
+    25% {
+        content: "/";
+    }
+
+    50% {
+        content: "-";
+    }
+
+    75% {
+        content: "\\";
+    }
+}
+
+/* MACOS Watch */
+.macos-watch {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #000;
+    border-radius: 50%;
+    position: relative;
+    background: #fff;
+}
+
+.macos-watch::before {
+    content: "";
+    position: absolute;
+    top: 9px;
+    left: 9px;
+    width: 7px;
+    height: 2px;
+    background: #000;
+    transform-origin: left center;
+    animation: spin 2s linear infinite;
+}
+
+/* TERMINAL Progress Bar */
+.terminal-bar {
+    font-family: var(--font-code);
+    color: var(--accent-green);
+    font-size: 0.9rem;
+}
+
+.terminal-bar::after {
+    content: "[          ]";
+    animation: term-load 1s steps(11) infinite;
+}
+
+@keyframes term-load {
+    0% {
+        content: "[          ]";
+    }
+
+    10% {
+        content: "[#         ]";
+    }
+
+    20% {
+        content: "[##        ]";
+    }
+
+    30% {
+        content: "[###       ]";
+    }
+
+    40% {
+        content: "[####      ]";
+    }
+
+    50% {
+        content: "[#####     ]";
+    }
+
+    60% {
+        content: "[######    ]";
+    }
+
+    70% {
+        content: "[#######   ]";
+    }
+
+    80% {
+        content: "[########  ]";
+    }
+
+    90% {
+        content: "[######### ]";
+    }
+
+    100% {
+        content: "[##########]";
+    }
 }
 
 /* --- ANIMATIONS GÉNÉRIQUES --- */
