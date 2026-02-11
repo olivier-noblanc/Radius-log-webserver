@@ -51,5 +51,5 @@ pub struct RadiusRequest {
     pub reason: String,
     pub class_id: String,
     pub session_id: String,
-    pub bg_color_class: Option<String>,
+    pub status: Option<String>,
 }

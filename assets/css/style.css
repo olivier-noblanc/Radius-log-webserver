@@ -382,6 +382,15 @@ tr:hover td {
     color: #fff;
 }
 
+.log-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.log-row:hover td {
+    background: rgba(0, 242, 255, 0.15) !important;
+}
+
 .table-success td {
     background-color: var(--status-success-bg) !important;
     color: var(--status-success-text) !important;
@@ -393,12 +402,14 @@ tr:hover td {
 }
 
 /* Status Colors */
-.status-success {
-    color: var(--accent-green);
+.status-success,
+td[data-status="success"] {
+    color: var(--status-success-text) !important;
 }
 
-.status-fail {
-    color: var(--accent-red);
+.status-fail,
+td[data-status="fail"] {
+    color: var(--status-danger-text) !important;
 }
 
 .row-new {
@@ -468,6 +479,96 @@ tr:hover td {
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+}
+
+.modal-content-lg {
+    max-width: 1000px !important;
+}
+
+.modal-body-log {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    border-radius: 6px;
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    max-height: 500px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--accent-green);
+}
+
+.security-warning {
+    margin-bottom: 1rem;
+    border-color: var(--accent-red) !important;
+    color: var(--accent-red);
+}
+
+.security-warning-title {
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.security-warning-text {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.gap-8 {
+    gap: 8px;
+}
+
+.text-xs {
+    font-size: 0.75rem;
+}
+
+.ml-4 {
+    margin-left: 1rem;
+}
+
+.mr-15 {
+    margin-right: 15px;
+}
+
+.protocol-list {
+    gap: 0.5rem;
+}
+
+.cert-list {
+    gap: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.modal-title-cyan {
+    color: var(--accent-cyan);
+    font-family: var(--font-code);
+    margin: 0;
+}
+
+.modal-title-green {
+    color: var(--accent-green);
+    font-family: var(--font-code);
+    margin: 0;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.w-18 {
+    width: 18px;
+}
+
+.h-18 {
+    height: 18px;
+}
+
+.error-only-label {
+    font-size: 0.8rem;
+    color: var(--accent-red);
+    cursor: pointer;
+    font-weight: 600;
 }
 
 .code-block {

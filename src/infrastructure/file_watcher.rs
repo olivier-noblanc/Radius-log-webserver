@@ -113,11 +113,10 @@ fn process_file_change(
 }
 
 fn render_row(r: &RadiusRequest) -> String {
-    let bg_class = r.bg_color_class.as_deref().unwrap_or("");
+    let status_val = r.status.as_deref().unwrap_or("");
     format!(
-        "<tr class='{} row-flash' style='cursor: pointer;' onclick='showDetails({})'><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
-        bg_class,
+        "<tr class='row-flash' style='cursor: pointer;' onclick='showDetails({})'><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td data-status='{}'>{}</td><td>{}</td></tr>",
         serde_json::to_string(r).unwrap_or_default().replace('\'', "\\'"),
-        r.timestamp, r.req_type, r.server, r.ap_ip, r.ap_name, r.mac, r.user, r.resp_type, r.reason
+        r.timestamp, r.req_type, r.server, r.ap_ip, r.ap_name, r.mac, r.user, status_val, r.resp_type, r.reason
     )
 }

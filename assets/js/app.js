@@ -166,7 +166,7 @@ async function loadData() {
     // Afficher loader léger
     logTableBody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; font-family:var(--font-code); color:var(--accent-cyan);">ANALYSE "BLAZING FAST" EN COURS...</td></tr>';
 
-    const url = `/api/parse?file=${encodeURIComponent(path)}&search=${encodeURIComponent(search)}&sort_by=${sortBy}&sort_desc=${sortDesc}&use_regex=${useRegex}&error_only=${errorOnly}&limit=${limit}`;
+    const url = `/api/logs/rows?file=${encodeURIComponent(path)}&search=${encodeURIComponent(search)}&sort_by=${sortBy}&sort_desc=${sortDesc}&use_regex=${useRegex}&error_only=${errorOnly}&limit=${limit}`;
     const authHeader = localStorage.getItem('radius_auth') === 'authorized' ? 'authorized' : '';
 
     try {
@@ -181,26 +181,9 @@ async function loadData() {
             return;
         }
         if (!response.ok) throw new Error('Network response was not ok');
-        const data = await response.json();
 
-        // Injection directe via template string (plus rapide pour de gros volumes)
-        const html = data.map(row => {
-            const rowJson = JSON.stringify(row).replace(/'/g, "&#39;");
-            return `
-                <tr class="${row.bg_color_class || ''}" style="cursor: pointer;" onclick='showDetails(${rowJson})'>
-                    <td>${row.timestamp}</td>
-                    <td>${row.req_type}</td>
-                    <td>${row.server}</td>
-                    <td>${row.ap_ip}</td>
-                    <td>${row.ap_name}</td>
-                    <td>${row.mac}</td>
-                    <td>${row.user}</td>
-                    <td>${row.resp_type}</td>
-                    <td>${row.reason}</td>
-                </tr>
-            `;
-        }).join('');
-
+        // On récupère directement le HTML généré par le serveur
+        const html = await response.text();
         logTableBody.innerHTML = html;
         updateSortIconsUI(sortBy, sortDesc);
     } catch (err) {
@@ -214,12 +197,46 @@ window.loadData = loadData;
 
 function showDetails(row) {
     const modalBody = document.getElementById('modalBody');
-    if (modalBody) modalBody.textContent = JSON.stringify(row, null, 2);
+    if (modalBody) {
+        if (typeof row === 'string') {
+            try {
+                row = JSON.parse(row);
+            } catch (e) {
+                console.error("[DEBUG] Failed to parse row data:", e);
+            }
+        }
+        modalBody.textContent = JSON.stringify(row, null, 2);
+    }
     if (modal) modal.show();
 }
 
-// Sort logic for HTMX
-window.updateSort = function (col) {
+// Event Delegation for Log Rows and Sorting
+document.addEventListener('click', (e) => {
+    // Log Details
+    const row = e.target.closest('.log-row');
+    if (row && row.dataset.log) {
+        showDetails(row.dataset.log);
+        return;
+    }
+
+    // Sorting
+    const th = e.target.closest('th.sortable');
+    if (th && th.dataset.col) {
+        updateSort(th.dataset.col);
+        return;
+    }
+
+    // Modal Close
+    const closeBtn = e.target.closest('.btn-modal-close');
+    if (closeBtn) {
+        modal.hide();
+        const secModal = document.getElementById('securityModal');
+        if (secModal) secModal.classList.remove('open');
+        return;
+    }
+});
+
+function updateSort(col) {
     const sortBy = document.getElementById('sort_by');
     const sortDesc = document.getElementById('sort_desc');
     if (!sortBy || !sortDesc) return;
@@ -290,8 +307,22 @@ if (exportBtn) {
     });
 }
 
-// ========== VIEW SWITCHING ==========
-window.showView = function (viewName) {
+// HTMX Event Hooks
+document.addEventListener('htmx:afterSwap', (event) => {
+    if (event.detail.target.id === 'view-dashboard') {
+        const dashboard = document.getElementById('view-dashboard');
+        if (dashboard && dashboard.dataset.stats) {
+            try {
+                const stats = JSON.parse(dashboard.dataset.stats);
+                renderDashboardCharts(stats);
+            } catch (e) {
+                console.error("[DEBUG] Failed to parse dashboard stats:", e);
+            }
+        }
+    }
+});
+
+function showView(viewName) {
     // Remove active class from all nav links
     document.querySelectorAll('.btn-nav').forEach(el => {
         el.classList.remove('active');
@@ -325,7 +356,7 @@ window.showView = function (viewName) {
 // ========== CHARTS ==========
 let chartInstances = {};
 
-window.renderDashboardCharts = function (stats) {
+function renderDashboardCharts(stats) {
     console.log("[DEBUG] Rendering Dashboard Charts with stats:", stats);
 
     // Clear existing instances

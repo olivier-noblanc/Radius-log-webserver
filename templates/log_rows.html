@@ -1,6 +1,5 @@
 {% for log in logs %}
-<tr class="{% if let Some(bg) = log.bg_color_class %}{{ bg }}{% endif %}" style="cursor: pointer;"
-    onclick="showDetails({{ serde_json::to_string(log).unwrap() }})">
+<tr class="log-row" data-log='{{ serde_json::to_string(log).unwrap() }}'>
     <td>{{ log.timestamp }}</td>
     <td>{{ log.req_type }}</td>
     <td>{{ log.server }}</td>
@@ -8,7 +7,7 @@
     <td>{{ log.ap_name }}</td>
     <td>{{ log.mac }}</td>
     <td>{{ log.user }}</td>
-    <td>{{ log.resp_type }}</td>
+    <td data-status="{{ log.status.as_deref().unwrap_or("") }}">{{ log.resp_type }}</td>
     <td>{{ log.reason }}</td>
 </tr>
 {% endfor %}

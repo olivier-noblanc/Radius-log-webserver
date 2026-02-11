@@ -207,8 +207,8 @@ pub fn process_group(group: &[RadiusEvent]) -> RadiusRequest {
                 req.reason = map_reason(code);
             }
             match p_type {
-                "2" => req.bg_color_class = Some("table-success".to_string()),
-                "3" => req.bg_color_class = Some("table-danger".to_string()),
+                "2" => req.status = Some("success".to_string()),
+                "3" => req.status = Some("fail".to_string()),
                 _ => {}
             }
         }

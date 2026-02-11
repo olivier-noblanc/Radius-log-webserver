@@ -119,7 +119,7 @@ pub async fn parse_file(req: HttpRequest, query: web::Query<ParseQuery>) -> impl
             // Note: error_only filter still applied here if needed, or could be moved to core::parser
             let mut final_reqs = reqs;
             if query.error_only {
-                final_reqs.retain(|r| r.bg_color_class.as_deref() == Some("table-danger"));
+                final_reqs.retain(|r| r.status.as_deref() == Some("fail"));
             }
 
             HttpResponse::Ok().json(final_reqs)
@@ -201,7 +201,7 @@ pub async fn log_rows_htmx(req: HttpRequest, query: web::Query<ParseQuery>) -> i
             
             // Filter Errors Only
             if query.error_only {
-                reqs.retain(|r| r.bg_color_class.as_deref() == Some("table-danger"));
+                reqs.retain(|r| r.status.as_deref() == Some("fail"));
             }
 
             let tmpl = LogRowsTemplate { logs: reqs };

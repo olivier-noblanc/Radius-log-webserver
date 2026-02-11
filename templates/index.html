@@ -169,15 +169,15 @@
                         </select></div>
                     <div class="flex-grow"><input type="text" id="searchInput" name="search" class="input-glass"
                             placeholder="Search (User, IP, Reason)..."></div>
-                    <div class="flex items-center ml-4" style="gap: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                    <div class="flex items-center ml-4 gap-8 text-xs text-muted">
                         <input type="checkbox" id="regexToggle" name="use_regex" value="true"
-                            style="cursor: pointer;"><label for="regexToggle" style="cursor: pointer;">REGEX</label>
+                            class="cursor-pointer"><label for="regexToggle" class="cursor-pointer">REGEX</label>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin: 0 15px;"><input type="checkbox"
-                            id="errorToggle" name="error_only" value="true"
-                            style="width: 18px; height: 18px; cursor: pointer;"><label for="errorToggle"
-                            style="font-size: 0.8rem; color: var(--accent-red); cursor: pointer; font-weight: 600;">ERRORS
-                            ONLY</label></div>
+                    <div class="flex items-center mr-15 gap-8">
+                        <input type="checkbox" id="errorToggle" name="error_only" value="true"
+                            class="cursor-pointer w-18 h-18"><label for="errorToggle" class="error-only-label">ERRORS
+                            ONLY</label>
+                    </div>
                     <div><button class="btn-glass btn-primary" id="loadBtn">REFRESH</button><button class="btn-glass"
                             id="exportBtn">EXPORT CSV</button></div>
                 </div>
@@ -187,39 +187,37 @@
                     <table id="logTable">
                         <thead>
                             <tr>
-                                <th class="sortable" data-col="timestamp" onclick="updateSort('timestamp')">TIMESTAMP<i
+                                <th class="sortable" data-col="timestamp">TIMESTAMP<i
                                         class="bi bi-arrow-down-up small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="req_type" onclick="updateSort('req_type')">TYPE<i
+                                <th class="sortable" data-col="req_type">TYPE<i
                                         class="bi bi-arrow-down-up small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="server" onclick="updateSort('server')">SERVER<i
+                                <th class="sortable" data-col="server">SERVER<i
                                         class="bi bi-arrow-down-up small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="ap_ip" onclick="updateSort('ap_ip')">AP IP<i
+                                <th class="sortable" data-col="ap_ip">AP IP<i
                                         class="bi bi-arrow-down-up small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="ap_name" onclick="updateSort('ap_name')">AP NAME<i
+                                <th class="sortable" data-col="ap_name">AP NAME<i
                                         class="bi bi-arrow-down-up small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="mac" onclick="updateSort('mac')">MAC<i
+                                <th class="sortable" data-col="mac">MAC<i class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="user">USER<i class="bi bi-arrow-down-up small ms-1"></i>
+                                    <div class="resizer"></div>
+                                </th>
+                                <th class="sortable" data-col="resp_type">RESULT<i
                                         class="bi bi-arrow-down-up small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
-                                <th class="sortable" data-col="user" onclick="updateSort('user')">USER<i
-                                        class="bi bi-arrow-down-up small ms-1"></i>
-                                    <div class="resizer"></div>
-                                </th>
-                                <th class="sortable" data-col="resp_type" onclick="updateSort('resp_type')">RESULT<i
-                                        class="bi bi-arrow-down-up small ms-1"></i>
-                                    <div class="resizer"></div>
-                                </th>
-                                <th class="sortable" data-col="reason" onclick="updateSort('reason')">REASON /
+                                <th class="sortable" data-col="reason">REASON /
                                     DIAGNOSTICS<i class="bi bi-arrow-down-up small ms-1"></i>
                                     <div class="resizer"></div>
                                 </th>
@@ -244,36 +242,32 @@
 
             <!-- Detail Modal -->
             <div class="modal-overlay" id="detailModal">
-                <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-content">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 style="color: var(--accent-cyan); font-family: var(--font-code);">EVENT DETAILS</h3>
+                        <h3 class="modal-title-cyan">EVENT DETAILS</h3>
                         <button class="btn-glass btn-modal-close" data-modal="detailModal">CLOSE</button>
                     </div>
-                    <div id="modalBody"
-                        style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 6px; font-family: var(--font-code); font-size: 0.85rem; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; color: var(--accent-green);">
-                    </div>
+                    <div id="modalBody" class="modal-body-log"></div>
                 </div>
             </div>
 
             <!-- Security Modal -->
             <div class="modal-overlay" id="securityModal">
-                <div class="modal-content" style="max-width: 1000px;">
+                <div class="modal-content modal-content-lg">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 style="color: var(--accent-green); font-family: var(--font-code);">SERVER SECURITY
-                            CONFIGURATION </h3>
+                        <h3 class="modal-title-green">SERVER SECURITY CONFIGURATION</h3>
                         <button class="btn-glass btn-modal-close" data-modal="securityModal">CLOSE</button>
                     </div>
-                    <div id="schannelWarning" class="glass-panel"
-                        style="margin-bottom: 1rem; border-color: var(--accent-red); color: var(--accent-red); display: none;">
-                        <div style="font-weight: bold; margin-bottom: 0.25rem;">⚠️ DIAGNOSTIC SCHANNEL LIMITÉ</div>
-                        <div style="font-size: 0.8rem; opacity: 0.8;">Le logging SChannel n'est pas activé sur ce
+                    <div id="schannelWarning" class="glass-panel security-warning" style="display: none;">
+                        <div class="security-warning-title">⚠️ DIAGNOSTIC SCHANNEL LIMITÉ</div>
+                        <div class="security-warning-text">Le logging SChannel n'est pas activé sur ce
                             serveur (EventLogging = 0). L'analyse des erreurs de handshake dans le flux de logs sera
                             indisponible.</div>
                     </div>
                     <div class="grid-3">
                         <div class="glass-panel">
                             <h4 class="text-muted mb-4">TLS PROTOCOLS</h4>
-                            <div id="protocolList" class="flex flex-col" style="gap: 0.5rem;"></div>
+                            <div id="protocolList" class="flex flex-col protocol-list"></div>
                         </div>
                         <div class="glass-panel">
                             <h4 class="text-muted mb-4">CIPHER SUITES</h4>
@@ -285,8 +279,7 @@
                         </div>
                         <div class="glass-panel">
                             <h4 class="text-muted mb-4">LOCAL CERTIFICATES</h4>
-                            <div id="certList" class="flex flex-col"
-                                style="gap: 1rem; max-height: 300px; overflow-y: auto;"></div>
+                            <div id="certList" class="flex flex-col cert-list"></div>
                         </div>
                     </div>
                 </div>

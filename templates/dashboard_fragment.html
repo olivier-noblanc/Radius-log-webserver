@@ -1,4 +1,4 @@
-<div id="view-dashboard">
+<div id="view-dashboard" data-stats='{{ serde_json::to_string(stats).unwrap()|safe }}'>
     <!-- Dashboard Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="glass-panel p-4 text-center">
@@ -31,15 +31,4 @@
         </div>
     </div>
 
-    <!-- Chart.js initialization script -->
-    <script>
-        (function () {
-            // We pass the stats via a data attribute or inline script
-            // Using a simple JSON serialization for now
-            const stats = JSON.parse('{{ serde_json::to_string(stats).unwrap()|safe }}');
-            if (window.renderDashboardCharts) {
-                window.renderDashboardCharts(stats);
-            }
-        })();
-    </script>
 </div>
