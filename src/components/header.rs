@@ -25,7 +25,8 @@ pub fn Header(props: HeaderProps) -> Element {
     rsx! {
         header { 
             class: "main-header glass-panel mb-6",
-            "x-data": "themeHandler('{props.theme}')",
+            "x-data": "themeHandler",
+            "data-initial-theme": "{props.theme}",
             
             div { class: "flex flex-col",
                 a { href: "/", class: "brand-logo",

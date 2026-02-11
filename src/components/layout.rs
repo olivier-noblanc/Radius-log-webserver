@@ -46,9 +46,9 @@ pub fn Layout(props: LayoutProps) -> Element {
                 r#type: "text/javascript",
                 dangerous_inner_html: r#"
                     document.addEventListener('alpine:init', () => {{
-                        Alpine.data('themeHandler', function(initialTheme) {{
+                        Alpine.data('themeHandler', function() {{
                             return {{
-                                theme: initialTheme,
+                                theme: '',
                                 liveConnected: false,
                                 statusText: 'DISCONNECTED',
                                 statusStyle: 'color: #ff3131',
@@ -58,6 +58,8 @@ pub fn Layout(props: LayoutProps) -> Element {
                                 ws: null,
                                 
                                 init() {{
+                                    // Read initial theme from data attribute
+                                    this.theme = this.$el.dataset.initialTheme || 'onyx-glass';
                                     this.connectWs();
                                 }},
                                 
