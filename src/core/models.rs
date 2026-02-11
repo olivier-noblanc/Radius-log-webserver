@@ -33,7 +33,7 @@ pub struct RadiusEvent {
     pub _text: Option<String>,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct RadiusRequest {
     // FIX: ID Unique pour éviter le bug d'indexation
     #[serde(skip_deserializing)]

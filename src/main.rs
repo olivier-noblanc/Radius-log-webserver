@@ -22,6 +22,7 @@ use radius_log_webserver::infrastructure::{
     cache::LogCache, file_watcher::FileWatcher, win32::get_log_path_from_registry,
 };
 use radius_log_webserver::utils::logging::init_logging;
+// Retrait de LiveView
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 

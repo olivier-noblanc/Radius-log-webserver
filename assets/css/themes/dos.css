@@ -4,19 +4,43 @@
 
 :root {
     --bg-deep: #0000aa;
-    --bg-panel: #0000aa;
+    --bg-panel: #aaaaaa;
     --text-main: #ffffff;
-    /* Passé de #aaaaaa à #ffffff pour lisibilité */
-    --text-muted: #55ffff;
-    /* Cyan clair pour les textes secondaires */
-    --accent-cyan: #ffffff;
-    --font-ui: "Press Start 2P", "VT323", monospace;
-    --font-code: "VT323", monospace;
-    image-rendering: pixelated;
-    --status-success-bg: rgba(0, 255, 0, 0.3);
-    --status-danger-bg: rgba(255, 0, 0, 0.3);
-    --status-success-text: #fff;
-    --status-danger-text: #fff;
+    --accent-cyan: #55ffff;
+    --accent-green: #55ff55;
+    --accent-red: #ff5555;
+    --font-ui: 'Fixedsys', 'Modern', 'Courier New', monospace;
+    --font-code: 'Fixedsys', 'Modern', monospace;
+    --border-glass: #ffffff;
+    --status-success-bg: #55ff55;
+    --status-danger-bg: #ff5555;
+    --status-success-text: #000;
+    --status-danger-text: #000;
+}
+
+/* FIX : Select options visibility (blue on blue) */
+[data-theme="dos"] select.input-glass {
+    background: #0000aa !important;
+    color: #ffffff !important;
+    border: 2px solid #aaaaaa !important;
+}
+
+[data-theme="dos"] select option {
+    background-color: #0000aa !important;
+    color: #ffffff !important;
+    padding: 4px 8px;
+}
+
+[data-theme="dos"] select option:hover,
+[data-theme="dos"] select option:checked {
+    background-color: #ffffff !important;
+    color: #0000aa !important;
+}
+
+/* Improve text readability */
+[data-theme="dos"] .text-muted {
+    color: #55ffff !important;
+    /* Cyan instead of gray */
 }
 
 [data-theme="dos"] body {

@@ -33,16 +33,16 @@ fn main() {
         Err(_) => println!("⚠️ [CSS] lightningcss n'est pas installé. (Tapez 'cargo install lightningcss-cli' pour l'activer)"),
     }
 
-    // 3. HTML HINT (dprint - formateur/linter universel en Rust)
-    println!("🔍 [HTML] Vérification via dprint...");
+    // 3. RUST CODE STYLE (dprint - formateur/linter universel en Rust)
+    println!("🔍 [CODE] Vérification via dprint sur les composants...");
     let html_status = Command::new("dprint")
-        .args(["check", "templates/**/*.html"])
+        .args(["check", "src/components/**/*.rs"])
         .status();
 
     match html_status {
-        Ok(status) if status.success() => println!("✅ [HTML] Templates conformes."),
-        Ok(_) => println!("❌ [HTML] Problèmes de formatage détectés."),
-        Err(_) => println!("⚠️ [HTML] dprint n'est pas installé. (Tapez 'cargo install dprint' pour l'activer)"),
+        Ok(status) if status.success() => println!("✅ [CODE] Structure des composants conforme."),
+        Ok(_) => println!("❌ [CODE] Problèmes de formatage détectés dans les composants."),
+        Err(_) => println!("⚠️ [CODE] dprint n'est pas installé. (Tapez 'cargo install dprint' pour l'activer)"),
     }
 
     let duration = start.elapsed();

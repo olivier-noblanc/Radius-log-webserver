@@ -28,6 +28,23 @@
 [data-theme="terminal"] .main-header {
     border-bottom: 1px solid #33ff00 !important;
     background: rgba(0, 20, 0, 0.8) !important;
+    /* NO MARGIN OVERRIDE */
+}
+
+/* FIX : Input visibility (green on green) */
+[data-theme="terminal"] .input-glass {
+    background: rgba(0, 10, 0, 0.5) !important;
+    border: 1px solid #33ff00 !important;
+    color: #33ff00 !important;
+}
+
+[data-theme="terminal"] .input-glass::placeholder {
+    color: rgba(51, 255, 0, 0.5) !important;
+}
+
+[data-theme="terminal"] .input-glass:focus {
+    background: rgba(0, 20, 0, 0.9) !important;
+    outline: 2px solid #33ff00 !important;
 }
 
 [data-theme="terminal"] table td::after {

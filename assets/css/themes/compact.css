@@ -3,13 +3,30 @@
    ========================================= */
 
 :root {
-    --spacing-container: 0.2rem;
-    --spacing-panel: 0.2rem;
-    --font-size-base: 11px;
-    --font-size-table: 10px;
+    --spacing-container: 0.5rem;
+    /* Was 0.2rem - too tight */
+    --spacing-panel: 0.75rem;
+    /* Was 0.2rem - too tight */
+    --font-size-base: 12px;
+    /* Was 11px - too small */
+    --font-size-table: 11px;
+    /* Was 10px - too small */
     --bg-deep: #1a1c1e;
     --bg-panel: rgba(30, 32, 35, 0.9);
     --accent-cyan: #f2a100;
+}
+
+/* AJOUTER après les variables */
+[data-theme="compact"] body {
+    /* Prevent sub-pixel rendering issues */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessibility: Minimum font size */
+[data-theme="compact"] .text-xxs {
+    font-size: 11px !important;
+    /* Never go below 11px */
 }
 
 [data-theme="compact"] .glass-panel {

@@ -2,12 +2,13 @@ use actix_web::{web, HttpResponse, HttpRequest, Responder};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::path::PathBuf;
-use crate::core::models::RadiusRequest;
+// use crate::core::models::RadiusRequest;
 use quick_xml::reader::Reader;
 use crate::core::parser::parse_xml_bytes;
 use crate::utils::security::{is_authorized, resolve_safe_path};
 use crate::infrastructure::win32::get_log_path_from_registry;
-use askama::Template; // <--- CORRECTION ICI (Import manquant)
+use crate::components::log_table::LogTable;
+use dioxus::prelude::*;
 
 #[derive(Serialize)]
 pub struct LogFile {
@@ -145,11 +146,19 @@ pub async fn log_rows_htmx(req: HttpRequest, query: web::Query<ParseQuery>, cach
         cache.get_latest(query.limit)
     };
     
-    let tmpl = LogRowsTemplate { logs };
-    match tmpl.render() {
-        Ok(h) => HttpResponse::Ok().content_type("text/html").body(h),
-        Err(e) => HttpResponse::InternalServerError().body(format!("Template error: {}", e)),
-    }
+    let html = dioxus_ssr::render_element(rsx! {
+        LogTable { 
+            logs: logs,
+            sort_by: query.sort_by.clone(),
+            sort_desc: query.sort_desc
+        }
+    });
+    
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .insert_header(("Cache-Control", "no-store, must-revalidate"))
+        .insert_header(("HX-Request", "true"))
+        .body(html)
 }
 
 pub async fn log_detail_htmx(
@@ -163,14 +172,13 @@ pub async fn log_detail_htmx(
 
     if let Some(log) = cache.get_by_id(query.id) {
         let raw_json = serde_json::to_string_pretty::<crate::core::models::RadiusRequest>(&log).unwrap_or_default();
-        let tmpl = LogDetailTemplate { 
-            log: log.clone(),
-            raw_json
-        };
-        match tmpl.render() {
-            Ok(h) => HttpResponse::Ok().content_type("text/html").body(h),
-            Err(e) => HttpResponse::InternalServerError().body(format!("Template error: {}", e)),
-        }
+        let html = dioxus_ssr::render_element(rsx! {
+            crate::components::log_detail::LogDetail { 
+                log: log.clone(),
+                raw_json: raw_json
+            }
+        });
+        HttpResponse::Ok().content_type("text/html").body(html)
     } else {
         HttpResponse::NotFound().body("Log not found")
     }
@@ -212,15 +220,4 @@ pub async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> imp
     }
 }
 
-#[derive(Template)]
-#[template(path = "log_rows.html")]
-pub struct LogRowsTemplate {
-    pub logs: Vec<RadiusRequest>,
-}
-
-#[derive(Template)]
-#[template(path = "log_detail.html")]
-pub struct LogDetailTemplate {
-    pub log: RadiusRequest,
-    pub raw_json: String,
-}
+// FIN DU MODULE

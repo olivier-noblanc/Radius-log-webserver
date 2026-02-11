@@ -29,7 +29,7 @@
     border-radius: 8px 8px 0 0 !important;
     border-bottom: 1px solid #001a4f !important;
     padding: 8px 15px !important;
-    margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
+    /* NO MARGIN OVERRIDE - Uses base layout */
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
 }
 
@@ -88,10 +88,9 @@
     box-shadow: 0 0 5px rgba(36, 94, 219, 0.4) !important;
 }
 
-[data-theme="xp"] #human-gate {
-    /* Override l'animation par défaut pour un effet plus lent */
+/* [data-theme="xp"] #human-gate {
     animation: xp-fade-in 0.8s ease-out forwards;
-}
+} */
 
 /* XP Loader Refinement */
 .theme-xp.loader-box {

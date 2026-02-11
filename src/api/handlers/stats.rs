@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::infrastructure::cache::LogCache;
 use crate::utils::security::is_authorized;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, PartialEq)]
 pub struct Stats {
     pub total_requests: usize,
     pub success_rate: f64,

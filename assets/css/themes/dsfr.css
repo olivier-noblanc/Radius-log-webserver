@@ -19,11 +19,24 @@
 [data-theme="dsfr"] .main-header {
     background: #000091 !important;
     color: #fff !important;
-    padding: 0.5rem 1.5rem !important;
+    padding: 0.75rem 1.5rem !important;
+    /* Slightly larger for DSFR */
     font-weight: 700 !important;
-    font-family: 'Marianne', sans-serif !important;
     border-bottom: 4px solid #e1000f !important;
-    margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
+    /* NO MARGIN OVERRIDE */
+}
+
+/* FIX : Improve contrast (WCAG AA compliance) */
+[data-theme="dsfr"] .text-muted {
+    color: #666666 !important;
+    /* Was #3a3a3a */
+}
+
+[data-theme="dsfr"] .btn-glass {
+    font-weight: 500 !important;
+    /* Was 700, too heavy */
+    min-height: 40px;
+    /* Touch target size */
 }
 
 [data-theme="dsfr"] .btn-primary {

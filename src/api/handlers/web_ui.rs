@@ -1,11 +1,12 @@
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
-use askama::Template;
+use dioxus::prelude::*;
+// use askama::Template;
 use std::sync::Arc;
-use crate::core::models::RadiusRequest;
+// use crate::core::models::RadiusRequest;
 use crate::infrastructure::cache::LogCache;
 use crate::utils::security::is_authorized;
-use crate::api::handlers::logs::{get_latest_log_file, get_all_log_files, LogFile, ParseQuery};
-use crate::api::handlers::stats::{get_stats_data, Stats};
+use crate::api::handlers::logs::{get_latest_log_file, get_all_log_files, ParseQuery};
+use crate::api::handlers::stats::get_stats_data;
 use crate::core::parser::parse_xml_bytes;
 use quick_xml::reader::Reader;
 use std::fs::File;
@@ -20,46 +21,7 @@ const GIT_SHA: &str = env!("VERGEN_GIT_SHA");
 
 // --- STRUCTURES ---
 
-#[derive(Template)]
-#[template(path = "theme_selector.html")]
-pub struct ThemeSelectorTemplate;
-
-#[derive(Template)]
-#[template(path = "index.html")]
-pub struct IndexTemplate {
-    pub logs: Vec<RadiusRequest>,
-    pub files: Vec<LogFile>,
-    pub build_version: String,
-    pub git_sha: String,
-    pub theme: String,
-    pub is_authorized: bool,
-    pub sort_by: String,
-    pub sort_desc: bool,
-    pub current_file: String,
-    pub search_val: String,
-    // Nouveau champ pour injecter les CSS
-    pub css_files: Vec<String>,
-}
-
-#[derive(Template)]
-#[template(path = "partials/theme_css.html")]
-pub struct ThemeFragmentTemplate {
-    pub css_files: Vec<String>,
-    pub git_sha: String,
-    pub theme: String,
-    pub cache_buster: String,
-}
-
-#[derive(Template)]
-#[template(path = "dashboard_fragment.html")]
-pub struct DashboardTemplate {
-    pub stats: Stats,
-    pub total_requests: usize,
-    pub success_rate: f64,
-    pub active_users: usize,
-    pub success_rate_rounded: u32,
-    pub rejection_count: usize,
-}
+// --- LOGIQUE THÈME ---
 
 #[derive(Deserialize)]
 pub struct LoginQuery {
@@ -105,29 +67,7 @@ fn is_local_dev(req: &HttpRequest) -> bool {
 
 pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web::Query<ParseQuery>) -> impl Responder {
     let dev_mode = is_local_dev(&req);
-
-    // 1. CAS : PAS AUTORISÉ (HUMAN GATE)
-    if !is_authorized(&req) {
-        let tmpl = ThemeSelectorTemplate {};
-        
-        let cache_header = if dev_mode {
-            // DEV : Pas de cache
-            "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0"
-        } else {
-            // PROD : Cache court
-            "public, max-age=60"
-        };
-
-        // CORRECTION ICI : Chaining direct (pas de let mut)
-        return HttpResponse::Ok()
-            .content_type("text/html")
-            .insert_header(("Cache-Control", cache_header))
-            .insert_header(("Pragma", if dev_mode { "no-cache" } else { "" }))
-            .insert_header(("Expires", if dev_mode { "0" } else { "" }))
-            .body(tmpl.render().unwrap());
-    }
-
-    // 2. CAS : AUTORISÉ (INDEX APP)
+    let is_auth = is_authorized(&req);
     let theme = req.cookie("theme").map(|c| c.value().to_string()).unwrap_or_else(|| "neon".into());
 
     let mut logs = cache.get_latest(100);
@@ -138,9 +78,6 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
     } else {
         query.file.clone()
     };
-
-    let sort_by = if query.sort_by.is_empty() { "timestamp".to_string() } else { query.sort_by.clone() };
-    let sort_desc = query.sort_desc;
 
     if logs.is_empty() {
         if let Some(path) = get_latest_log_file() {
@@ -153,39 +90,94 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
         }
     }
 
-    let build_version = format!("{} [{}]", std::env::var("CARGO_PKG_VERSION").unwrap_or_default(), GIT_SHA);
+    let build_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
     let files = get_all_log_files().unwrap_or_default();
+    let css_files = get_theme_css_files(&theme);
+    let search_val = query.search.clone();
 
-    let tmpl = IndexTemplate {
-        logs,
-        files,
-        build_version,
-        git_sha: GIT_SHA.to_string(),
-        theme: theme.clone(),
-        is_authorized: true,
-        sort_by,
-        sort_desc,
-        current_file,
-        search_val: query.search.clone(),
-        css_files: get_theme_css_files(&theme),
-    };
+    let html = dioxus_ssr::render_element(rsx! {
+        crate::components::layout::Layout {
+            title: "RADIUS // LOG CORE".to_string(),
+            theme: theme,
+            build_version: build_version,
+            git_sha: GIT_SHA.to_string(),
+            css_files: css_files,
+            is_authorized: is_auth,
+            
+            div { id: "view-logs",
+                form { 
+                    id: "log-filters", 
+                    "hx-get": "/api/logs/rows", 
+                    "hx-target": "#logTableBody",
+                    "hx-swap": "innerHTML",
+                    "hx-trigger": "change from:select, change from:input[type=checkbox], input delay:500ms from:input[type=text]",
+                    class: "flex items-center mb-4 glass-panel panel-main",
+                    
+                    div { class: "flex-grow",
+                        select { id: "fileSelect", name: "file", class: "input-glass",
+                            for file in files {
+                                option { 
+                                    value: "{file.path}", 
+                                    selected: file.path == current_file,
+                                    "{file.name} ({file.formatted_size})"
+                                }
+                            }
+                        }
+                    }
+                    div { class: "flex-grow",
+                        input { 
+                            r#type: "text", 
+                            id: "searchInput", 
+                            name: "search", 
+                            class: "input-glass",
+                            placeholder: "Search (User, IP, Reason)...", 
+                            value: "{search_val}"
+                        }
+                    }
+                    div { class: "flex items-center ml-4 gap-8 text-xs text-muted",
+                        input { 
+                            r#type: "checkbox", 
+                            id: "errorToggle", 
+                            name: "error_only", 
+                            value: "true",
+                            class: "cursor-pointer w-18 h-18" 
+                        }
+                        label { r#for: "errorToggle", class: "error-only-label", "ERRORS ONLY" }
+                    }
 
-    // CORRECTION ICI : Chaining direct
+                    input { r#type: "hidden", id: "sort_by", name: "sort_by", value: "timestamp" }
+                    input { r#type: "hidden", id: "sort_desc", name: "sort_desc", value: "true" }
+
+                    div {
+                        button { r#type: "submit", class: "btn-glass btn-primary", id: "loadBtn", "REFRESH" }
+                        a { 
+                            href: "/api/export?file={current_file}&search={search_val}",
+                            class: "btn-glass", 
+                            id: "exportBtn",
+                            "EXPORT CSV"
+                        }
+                    }
+                }
+
+                crate::components::log_table::LogTable { 
+                    logs: logs,
+                    sort_by: "timestamp".to_string(),
+                    sort_desc: true
+                }
+            }
+        }
+    });
+
     let cache_header = if dev_mode {
         "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0"
     } else {
         "public, max-age=30"
     };
 
-    match tmpl.render() {
-        Ok(body) => HttpResponse::Ok()
-            .content_type("text/html")
-            .insert_header(("Cache-Control", cache_header))
-            .insert_header(("Pragma", if dev_mode { "no-cache" } else { "" }))
-            .insert_header(("Expires", if dev_mode { "0" } else { "" }))
-            .body(body),
-        Err(e) => HttpResponse::InternalServerError().body(format!("Template error: {}", e)),
-    }
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .insert_header(("Cache-Control", cache_header))
+        .body(html)
 }
 
 pub async fn login(query: web::Form<LoginQuery>) -> impl Responder {
@@ -219,48 +211,42 @@ pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
         .finish();
 
     // Cache busting simple via timestamp
-    let cache_buster = std::time::SystemTime::now()
+    let _cache_buster = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs()
         .to_string();
 
-    let tmpl = ThemeFragmentTemplate {
-        css_files,
-        git_sha: GIT_SHA.to_string(),
-        theme: theme.clone(),
-        cache_buster,
-    };
+    let html = dioxus_ssr::render_element(rsx! {
+        // Conteneur pour le CSS dynamique (Thèmes)
+        div { id: "theme-css", style: "display: contents;",
+            for css in css_files {
+                link { 
+                    id: if css.contains("/themes/") { "theme-link" } else { "" },
+                    rel: "stylesheet", 
+                    href: "{css}?v={GIT_SHA}" 
+                }
+            }
+        }
+    });
 
-    match tmpl.render() {
-        Ok(body) => HttpResponse::Ok()
-            .cookie(theme_cookie)
-            .content_type("text/html")
-            // On déclenche un événement personnalisé pour que le JS mette à jour data-theme
-            .insert_header(("HX-Trigger", format!("{{\"themeChanged\": \"{}\"}}", theme)))
-            .body(body),
-        Err(e) => HttpResponse::InternalServerError().body(format!("Template error: {}", e)),
-    }
+    HttpResponse::Ok()
+        .cookie(theme_cookie)
+        .content_type("text/html")
+        .insert_header(("HX-Trigger", format!("{{\"themeChanged\": \"{}\"}}", theme)))
+        .insert_header(("HX-Reswap", "outerHTML")) // Changed from innerHTML to outerHTML
+        .body(html)
 }
 
 pub async fn dashboard_htmx(req: HttpRequest, cache: web::Data<Arc<LogCache>>) -> impl Responder {
     if !is_authorized(&req) { return HttpResponse::Forbidden().body("Access Denied"); }
     let stats = get_stats_data(&cache);
-    let success_rate_rounded = stats.success_rate.round() as u32;
-    let rejection_count = stats.total_requests - (stats.total_requests as f64 * stats.success_rate / 100.0).round() as usize;
 
-    let tmpl = DashboardTemplate {
-        total_requests: stats.total_requests,
-        success_rate: stats.success_rate,
-        active_users: stats.active_users,
-        success_rate_rounded,
-        rejection_count,
-        stats,
-    };
-    match tmpl.render() {
-        Ok(h) => HttpResponse::Ok().content_type("text/html").body(h),
-        Err(e) => HttpResponse::InternalServerError().body(format!("Template error: {}", e)),
-    }
+    let html = dioxus_ssr::render_element(rsx! {
+        crate::components::dashboard::Dashboard { stats: stats }
+    });
+    
+    HttpResponse::Ok().content_type("text/html").body(html)
 }
 
 // --- HANDLERS STATIQUES ---

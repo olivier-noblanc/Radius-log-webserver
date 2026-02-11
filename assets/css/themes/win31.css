@@ -1,6 +1,7 @@
-/* =========================================
-   THEME WINDOWS 3.1 (Win31)
-   ========================================= */
+/* ==========================================
+   WINDOWS 3.1 (WIN31)
+   Authentic 16-bit Windows look
+   ========================================== */
 
 :root {
     --bg-deep: #008080;
@@ -18,53 +19,107 @@
 [data-theme="win31"] body {
     background-color: #008080;
     background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucgpZD4cGF0aQkAAAAiJ0RU5ErkJggg==");
-    /* Subtle grain */
 }
 
+/* Header - Active Window Title Bar */
 [data-theme="win31"] .main-header {
-    background-color: #c0c0c0 !important;
-    color: #000000 !important;
-    border-bottom: 2px solid #808080 !important;
-    padding: 4px 8px !important;
-    margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
-    font-weight: bold !important;
-    text-shadow: none !important;
+    background-color: #000080 !important;
+    /* Active title bar blue */
+    color: #ffffff !important;
+    border: none !important;
+    border-bottom: 2px solid #000000 !important;
+    /* NO MARGIN OVERRIDE - Uses base layout */
 }
 
+/* Suppression des effets de texte pour les logos */
 [data-theme="win31"] .architect-info,
 [data-theme="win31"] .architect-name,
 [data-theme="win31"] .brand-logo {
-    color: #000 !important;
+    color: #fff !important;
     text-shadow: none !important;
 }
 
+[data-theme="win31"] .brand-logo svg {
+    filter: brightness(0) invert(1);
+    /* White icon */
+}
+
+/* Panels - 3D raised effect */
 [data-theme="win31"] .glass-panel {
     background: #c0c0c0 !important;
-    border: 2px solid !important;
-    border-color: #fff #000 #000 #fff !important;
-    /* Double border relief */
-    box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.6) !important;
+    border-top: 2px solid #ffffff !important;
+    border-left: 2px solid #ffffff !important;
+    border-right: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
     border-radius: 0 !important;
     backdrop-filter: none !important;
+    box-shadow: none !important;
 }
 
+/* Buttons - 3D raised effect */
 [data-theme="win31"] .btn-glass {
     background: #c0c0c0 !important;
-    border: 2px solid !important;
-    border-color: #fff #808080 #808080 #fff !important;
-    box-shadow: inset 1px 1px 1px #dfdfdf !important;
+    border-top: 2px solid #ffffff !important;
+    border-left: 2px solid #ffffff !important;
+    border-right: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
     color: #000 !important;
     border-radius: 0 !important;
-    font-weight: bold !important;
+    padding: 3px 12px !important;
+    font-size: 13px !important;
+    font-family: 'MS Sans Serif', 'Arial', sans-serif !important;
+    box-shadow: none !important;
 }
 
+/* Button pressed effect */
 [data-theme="win31"] .btn-glass:active {
-    border-color: #808080 #fff #fff #808080 !important;
-    box-shadow: inset 1px 1px 1px #000 !important;
+    border-top: 2px solid #000000 !important;
+    border-left: 2px solid #000000 !important;
+    border-right: 2px solid #ffffff !important;
+    border-bottom: 2px solid #ffffff !important;
+    padding: 4px 11px 2px 13px !important;
+    /* Offset effect */
 }
 
+/* Inputs - Sunken effect */
+[data-theme="win31"] .input-glass,
+[data-theme="win31"] .table-container,
+[data-theme="win31"] select.input-glass {
+    background: #ffffff !important;
+    color: #000 !important;
+    border-top: 2px solid #000000 !important;
+    border-left: 2px solid #000000 !important;
+    border-right: 2px solid #ffffff !important;
+    border-bottom: 2px solid #ffffff !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Table headers */
+[data-theme="win31"] th {
+    background: #c0c0c0 !important;
+    border-top: 2px solid #ffffff !important;
+    border-left: 2px solid #ffffff !important;
+    border-right: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+    color: #000 !important;
+}
+
+[data-theme="win31"] td {
+    border-bottom: 1px solid #808080 !important;
+    color: #000 !important;
+}
+
+/* Select options visibility FIX */
+[data-theme="win31"] select option {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Scrollbar 16-bit style */
 [data-theme="win31"] ::-webkit-scrollbar {
     width: 16px;
+    height: 16px;
 }
 
 [data-theme="win31"] ::-webkit-scrollbar-track {
@@ -77,58 +132,28 @@
     border: 1px solid #000;
 }
 
-[data-theme="win31"] select option {
-    background-color: #ffffff;
-    color: #000000;
+[data-theme="win31"] ::-webkit-scrollbar-thumb:hover {
+    background: #ffffff;
 }
 
-/* Win31 Loader Adaptation */
+/* Loader adaptation */
 .theme-win31.loader-box {
     background: #c0c0c0 !important;
-    border: 2px solid !important;
-    border-color: #fff #000 #000 #fff !important;
+    border-top: 2px solid #ffffff !important;
+    border-left: 2px solid #ffffff !important;
+    border-right: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
     border-radius: 0 !important;
-    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5) !important;
-    padding: 0 !important;
-    /* No padding to allow title bar to touch edges */
-    overflow: hidden;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 0 !important;
-    min-width: 250px;
+    box-shadow: none !important;
 }
 
-.theme-win31 .loader-icon {
-    padding: 15px;
-}
-
-.theme-win31 .loader-text {
-    background: #000080;
-    /* Windows 3.1 Active Title Bar Blue */
-    color: #fff !important;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: bold;
-    order: -1;
-    /* Move text to top as title bar */
-}
-
-.theme-win31 .loader-title {
-    color: #fff !important;
-    font-family: 'MS Sans Serif', 'Arial', sans-serif !important;
-    text-transform: none !important;
-}
-
+.theme-win31 .loader-title,
 .theme-win31 .loader-sub {
-    display: none;
-    /* Sub text usually doesn't exist in such simple dialogs */
+    color: #000 !important;
+    font-family: 'MS Sans Serif', 'Arial', sans-serif !important;
 }
 
 [data-theme="win31"] .loader-progress-bar {
     display: none;
-    /* No top progress bar for Win3.1 */
-}
-
-[data-theme="win31"] .win31-hourglass {
-    font-size: 32px;
+    /* No progress bar in Win 3.1 */
 }

@@ -1,4 +1,0 @@
-{% for css in css_files %}
-<link {% if css.contains("/themes/") %}id="theme-link" {% endif %} rel="stylesheet"
-    href="{{ css }}?v={{ cache_buster }}">
-{% endfor %}

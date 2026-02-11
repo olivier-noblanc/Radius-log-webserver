@@ -1,5 +1,60 @@
+/* ==========================================
+   RESET & BOX MODEL
+   ========================================== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    /* Prévient le zoom mobile sur focus */
+    -webkit-text-size-adjust: 100%;
+    /* Smooth scroll natif */
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    /* Position relative pour les overlays */
+    position: relative;
+}
+
+/* Reset des listes */
+ul,
+ol {
+    list-style: none;
+}
+
+/* Reset des liens */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Reset des boutons */
+button {
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+/* Reset des inputs */
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
 /* ========== DESIGN SYSTEM & VARIABLES ========== */
 :root {
+    /* Couleurs */
     --bg-deep: #0a0a0c;
     --bg-panel: rgba(16, 16, 20, 0.75);
     --accent-cyan: #00f2ff;
@@ -8,16 +63,56 @@
     --text-main: #e0e0e0;
     --text-muted: #888888;
     --border-glass: rgba(255, 255, 255, 0.1);
+
+    /* Typographie */
     --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
     --font-code: 'JetBrains Mono', 'Courier New', monospace;
+
+    /* Espacements standardisés */
+    --spacing-xs: 0.25rem;
+    /* 4px */
+    --spacing-sm: 0.5rem;
+    /* 8px */
+    --spacing-md: 1rem;
+    /* 16px */
+    --spacing-lg: 1.5rem;
+    /* 24px */
+    --spacing-xl: 2rem;
+    /* 32px */
     --spacing-container: 2rem;
     --spacing-panel: 1.5rem;
+
+    /* Tailles de police */
+    --font-size-xs: 0.65rem;
+    /* 10.4px */
+    --font-size-sm: 0.75rem;
+    /* 12px */
     --font-size-base: 14px;
+    --font-size-md: 1rem;
+    /* 16px */
+    --font-size-lg: 1.25rem;
+    /* 20px */
+    --font-size-xl: 1.5rem;
+    /* 24px */
     --font-size-table: 12px;
+
+    /* Status colors */
     --status-success-bg: rgba(57, 255, 20, 0.1);
     --status-success-text: #39ff14;
     --status-danger-bg: rgba(255, 49, 49, 0.1);
     --status-danger-text: #ff3131;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.3s ease;
+    --transition-slow: 0.5s ease;
+
+    /* Z-index scale */
+    --z-base: 1;
+    --z-header: 100;
+    --z-modal: 2000;
+    --z-loader: 9999;
+    --z-overlay: 10000;
 }
 
 /* --- THEME NEON / CYBERPUNK (DEFAULT) --- */
@@ -93,10 +188,23 @@ body {
 }
 
 /* ========== LAYOUT UTILS ========== */
+/* ==========================================
+   LAYOUT SYSTEM
+   ========================================== */
+.app-wrapper {
+    /* Nouveau wrapper pour éviter les conflits */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
 .container {
     max-width: 1800px;
     margin: 0 auto;
-    padding: var(--spacing-container);
+    /* SUPPRESSION du padding-top qui causait les conflits */
+    padding: 0 var(--spacing-container) var(--spacing-container);
+    width: 100%;
+    flex: 1;
 }
 
 .flex {
@@ -334,26 +442,29 @@ select.input-glass option {
 /* ========== HEADER & NAVIGATION ========== */
 
 /* Le Header Principal (Top Bar) */
+/* Header SANS marge négative */
 .main-header {
     display: grid !important;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     padding: var(--spacing-panel);
-    border-radius: 8px;
+    border-radius: 0;
+    /* Pas de radius pour toucher les bords */
     background: var(--bg-panel);
     border: 1px solid var(--border-glass);
-    transition: all 0.3s ease;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    transform: translateZ(0);
-    position: relative;
-    z-index: 100;
+    position: sticky;
+    /* Reste en haut au scroll */
+    top: 0;
+    z-index: var(--z-header);
     width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 1.5rem;
+    /* CRITICAL FIX : Pas de margin négative */
+    margin: 0 0 1.5rem 0;
 }
 
 /* Media Query pour le Header Mobile/Tablette */
+/* Media query pour header responsive */
 @media (max-width: 1100px) {
     .main-header {
         grid-template-columns: 1fr;
@@ -369,6 +480,7 @@ select.input-glass option {
     .controls-right {
         justify-content: center !important;
         width: 100%;
+        flex-wrap: wrap;
     }
 }
 
@@ -751,7 +863,7 @@ td[data-status="fail"] {
     justify-content: center;
     text-align: center;
     transition: opacity 0.5s;
-    animation: boot-entry 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: boot-entry 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 #human-gate.hidden {
@@ -776,7 +888,7 @@ td[data-status="fail"] {
 
 #app-root.visible {
     display: block;
-    animation: boot-entry 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: boot-entry 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* ========== UX & LOADING SYSTEM ========== */
@@ -1100,20 +1212,12 @@ td[data-status="fail"] {
 @keyframes boot-entry {
     0% {
         opacity: 0;
-        transform: scale(1, 0.01);
-        filter: blur(10px);
-    }
-
-    50% {
-        opacity: 1;
-        transform: scale(1, 0.01);
-        filter: blur(5px);
+        transform: translateY(10px);
     }
 
     100% {
         opacity: 1;
-        transform: scale(1, 1);
-        filter: blur(0px);
+        transform: translateY(0);
     }
 }
 
@@ -1137,6 +1241,16 @@ td[data-status="fail"] {
 }
 
 /* ========== RETRO & MODERN THEMES (GLOBAL OVERRIDES) ========== */
+
+:root {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.glass-panel,
+.btn-glass,
+.input-glass {
+    transition: all 0.3s ease;
+}
 
 .scanlines {
     position: fixed;

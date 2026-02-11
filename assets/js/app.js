@@ -1,5 +1,14 @@
 // assets/js/app.js
 
+// HTMX Logging
+document.body.addEventListener('htmx:beforeRequest', (evt) => {
+    console.log('[HTMX] Request:', evt.detail.path);
+});
+
+document.body.addEventListener('htmx:afterSwap', (evt) => {
+    console.log('[HTMX] Swap complete:', evt.detail.target.id);
+});
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. CONFIGURATION COMPLÈTE DES THÈMES ---
@@ -198,6 +207,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnLogs) btnLogs.addEventListener('click', () => showView('logs'));
     if (btnDash) btnDash.addEventListener('click', () => showView('dashboard'));
 
+    // --- MODALS MANAGEMENT (Fix close buttons) ---
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+            // Clean URL hash
+            if (window.location.hash === `#${modalId}`) {
+                history.replaceState(null, null, ' ');
+            }
+        }
+    }
+
+    // Close modal on overlay click
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('close-overlay')) {
+            e.preventDefault();
+            const modal = e.target.closest('.modal-overlay');
+            if (modal) {
+                closeModal(modal.id);
+            }
+        }
+    });
+
+    // Close modal on ESC key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const openModals = document.querySelectorAll('.modal-overlay:not([style*="display: none"])');
+            openModals.forEach(modal => closeModal(modal.id));
+        }
+    });
+
+    // HTMX integration: Open modal when detail is loaded
+    document.body.addEventListener('htmx:afterSwap', (evt) => {
+        if (evt.detail.target.id === 'modalBody') {
+            const modal = document.getElementById('detailModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+    });
+
     // --- 4. LOGIQUE THÈME (HTMX Trigger) ---
     const themeSelect = document.getElementById('themeSelect');
     const gateThemeSelect = document.getElementById('gate-theme');
@@ -208,6 +258,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.setAttribute('data-theme', themeName);
         if (themeSelect) themeSelect.value = themeName;
         if (gateThemeSelect) gateThemeSelect.value = themeName;
+
+        // Force reload des CSS si nécessaire
+        const themeLinks = document.querySelectorAll('#theme-css link');
+        themeLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            link.setAttribute('href', href.split('?')[0] + '?v=' + Date.now());
+        });
     });
 
     // Optionnel : Garder setTheme pour le boot selector si besoin, mais version light
@@ -215,6 +272,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.setAttribute('data-theme', themeName);
         document.cookie = `theme=${themeName}; path=/; max-age=31536000`;
     };
+
+    // Préload des thèmes au hover du select
+    if (themeSelect) {
+        themeSelect.addEventListener('mouseenter', () => {
+            const allThemes = Array.from(themeSelect.options).map(opt => opt.value);
+            allThemes.forEach(theme => {
+                const file = themeCssMapping[theme];
+                if (file) {
+                    const link = document.createElement('link');
+                    link.rel = 'prefetch';
+                    link.href = file;
+                    document.head.appendChild(link);
+                }
+            });
+        }, { once: true });
+    }
 
     // --- 5. FILTRE ERRORS ONLY (Instantané) ---
     const errorToggle = document.getElementById('errorToggle');
@@ -243,19 +316,149 @@ document.addEventListener('DOMContentLoaded', () => {
         if (errorToggle.checked) toggleErrors();
     }
 
-    // --- 6. LIVE BUTTON ---
-    const liveBtn = document.getElementById('liveBtn');
-    if (liveBtn) {
-        liveBtn.addEventListener('click', () => {
+    // --- TABLE COLUMN RESIZE (Fix memory leaks) ---
+    let currentResizer = null;
+    let currentTh = null;
+    let startX = 0;
+    let startWidth = 0;
+
+    function initTableResize() {
+        const resizers = document.querySelectorAll('.resizer');
+        resizers.forEach(resizer => {
+            resizer.addEventListener('mousedown', initResize);
+        });
+    }
+
+    function initResize(e) {
+        currentResizer = e.target;
+        currentTh = currentResizer.parentElement;
+        startX = e.pageX;
+        startWidth = currentTh.offsetWidth;
+
+        document.addEventListener('mousemove', doResize);
+        document.addEventListener('mouseup', stopResize);
+
+        currentTh.classList.add('resizing');
+    }
+
+    function doResize(e) {
+        if (currentResizer) {
+            const width = startWidth + (e.pageX - startX);
+            currentTh.style.width = width + 'px';
+            currentTh.style.minWidth = width + 'px';
+        }
+    }
+
+    function stopResize() {
+        if (currentTh) {
+            currentTh.classList.remove('resizing');
+        }
+
+        // CRITICAL: Remove event listeners to prevent memory leak
+        document.removeEventListener('mousemove', doResize);
+        document.removeEventListener('mouseup', stopResize);
+
+        currentResizer = null;
+        currentTh = null;
+    }
+
+    // Initialize on page load
+    initTableResize();
+
+    // Re-initialize after HTMX updates
+    document.body.addEventListener('htmx:afterSwap', (evt) => {
+        if (evt.detail.target.id === 'logTableBody') {
+            initTableResize();
+        }
+    });
+
+    // --- WEBSOCKET LIVE CONNECTION ---
+    let ws = null;
+    let wsReconnectInterval = null;
+
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+        try {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('[WS] Connected');
+                updateLiveStatus(true);
+                clearInterval(wsReconnectInterval);
+                wsReconnectInterval = null;
+            };
+
+            ws.onmessage = (event) => {
+                console.log('[WS] Message received:', event.data);
+                // Insert new row at top of table
+                const tableBody = document.getElementById('logTableBody');
+                if (tableBody) {
+                    tableBody.insertAdjacentHTML('afterbegin', event.data);
+                    // Flash animation
+                    const newRow = tableBody.firstElementChild;
+                    if (newRow) {
+                        newRow.classList.add('row-flash');
+                    }
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('[WS] Error:', error);
+                updateLiveStatus(false);
+            };
+
+            ws.onclose = () => {
+                console.log('[WS] Disconnected');
+                updateLiveStatus(false);
+                // Auto-reconnect every 5 seconds
+                if (!wsReconnectInterval) {
+                    wsReconnectInterval = setInterval(connectWebSocket, 5000);
+                }
+            };
+        } catch (error) {
+            console.error('[WS] Connection failed:', error);
+            updateLiveStatus(false);
+        }
+    }
+
+    function updateLiveStatus(isConnected) {
+        const liveBtn = document.getElementById('liveBtn');
+        const statusBadge = document.getElementById('statusBadge');
+
+        if (liveBtn) {
             const dot = liveBtn.querySelector('.live-dot');
             const label = liveBtn.querySelector('.live-label');
-            dot.classList.toggle('active');
-            if (dot.classList.contains('active')) {
+
+            if (isConnected) {
+                dot.classList.add('active');
                 label.innerText = "LIVE";
                 label.style.color = "#39ff14";
             } else {
+                dot.classList.remove('active');
                 label.innerText = "OFFLINE";
                 label.style.color = "var(--text-muted)";
+            }
+        }
+
+        if (statusBadge) {
+            statusBadge.innerText = isConnected ? "CONNECTED" : "DISCONNECTED";
+            statusBadge.style.color = isConnected ? "#39ff14" : "#ff3131";
+        }
+    }
+
+    // Connect on page load
+    connectWebSocket();
+
+    // Manual toggle
+    const liveBtn = document.getElementById('liveBtn');
+    if (liveBtn) {
+        liveBtn.addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            } else {
+                connectWebSocket();
             }
         });
     }
