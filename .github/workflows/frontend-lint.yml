@@ -14,7 +14,7 @@ jobs:
     name: Frontend Audit (Rust-based)
     runs-on: ubuntu-latest
     env:
-      PATH: ${{ github.workspace }}/.cargo/bin:/usr/local/bin:${{ env.PATH }}
+      PATH: /usr/local/bin:$HOME/.cargo/bin:${{ env.PATH }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,21 +29,21 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Linting Tools
+      - name: Install Linting Tools (Direct Binaries)
         run: |
-          # Ajouter ~/.cargo/bin au PATH pour Cargo
-          export PATH="$HOME/.cargo/bin:$PATH"
+          # INSTALL DPRINT (binaire MUSL Linux)
+          curl -L https://github.com/dprint/dprint/releases/latest/download/dprint-x86_64-unknown-linux-musl.tar.gz -o dprint.tar.gz
+          tar -xzf dprint.tar.gz
+          chmod +x dprint
+          sudo mv dprint /usr/local/bin/dprint
 
-          # INSTALL DPRINT via cargo install (stable, exit code fiable)
-          cargo install dprint --version 0.51.1
-
-          # INSTALL OXLINT (binaire Linux MUSL)
+          # INSTALL OXLINT
           gh release download --repo oxc-project/oxc --pattern "oxlint-linux-x64-musl.tar.gz"
           tar -xzf oxlint-linux-x64-musl.tar.gz
           chmod +x oxlint
           sudo mv oxlint /usr/local/bin/oxlint
 
-          # INSTALL LIGHTNINGCSS (binaire Linux MUSL)
+          # INSTALL LIGHTNINGCSS
           gh release download --repo parcel-bundler/lightningcss --pattern "lightningcss-linux-x64-musl"
           mv lightningcss-linux-x64-musl lightningcss
           chmod +x lightningcss
