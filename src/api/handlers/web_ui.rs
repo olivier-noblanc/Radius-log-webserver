@@ -1,8 +1,6 @@
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use dioxus::prelude::*;
-// use askama::Template;
 use std::sync::Arc;
-// use crate::core::models::RadiusRequest;
 use crate::infrastructure::cache::LogCache;
 use crate::utils::security::is_authorized;
 use crate::api::handlers::logs::{get_latest_log_file, get_all_log_files, ParseQuery};
@@ -21,41 +19,33 @@ const GIT_SHA: &str = env!("VERGEN_GIT_SHA");
 
 // --- STRUCTURES ---
 
-// --- LOGIQUE THÈME ---
-
 #[derive(Deserialize)]
 pub struct LoginQuery {
     pub theme: Option<String>,
 }
 
-// Fonction utilitaire pour mapper les thèmes vers des fichiers CSS (Thèmes uniquement)
+// --- LOGIQUE THÈME ---
+
+// Fonction utilitaire pour mapper les thèmes vers des fichiers CSS
 fn get_theme_css_files(theme: &str) -> Vec<String> {
     let mut files = Vec::new();
     
     match theme {
-        // Nouveaux thèmes
         "light" => files.push("/css/themes/light.css".to_string()),
         "dark" => files.push("/css/themes/dark.css".to_string()),
-        
-        // Sysadmin heritage
+        "onyx-glass" => files.push("/css/themes/onyx-glass.css".to_string()),
         "win31" => files.push("/css/themes/win31.css".to_string()),
         "xp" => files.push("/css/themes/xp.css".to_string()),
         "macos" => files.push("/css/themes/macos9.css".to_string()),
-        
-        // Modern
-        "neon" => {}, // Pas de CSS additionnel (déjà dans style.css)
-        "onyx-glass" => files.push("/css/themes/onyx-glass.css".to_string()),
-        
-        // Specialized
         "terminal" => files.push("/css/themes/terminal.css".to_string()),
         "compact" => files.push("/css/themes/compact.css".to_string()),
         "dsfr" => files.push("/css/themes/dsfr.css".to_string()),
-        
         _ => {} // Fallback to neon (base CSS)
     }
     
     files
 }
+
 // --- HELPER LOCALHOST ---
 
 fn is_local_dev(req: &HttpRequest) -> bool {
@@ -68,9 +58,12 @@ fn is_local_dev(req: &HttpRequest) -> bool {
 // --- HANDLERS ---
 
 pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web::Query<ParseQuery>) -> impl Responder {
+    // ORDRE IMPORTANT : Theme d'abord, ensuite CSS
+    let theme = req.cookie("theme").map(|c| c.value().to_string()).unwrap_or_else(|| "neon".into());
+    let css_files = get_theme_css_files(&theme);
+
     let dev_mode = is_local_dev(&req);
     let is_auth = is_authorized(&req);
-    let theme = req.cookie("theme").map(|c| c.value().to_string()).unwrap_or_else(|| "neon".into());
 
     let latest_file = get_latest_log_file()
         .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
@@ -112,6 +105,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
             build_version: build_version,
             git_sha: GIT_SHA.to_string(),
             is_authorized: is_auth,
+            css_files: css_files,
             
             div { id: "view-logs",
                 form { 
@@ -440,7 +434,6 @@ pub async fn serve_megacss() -> impl Responder {
         .insert_header(("ETag", GIT_SHA))
         .body(bundle)
 }
-
 
 pub async fn robots_txt() -> impl Responder {
     HttpResponse::Ok()

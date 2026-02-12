@@ -7,86 +7,71 @@ pub struct LayoutProps {
     pub build_version: String,
     pub git_sha: String,
     pub is_authorized: bool,
-    pub children: Element,
     pub css_files: Vec<String>,
+    pub children: Element,
 }
 
 #[component]
 pub fn Layout(props: LayoutProps) -> Element {
-    let loader_class = format!("theme-{}", props.theme);
-    
     rsx! {
         head {
             meta { charset: "utf-8" }
-            meta { name: "viewport", content: "width=device-width, initial-scale=1" }
+            meta { name: "viewport", content: "width=device-width, initial-scale=1.0" }
             title { "{props.title}" }
             
-            // Base CSS (toujours chargé)
+            // Base CSS
             link { rel: "stylesheet", href: "/css/style.css" }
+            link { rel: "stylesheet", href: "/css/fonts.css" }
             
-            // Theme CSS (conditionnel)
-            for css_file in &props.css_files {
-                link { rel: "stylesheet", href: "{css_file}" }
+            // Theme specific CSS files (Dynamic injection)
+            for file in &props.css_files {
+                link { rel: "stylesheet", href: "{file}" }
             }
-            
-            script { src: "/js/htmx.min.js", defer: true }
-            script { src: "/js/app.js", defer: true }
+
+            // HTMX (LOCAL) & App JS
+            script { src: "/js/htmx.min.js" }
+            script { src: "/js/app.js" }
         }
-        body { "data-theme": "{props.theme}",
+        body {
+            // Login Gate (Human Check) if not authorized
             if !props.is_authorized {
-                div { id: "human-gate", class: "gate-overlay",
+                div { id: "human-gate",
                     div { class: "gate-content",
-                        h1 { class: "gate-logo", "RADIUS // CORE" }
-                        p { class: "gate-subtitle", "Authentication Required" }
-                        a { 
-                            href: "/api/login?theme={props.theme}", 
-                            class: "btn-glass btn-primary mt-6", 
-                            "AUTHORIZE ACCESS" 
-                        }
+                        h1 { class: "gate-logo", "RADIUS LOG CORE" }
+                        p { class: "gate-subtitle", "SECURE CONTROL" }
+                        a { href: "/api/login?theme={props.theme}", class: "btn-glass btn-primary mt-6", "AUTHENTICATE" }
                     }
                 }
-            } else {
-                div { class: "app-wrapper",
-                    crate::components::header::Header {
-                        build_version: props.build_version.clone(),
-                        theme: props.theme.clone()
-                    }
-                    
-                    div { class: "container",
-                        {props.children}
-                    }
-                    
-                    div { id: "view-dashboard", style: "display: none;" }
+            }
+
+            // Main Application Root
+            div { id: "app-root", class: if !props.is_authorized { "hidden" } else { "visible" },
+                // Header Navigation
+                crate::components::header::Header {
+                    build_version: props.build_version,
+                    theme: props.theme,
                 }
-                
-                // LOADER GLOBAL (HTMX-driven)
-                div { 
-                    id: "global-loader", 
-                    class: "htmx-indicator",
-                    
+
+                // Main Content Area
+                main { class: "container app-wrapper",
+                    {props.children}
+                }
+
+                // Global Modals
+                crate::components::modals::SecurityModal {}
+                crate::components::modals::DetailModal {}
+
+                // Global Loader
+                div { id: "global-loader",
                     div { class: "loader-progress-bar" }
-                    
-                    div { class: "loader-box {loader_class}",
-                        div { class: "loader-icon",
-                            // Loader variant selon le thème
-                            match props.theme.as_str() {
-                                "xp" => rsx! { div { class: "xp-pulse", div {} div {} div {} } },
-                                "dos" => rsx! { div { class: "dos-spin" } },
-                                "win31" => rsx! { div { class: "win31-hourglass", "⌛" } },
-                                "terminal" => rsx! { div { class: "terminal-bar" } },
-                                "macos" => rsx! { div { class: "macos-watch" } },
-                                _ => rsx! { div { class: "neon-ring" } }
-                            }
-                        }
+                    div { class: "loader-box",
+                        div { class: "loader-icon neon-ring" }
                         div { class: "loader-text",
                             div { class: "loader-title", "PROCESSING" }
-                            div { class: "loader-sub", "Please wait..." }
+                            div { class: "loader-sub", "Fetching Data..." }
                         }
                     }
                 }
-                
-                crate::components::modals::DetailModal {}
-                crate::components::modals::SecurityModal {}
             }
         }
     }

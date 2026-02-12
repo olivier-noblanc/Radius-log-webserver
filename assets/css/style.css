@@ -10,7 +10,7 @@
 }
 
 html {
-    /* Prévient le zoom mobile sur focus */
+    /* PrÃ©vient le zoom mobile sur focus */
     -webkit-text-size-adjust: 100%;
     /* Smooth scroll natif */
     scroll-behavior: smooth;
@@ -68,7 +68,7 @@ textarea {
     --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
     --font-code: 'JetBrains Mono', 'Courier New', monospace;
 
-    /* Espacements standardisés */
+    /* Espacements standardisÃ©s */
     --spacing-xs: 0.25rem;
     /* 4px */
     --spacing-sm: 0.5rem;
@@ -195,7 +195,7 @@ body {
    LAYOUT SYSTEM
    ========================================== */
 .app-wrapper {
-    /* Nouveau wrapper pour éviter les conflits */
+    /* Nouveau wrapper pour Ã©viter les conflits */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -324,10 +324,10 @@ body {
     }
 }
 
-/* Ajoute ceci dans style.css si tu veux gérer les modales sans JS */
+/* Ajoute ceci dans style.css si tu veux gÃ©rer les modales sans JS */
 .modal-overlay {
     display: none;
-    /* Caché par défaut */
+    /* CachÃ© par dÃ©faut */
 }
 
 .modal-overlay:target {
@@ -347,7 +347,7 @@ body {
     font-family: var(--font-code);
     font-weight: 700;
     font-size: 1.2rem;
-    /* Ajusté pour s'aligner */
+    /* AjustÃ© pour s'aligner */
     color: var(--accent-cyan);
     letter-spacing: -0.5px;
     display: flex;
@@ -355,7 +355,7 @@ body {
     gap: 12px;
     text-decoration: none;
     text-transform: uppercase;
-    /* Effet de lueur néon par défaut */
+    /* Effet de lueur nÃ©on par dÃ©faut */
     text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
     transition: all 0.3s ease;
 }
@@ -432,7 +432,7 @@ select.input-glass option {
 /* ========== HEADER & NAVIGATION ========== */
 
 /* Le Header Principal (Top Bar) */
-/* Header SANS marge négative */
+/* Header SANS marge nÃ©gative */
 .main-header {
     display: grid !important;
     grid-template-columns: 1fr auto 1fr;
@@ -449,7 +449,7 @@ select.input-glass option {
     top: 0;
     z-index: var(--z-header);
     width: 100%;
-    /* CRITICAL FIX : Pas de margin négative */
+    /* CRITICAL FIX : Pas de margin nÃ©gative */
     margin: 0 0 1.5rem 0;
 }
 
@@ -474,7 +474,7 @@ select.input-glass option {
     }
 }
 
-/* Navigation Centrée */
+/* Navigation CentrÃ©e */
 .nav-main {
     display: flex;
     gap: 1rem;
@@ -496,10 +496,10 @@ select.input-glass option {
     font-weight: bold;
 }
 
-/* Zone de contrôles à droite */
+/* Zone de contrÃ´les Ã  droite */
 .controls-right {
     justify-content: flex-end;
-    /* Aligne les icônes à droite */
+    /* Aligne les icÃ´nes Ã  droite */
 }
 
 /* Boutons de Nav */
@@ -665,22 +665,6 @@ td[data-status="fail"] {
     font-weight: bold;
 }
 
-.status-challenge,
-td[data-status="challenge"] {
-    color: #ffb100 !important;
-    background: rgba(255, 177, 0, 0.1) !important;
-    padding: 4px 8px !important;
-    border-left: 3px solid #ffb100 !important;
-    font-weight: 600 !important;
-    position: relative;
-}
-
-.status-challenge::before {
-    content: "⚡";
-    display: inline-block;
-    margin-right: 6px;
-}
-
 /* Animation flash pour nouveaux logs */
 .row-new.table-success td {
     animation: flash-success 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
@@ -695,7 +679,6 @@ td[data-status="challenge"] {
         background-color: var(--accent-green);
         transform: scale(1.02);
     }
-
     100% {
         background-color: var(--status-success-bg);
         transform: scale(1);
@@ -707,13 +690,11 @@ td[data-status="challenge"] {
         background-color: var(--accent-red);
         transform: scale(1.02);
     }
-
     100% {
         background-color: var(--status-danger-bg);
         transform: scale(1);
     }
 }
-
 
 /* ========== MODAL & OVERLAYS ========== */
 .modal-overlay {
@@ -1159,7 +1140,7 @@ td[data-status="challenge"] {
     }
 }
 
-/* --- ANIMATIONS GÉNÉRIQUES --- */
+/* --- ANIMATIONS GÃ‰NÃ‰RIQUES --- */
 @keyframes spin {
     100% {
         transform: rotate(360deg);
@@ -1301,7 +1282,7 @@ noscript {
 }
 
 .status-badge.connected::before {
-    content: "● ";
+    content: "â— ";
 }
 
 .status-badge.disconnected {
@@ -1311,5 +1292,6 @@ noscript {
 }
 
 .status-badge.disconnected::before {
-    content: "○ ";
+    content: "â—‹ ";
 }
+

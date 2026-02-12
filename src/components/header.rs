@@ -73,37 +73,35 @@ pub fn Header(props: HeaderProps) -> Element {
 
             div { class: "flex items-center gap-4 controls-right",
                 
-                // THEME SELECT - HTMX pur, NO JavaScript
-                select { 
-                    id: "themeSelect",
-                    name: "theme",
-                    class: "input-glass theme-select",
-                    "hx-get": "/api/theme",
-                    "hx-trigger": "change",
-                    "hx-include": "this",
-                    "hx-indicator": "#global-loader",
-                    "hx-swap": "none",
-                    // ✅ Reload après que le cookie soit setté
-                    "hx-on::after-request": "window.location.reload();",
+                                  select { 
+                        id: "themeSelect",
+                        name: "theme",
+                        class: "input-glass theme-select",
+                        "hx-get": "/api/theme",
+                        "hx-trigger": "change",
+                        "hx-include": "this",
+                        "hx-indicator": "#global-loader",
+                        "hx-swap": "none",
+                        "hx-on::after-request": "window.location.reload();",
+                        
+                        option { value: "onyx-glass", selected: props.theme == "onyx-glass", "[FLAGSHIP] Onyx Glass" }
+                        option { value: "light", selected: props.theme == "light", "[LIGHT] Professional" }
+                        option { value: "dark", selected: props.theme == "dark", "[DARK] OLED Mode" }
+                        option { value: "neon", selected: props.theme == "neon", "[NEON] Cyberpunk" }
+
+                        optgroup { label: "--- LEGACY SYSTEMS ---",
+                            option { value: "win31", selected: props.theme == "win31", "Windows 3.1" }
+                            option { value: "xp", selected: props.theme == "xp", "Windows XP" }
+                            option { value: "macos", selected: props.theme == "macos", "Macintosh Classic" }
+                        }
+
+                        optgroup { label: "--- SPECIALIZED ---",
+                            option { value: "terminal", selected: props.theme == "terminal", "Terminal / SSH" }
+                            option { value: "compact", selected: props.theme == "compact", "Compact / Dense" }
+                            option { value: "dsfr", selected: props.theme == "dsfr", "Republique Francaise" }
+                        }
+                    }
                     
-                    option { value: "onyx-glass", selected: props.theme == "onyx-glass", "🎯 FLAGSHIP // ONYX GLASS" }
-                    option { value: "light", selected: props.theme == "light", "☀️ LIGHT // PROFESSIONAL" }
-                    option { value: "dark", selected: props.theme == "dark", "🌙 DARK // OLED" }
-                    option { value: "neon", selected: props.theme == "neon", "🌃 NEON // CYBERPUNK" }
-
-                    optgroup { label: "━━━ SYSADMIN HERITAGE ━━━",
-                        option { value: "win31", selected: props.theme == "win31", "🪟 WINDOWS 3.1 // LEGACY" }
-                        option { value: "xp", selected: props.theme == "xp", "🖥️ WINDOWS XP // LUNA" }
-                        option { value: "macos", selected: props.theme == "macos", "🍎 MACINTOSH // CLASSIC" }
-                    }
-
-                    optgroup { label: "━━━ SPECIALIZED ━━━",
-                        option { value: "terminal", selected: props.theme == "terminal", "⌨️ TERMINAL // SSH" }
-                        option { value: "compact", selected: props.theme == "compact", "📊 COMPACT // DENSE" }
-                        option { value: "dsfr", selected: props.theme == "dsfr", "🇫🇷 RÉPUBLIQUE // FR" }
-                    }
-                }
-
                 a { 
                     href: "#securityModal",
                     class: "btn-glass btn-audit",
@@ -120,3 +118,5 @@ pub fn Header(props: HeaderProps) -> Element {
         }
     }
 }
+
+
