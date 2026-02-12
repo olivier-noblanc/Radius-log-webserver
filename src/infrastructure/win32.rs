@@ -9,15 +9,15 @@ use windows::Win32::Security::Cryptography::{
 use windows::core::PCWSTR;
 use winreg::RegKey;
 use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ProtocolInfo {
     pub name: String,
     pub enabled: bool,
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct CipherInfo {
     pub id: String,
     pub name: String,
@@ -199,6 +199,11 @@ pub fn get_schannel_logging_level() -> u32 {
         .and_then(|k| k.get_value::<u32, _>("EventLogging").ok())
         .unwrap_or(0)
 }
+
+pub fn read_schannel_config() -> crate::infrastructure::security_audit::TlsConfiguration {
+    crate::infrastructure::security_audit::read_schannel_config()
+}
+
 
 pub fn get_protocols_config() -> Vec<ProtocolInfo> {
     let mut protocols = Vec::new();

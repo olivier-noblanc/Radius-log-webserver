@@ -16,6 +16,7 @@ pub struct Stats {
     pub svg_line_points: String,
     pub pie_gradient: String,
     pub reasons_legend: Vec<(String, String, u32)>,
+    pub security_vulnerabilities: Vec<String>,
 }
 
 use crate::infrastructure::cache::StatsCache;
@@ -112,6 +113,13 @@ pub fn get_stats_data(cache: &LogCache) -> Stats {
         current_percent = next_percent;
     }
 
+    // --- AUDIT DE SÉCURITÉ (Synthèse pour Dashboard) ---
+    let audit = crate::infrastructure::security_audit::perform_security_audit();
+    let security_vulnerabilities = audit.vulnerabilities.iter()
+        .filter(|v| v.severity == "CRITICAL" || v.severity == "HIGH")
+        .map(|v| format!("[{}] {}", v.severity, v.title))
+        .collect();
+
     Stats {
         total_requests,
         success_rate,
@@ -122,5 +130,6 @@ pub fn get_stats_data(cache: &LogCache) -> Stats {
         svg_line_points,
         pie_gradient,
         reasons_legend,
+        security_vulnerabilities,
     }
 }

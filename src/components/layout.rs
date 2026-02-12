@@ -37,103 +37,6 @@ pub fn Layout(props: LayoutProps) -> Element {
             link { rel: "stylesheet", href: "/css/bootstrap-icons.min.css" }
             link { rel: "icon", r#type: "image/svg+xml", href: "/favicon.svg" }
 
-            script { 
-                defer: true,
-                src: "/js/cdn/alpine.js"
-            }
-            script {
-                r#type: "text/javascript",
-                dangerous_inner_html: r#"
-                    document.addEventListener('alpine:init', () => {{
-                        Alpine.data('themeHandler', function() {{
-                            return {{
-                                theme: '',
-                                liveConnected: false,
-                                statusText: 'DISCONNECTED',
-                                statusStyle: 'color: #ff3131',
-                                liveLabel: 'OFFLINE',
-                                liveStyle: 'color: var(--text-muted)',
-                                liveDotClass: '',
-                                ws: null,
-                                
-                                init() {{
-                                    // Read initial theme from data attribute
-                                    this.theme = this.$el.dataset.initialTheme || 'onyx-glass';
-                                    this.connectWs();
-                                }},
-                                
-                                connectWs() {{
-                                    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                                    this.ws = new WebSocket(`${{proto}}//${{location.host}}/ws`);
-                                    
-                                    this.ws.onopen = () => {{ 
-                                        this.liveConnected = true;
-                                        this.statusText = 'CONNECTED';
-                                        this.statusStyle = 'color: #39ff14';
-                                        this.liveLabel = 'LIVE';
-                                        this.liveStyle = 'color: #39ff14';
-                                        this.liveDotClass = 'active';
-                                    }};
-                                    
-                                    this.ws.onclose = () => {{
-                                        this.liveConnected = false;
-                                        this.statusText = 'DISCONNECTED';
-                                        this.statusStyle = 'color: #ff3131';
-                                        this.liveLabel = 'OFFLINE';
-                                        this.liveStyle = 'color: var(--text-muted)';
-                                        this.liveDotClass = '';
-                                        setTimeout(() => this.connectWs(), 5000);
-                                    }};
-                                    
-                                    this.ws.onmessage = () => {{
-                                        htmx.ajax('GET', '/api/logs/rows', '#logTableBody');
-                                    }};
-                                }},
-                                
-                                toggleLive() {{
-                                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {{
-                                        this.ws.close();
-                                    }} else {{
-                                        this.connectWs();
-                                    }}
-                                }},
-
-                                changeTheme() {{
-                                    fetch('/api/theme?theme=' + this.theme)
-                                        .then(r => r.text())
-                                        .then(html => {{
-                                            // Update theme CSS
-                                            const themeContainer = document.getElementById('theme-css');
-                                            if (themeContainer) {{
-                                                themeContainer.innerHTML = html;
-                                            }}
-                                            document.documentElement.setAttribute('data-theme', this.theme);
-                                            
-                                            // Reload current view content
-                                            const viewLogs = document.getElementById('view-logs');
-                                            const viewDashboard = document.getElementById('view-dashboard');
-                                            
-                                            if (viewLogs && viewLogs.style.display !== 'none') {{
-                                                // Logs view is active - reload logs
-                                                htmx.ajax('GET', '/api/logs/rows', {{
-                                                    target: '#logTableBody', 
-                                                    swap: 'innerHTML'
-                                                }});
-                                            }} else if (viewDashboard && viewDashboard.style.display !== 'none') {{
-                                                // Dashboard view is active - reload dashboard
-                                                htmx.ajax('GET', '/api/dashboard', {{
-                                                    target: '#view-dashboard', 
-                                                    swap: 'innerHTML'
-                                                }});
-                                            }}
-                                        }})
-                                        .catch(err => console.error('Theme change error:', err));
-                                }}
-                            }}
-                        }});
-                    }});
-                "#
-            }
 
             for css in props.css_files {
                 link { 
@@ -201,7 +104,7 @@ pub fn Layout(props: LayoutProps) -> Element {
                 DetailModal {}
             }
             script { src: "/js/htmx.min.js" }
-            script { src: "/js/app.js", defer: "true" }
+            script { src: "/js/app.js" }
         }
     }
 }

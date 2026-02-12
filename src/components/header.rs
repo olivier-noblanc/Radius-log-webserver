@@ -8,25 +8,9 @@ pub struct HeaderProps {
 
 #[component]
 pub fn Header(props: HeaderProps) -> Element {
-    let nav_logs_click = r#"
-        document.getElementById('view-logs').style.display = 'block';
-        document.getElementById('view-dashboard').style.display = 'none';
-        $el.classList.add('active');
-        document.getElementById('btn-nav-dashboard').classList.remove('active');
-    "#;
-
-    let nav_dashboard_click = r#"
-        document.getElementById('view-logs').style.display = 'none';
-        document.getElementById('view-dashboard').style.display = 'block';
-        $el.classList.add('active');
-        document.getElementById('btn-nav-logs').classList.remove('active');
-    "#;
-
     rsx! {
         header { 
             class: "main-header glass-panel mb-6",
-            "x-data": "themeHandler",
-            "data-initial-theme": "{props.theme}",
             
             div { class: "flex flex-col",
                 a { href: "/", class: "brand-logo",
@@ -49,33 +33,65 @@ pub fn Header(props: HeaderProps) -> Element {
 
             nav { 
                 class: "nav-main",
+                
+                // LOGS button
                 button { 
                     id: "btn-nav-logs",
-                    class: "btn-glass btn-nav active", 
+                    class: "btn-glass btn-nav active",
                     "hx-get": "/api/logs/rows",
                     "hx-target": "#logTableBody",
                     "hx-swap": "innerHTML",
-                    "@click": nav_logs_click,
-                    "LOG STREAM"
+                    "hx-trigger": "click",
+                    // Show/hide via HTMX events
+                    "hx-on::after-request": r#"
+                        document.getElementById('view-logs').style.display='block';
+                        document.getElementById('view-dashboard').style.display='none';
+                        this.classList.add('active');
+                        document.getElementById('btn-nav-dashboard').classList.remove('active');
+                    "#,
+                    "LOG STREAM" 
                 }
+                
+                // DASHBOARD button
                 button { 
                     id: "btn-nav-dashboard",
-                    class: "btn-glass btn-nav", 
+                    class: "btn-glass btn-nav",
                     "hx-get": "/api/dashboard",
                     "hx-target": "#view-dashboard",
                     "hx-swap": "innerHTML",
-                    "@click": nav_dashboard_click,
-                    "ANALYTICS"
+                    "hx-trigger": "click",
+                    "hx-on::after-request": r#"
+                        document.getElementById('view-logs').style.display='none';
+                        document.getElementById('view-dashboard').style.display='block';
+                        this.classList.add('active');
+                        document.getElementById('btn-nav-logs').classList.remove('active');
+                    "#,
+                    "ANALYTICS" 
                 }
             }
 
             div { class: "flex items-center gap-4 controls-right",
+                
+                // THEME SELECT
                 select { 
-                    id: "themeSelect", 
-                    name: "theme", 
+                    id: "themeSelect",
+                    name: "theme",
                     class: "input-glass theme-select",
-                    "x-model": "theme",
-                    "@change": "changeTheme()",
+                    "hx-get": "/api/theme",
+                    "hx-target": "#theme-css",
+                    "hx-swap": "innerHTML",
+                    "hx-trigger": "change",
+                    "hx-include": "this",
+                    "hx-vals": r#"js:{{theme: this.value}}"#,
+                    // Reload data after theme change
+                    "hx-on::after-swap": r#"
+                        document.documentElement.setAttribute('data-theme', this.value);
+                        if (document.getElementById('view-logs').style.display !== 'none') {{
+                            htmx.ajax('GET', '/api/logs/rows', '#logTableBody');
+                        }} else {{
+                            htmx.ajax('GET', '/api/dashboard', '#view-dashboard');
+                        }}
+                    "#,
                     
                     option { value: "onyx-glass", selected: props.theme == "onyx-glass", "FLAGSHIP // ONYX GLASS" }
                     option { value: "cyber-tactical", selected: props.theme == "cyber-tactical", "FLAGSHIP // CYBER TACTICAL" }
@@ -85,7 +101,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     option { value: "terminal", selected: props.theme == "terminal", "TERMINAL // SSH" }
                     option { value: "xp", selected: props.theme == "xp", "WINDOWS XP // LUNA" }
                     option { value: "win31", selected: props.theme == "win31", "WINDOWS 3.1 // LEGACY" }
-                    option { value: "win95", selected: props.theme == "win95", "WINDOWS CHICAGO // 95" }
+                    option { value: "win95", selected: props.theme == "win95", "WINDOWS 95 // CHICAGO" }
                     option { value: "macos", selected: props.theme == "macos", "MACINTOSH // CLASSIC" }
                     option { value: "dos", selected: props.theme == "dos", "MS-DOS // COMSPEC" }
                     option { value: "c64", selected: props.theme == "c64", "COMMODORE // 64" }
@@ -96,7 +112,7 @@ pub fn Header(props: HeaderProps) -> Element {
                 }
 
                 a { 
-                    href: "#securityModal", 
+                    href: "#securityModal",
                     class: "btn-glass btn-audit",
                     svg { 
                         width: "16", height: "16", view_box: "0 0 24 24", 
@@ -106,26 +122,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     " SECURITY AUDIT"
                 }
 
-                div { 
-                    id: "statusBadge", 
-                    class: "status-badge",
-                    "x-text": "statusText",
-                    ":style": "statusStyle"
-                }
-
-                button { 
-                    class: "btn-glass", 
-                    "@click": "toggleLive()",
-                    div { 
-                        class: "live-dot",
-                        ":class": "liveDotClass"
-                    }
-                    span { 
-                        class: "live-label",
-                        "x-text": "liveLabel",
-                        ":style": "liveStyle"
-                    }
-                }
+                div { id: "statusBadge", class: "status-badge", "DISCONNECTED" }
             }
         }
     }
