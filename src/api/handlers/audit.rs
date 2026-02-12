@@ -5,7 +5,7 @@ use crate::infrastructure::win32::*;
 
 #[derive(Deserialize)]
 pub struct DebugQuery {
-    pub timestamp: String,
+    pub timestamp: Option<String>, // <--- On le rend optionnel (peut être vide)
 }
 
 #[derive(Serialize)]

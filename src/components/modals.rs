@@ -1,15 +1,33 @@
 use dioxus::prelude::*;
-// use crate::core::models::RadiusRequest;
 
+// On ajoute une propriété pour savoir si l'utilisateur est connecté
 #[component]
-pub fn SecurityModal() -> Element {
+pub fn SecurityModal(is_authorized: bool) -> Element {
     rsx! {
         div { id: "securityModal", class: "modal-overlay",
             a { href: "#", class: "close-overlay" }
             div { class: "modal-content glass-panel p-6 max-w-md w-full animate-pop",
-                h2 { class: "text-xl font-bold mb-4", "SECURITY LOCK" }
-                p { class: "mb-6 opacity-80", "Access restricted. Verify identity to unlock control center." }
-                a { href: "/api/login", class: "btn-lock w-full", "VALIDATE IDENTITY" }
+                
+                // LOGIQUE CONDITIONNELLE
+                if is_authorized {
+                    // CAS 1 : Utilisateur connecté -> Afficher l'audit (ou un lien)
+                    h2 { class: "text-xl font-bold mb-4", "SECURITY STATUS" }
+                    div { class: "mb-4 text-center",
+                        div { class: "text-4xl mb-2", "🔓" }
+                        p { class: "opacity-80", "Identity Verified. Access Granted." }
+                    }
+                    // Bouton pour fermer ou voir les détails
+                    a { 
+                        href: "/api/debug", // Ou une autre route d'audit
+                        class: "btn-glass w-full text-center",
+                        "VIEW DETAILED AUDIT REPORT"
+                    }
+                } else {
+                    // CAS 2 : Utilisateur non connecté -> Afficher le login
+                    h2 { class: "text-xl font-bold mb-4", "SECURITY LOCK" }
+                    p { class: "mb-6 opacity-80", "Access restricted. Verify identity to unlock control center." }
+                    a { href: "/api/login", class: "btn-lock w-full", "VALIDATE IDENTITY" }
+                }
             }
         }
     }

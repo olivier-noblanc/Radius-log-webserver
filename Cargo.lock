@@ -2588,6 +2588,7 @@ dependencies = [
  "schannel",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sha1",
  "tokio",
  "tracing",

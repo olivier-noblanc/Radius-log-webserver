@@ -1256,3 +1256,72 @@ progress:not([value])::-webkit-progress-value {
   margin-left: -15px;
   padding-left: 16px;
 }
+
+
+/* ==========================================
+   PATCH POUR TON APPLICATION (Radius Log)
+   Connecte les classes de l'app au style Mac 9
+   ========================================== */
+
+[data-theme="macos"] body {
+    /* Fond bureau classique (Teal) */
+    background-color: #008080; 
+    /* Motif damier léger */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%23808080'/%3E%3Cpath d='M0 0h4v4H0zM4 4h4v4H4z' fill='%23777777' fill-opacity='0.4'/%3E%3C/svg%3E");
+}
+
+[data-theme="macos"] .glass-panel {
+    /* Transforme tes .glass-panel en Fenêtres Mac */
+    background: #dedede !important;
+    border: 1px solid #000000 !important;
+    /* Ombre portée 3D classique */
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #999999, 3px 3px 10px rgba(0, 0, 0, 0.3) !important;
+    /* Annule les effets de verre de style.css */
+    backdrop-filter: none !important;
+    animation: none !important;
+}
+
+[data-theme="macos"] .btn-glass {
+    /* Transforme tes boutons en boutons Mac 3D */
+    background: #dddddd !important;
+    border: 1px solid #555555 !important;
+    box-shadow: inset 1px 1px 0 #ffffff, 1px 1px 2px rgba(0, 0, 0, 0.1) !important;
+    text-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+}
+
+[data-theme="macos"] .input-glass {
+    /* Transforme tes inputs en champs blancs enfoncés */
+    background: #ffffff !important;
+    border: 1px solid #555555 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+    outline: none !important;
+}
+
+[data-theme="macos"] .main-header {
+    /* Force la barre de menu à être horizontale et blanche */
+    background: #dedede !important;
+    border-bottom: 2px solid #666666 !important;
+    color: #000000 !important;
+    padding: 6px 10px !important;
+    animation: none !important;
+}
+
+[data-theme="macos"] table {
+    /* Style table Mac */
+    background: #ffffff;
+    border: 1px solid #999999;
+}
+
+[data-theme="macos"] th {
+    /* En-têtes gris clair */
+    background: #dedede !important;
+    border-bottom: 1px solid #999999 !important;
+    color: #000000 !important;
+}
+
+[data-theme="macos"] td {
+    border-bottom: 1px solid #eeeeee !important;
+    color: #000000 !important;
+}

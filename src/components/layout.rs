@@ -39,7 +39,7 @@ pub fn Layout(props: LayoutProps) -> Element {
                     div { class: "gate-content",
                         h1 { class: "gate-logo", "RADIUS LOG CORE" }
                         p { class: "gate-subtitle", "SECURE CONTROL" }
-                        a { href: "/api/login?theme={props.theme}", class: "btn-glass btn-primary mt-6", "AUTHENTICATE" }
+                        a { href: "/api/login?logged=yes&theme={props.theme}", class: "btn-glass btn-primary mt-6", "AUTHENTICATE" }
                     }
                 }
             }
@@ -58,7 +58,9 @@ pub fn Layout(props: LayoutProps) -> Element {
                 }
 
                 // Global Modals
-                crate::components::modals::SecurityModal {}
+               crate::components::modals::SecurityModal {
+    is_authorized: props.is_authorized
+                }
                 crate::components::modals::DetailModal {}
 
                 // Global Loader

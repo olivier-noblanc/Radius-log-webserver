@@ -10,6 +10,7 @@ use quick_xml::reader::Reader;
 use std::fs::File;
 use serde::Deserialize;
 use rust_embed::RustEmbed;
+use std::collections::HashMap; // Nécessaire pour parser les query params
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
@@ -58,8 +59,24 @@ fn is_local_dev(req: &HttpRequest) -> bool {
 // --- HANDLERS ---
 
 pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web::Query<ParseQuery>) -> impl Responder {
-    // ORDRE IMPORTANT : Theme d'abord, ensuite CSS
-    let theme = req.cookie("theme").map(|c| c.value().to_string()).unwrap_or_else(|| "neon".into());
+    
+    // 1. PARSING MANUEL DES PARAMÈTRES EXTRA (Logged & Theme)
+    // Actix n'a pas de query_param() direct sur Request, on parse la query string
+    let qs = req.query_string();
+    let params: HashMap<String, String> = serde_urlencoded::from_str(&qs).unwrap_or_default();
+    
+    let is_manual_login = params.get("logged").map_or(false, |s| s == "yes");
+    
+    // 2. GESTION DU THÈME (URL prioritaire sur Cookie)
+    let theme = match params.get("theme") {
+        Some(t) => t.clone(), // Priorité 1 : Paramètre URL (Login)
+        None => {
+            req.cookie("theme")
+                .map(|c| c.value().to_string())
+                .unwrap_or_else(|| "neon".into()) // Priorité 2 : Cookie
+        }
+    };
+    
     let css_files = get_theme_css_files(&theme);
 
     let dev_mode = is_local_dev(&req);
@@ -101,7 +118,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
     let html = dioxus_ssr::render_element(rsx! {
         crate::components::layout::Layout {
             title: "RADIUS // LOG CORE".to_string(),
-            theme: theme,
+            theme: theme.clone(),
             build_version: build_version,
             git_sha: GIT_SHA.to_string(),
             is_authorized: is_auth,
@@ -185,10 +202,41 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
         "public, max-age=30"
     };
 
-    HttpResponse::Ok()
+    // Création de la réponse
+    let mut response = HttpResponse::Ok()
         .content_type("text/html")
         .insert_header(("Cache-Control", cache_header))
-        .body(format!("<!DOCTYPE html><html lang=\"fr\">{}</html>", html))
+        .body(format!("<!DOCTYPE html><html lang=\"fr\">{}</html>", html));
+
+    // GESTION DU COOKIE LOGIN (Si ?logged=yes)
+    if is_manual_login {
+        let auth_cookie = actix_web::cookie::Cookie::build("radius_auth", "authorized")
+            .path("/")
+            .max_age(actix_web::cookie::time::Duration::days(30))
+            .http_only(true)
+            .same_site(actix_web::cookie::SameSite::Lax)
+            .secure(false)
+            .finish();
+        
+        // FIX IMPORTANT : On passe la référence (&auth_cookie)
+        let _ = response.add_cookie(&auth_cookie);
+    }
+
+    // PERSISTANCE DU THÈME (Si ?theme=... dans l'URL)
+    if params.contains_key("theme") {
+        let theme_cookie = actix_web::cookie::Cookie::build("theme", theme)
+            .path("/")
+            .max_age(actix_web::cookie::time::Duration::days(365))
+            .http_only(false)
+            .same_site(actix_web::cookie::SameSite::Lax)
+            .secure(false)
+            .finish();
+            
+        // FIX IMPORTANT : On passe la référence (&theme_cookie)
+       let _ = response.add_cookie(&theme_cookie);
+    }
+
+    response
 }
 
 pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
@@ -198,11 +246,16 @@ pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(30))
         .http_only(true)
+        .same_site(actix_web::cookie::SameSite::Lax)
+        .secure(false) // Important pour HTTP local
         .finish();
 
     let theme_cookie = actix_web::cookie::Cookie::build("theme", theme)
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(365))
+        .http_only(false) 
+        .same_site(actix_web::cookie::SameSite::Lax)
+        .secure(false)
         .finish();
 
     HttpResponse::Found()
@@ -223,6 +276,8 @@ pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(365))
         .http_only(false)  // Must be accessible to JS for HTMX
+        .same_site(actix_web::cookie::SameSite::Lax)
+        .secure(false)
         .finish();
 
     // Return 200 OK - HTMX will trigger page reload via hx-on::after-request
