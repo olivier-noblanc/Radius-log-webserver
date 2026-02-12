@@ -279,7 +279,6 @@ pub async fn serve_static_asset(req: HttpRequest) -> impl Responder {
     }
 }
 
-<<<<<<< Updated upstream
 /// Scope CSS rules to a specific data-theme attribute
 fn scope_theme_css(css: &str, theme_name: &str) -> String {
     let selector = format!("[data-theme=\"{}\"]", theme_name);
