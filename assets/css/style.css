@@ -913,23 +913,45 @@ td[data-status="fail"] {
     bottom: 0;
     z-index: 9999;
     pointer-events: none;
-    /* Ne bloque plus le clic sur le reste du site */
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    /* Aligné en haut */
     padding-top: 1rem;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s 0.3s;
+    /* Delay visibility after opacity */
 }
 
-#global-loader.active {
+/* HTMX adds .htmx-request automatically when ANY request is pending */
+#global-loader.active,
+#global-loader.htmx-request {
     opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, visibility 0s 0s;
+    /* No delay on show */
 }
 
-#global-loader.active~#app-root {
-    filter: none;
-    /* Suppression du flou ou de l'assombrissement global */
+/* Backdrop semi-transparent */
+#global-loader::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: -1;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* Barre de progression style GitHub/YouTube */
@@ -938,51 +960,56 @@ td[data-status="fail"] {
     top: 0;
     left: 0;
     height: 3px;
-    width: 0;
+    width: 100%;
+    background: transparent;
+    z-index: 10000;
+    overflow: hidden;
+}
+
+#global-loader.active .loader-progress-bar::after,
+#global-loader.htmx-request .loader-progress-bar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 30%;
     background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
     box-shadow: 0 0 10px var(--accent-cyan);
-    z-index: 10000;
-    transition: width 0.4s ease;
+    animation: progress-slide 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#global-loader.active .loader-progress-bar {
-    width: 100%;
-    animation: progress-indeterminate 2s infinite linear;
-}
-
-@keyframes progress-indeterminate {
+@keyframes progress-slide {
     0% {
         transform: translateX(-100%);
-        width: 30%;
     }
 
     100% {
-        transform: translateX(300%);
-        width: 30%;
+        transform: translateX(400%);
     }
 }
 
 /* Badge discret en haut au centre */
 .loader-box {
-    background: rgba(16, 16, 20, 0.8) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(16, 16, 20, 0.95) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-glass);
-    padding: 0.5rem 1.5rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 50px;
-    /* Style Pill */
     min-width: unset;
     text-align: center;
     font-family: var(--font-ui);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
     transform: translateY(-20px);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
     gap: 16px;
 }
 
-#global-loader.active .loader-box {
+#global-loader.active .loader-box,
+#global-loader.htmx-request .loader-box {
     transform: translateY(0);
 }
 
@@ -998,6 +1025,7 @@ td[data-status="fail"] {
     text-transform: uppercase;
     letter-spacing: 1px;
     margin: 0;
+    color: var(--text-main);
 }
 
 .loader-sub {
@@ -1014,9 +1042,9 @@ td[data-status="fail"] {
     justify-content: center;
 }
 
+/* LOADER ICONS - All visible by default, themed via class on .loader-box */
 .loader-icon>div {
-    display: none;
-    /* Hidden by default, toggled by JS */
+    display: block;
 }
 
 /* NEON (Default) */

@@ -34,7 +34,7 @@ pub fn Header(props: HeaderProps) -> Element {
             nav { 
                 class: "nav-main",
                 
-                // LOGS button
+                // LOGS button - Pure HTMX
                 button { 
                     id: "btn-nav-logs",
                     class: "btn-glass btn-nav active",
@@ -42,7 +42,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     "hx-target": "#log-table-container",
                     "hx-swap": "innerHTML",
                     "hx-trigger": "click",
-                    // Show/hide via HTMX events
+                    "hx-indicator": "#global-loader",
                     "hx-on::after-request": r#"
                         document.getElementById('view-logs').style.display='block';
                         document.getElementById('view-dashboard').style.display='none';
@@ -52,7 +52,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     "LOG STREAM" 
                 }
                 
-                // DASHBOARD button
+                // DASHBOARD button - Pure HTMX
                 button { 
                     id: "btn-nav-dashboard",
                     class: "btn-glass btn-nav",
@@ -60,6 +60,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     "hx-target": "#view-dashboard",
                     "hx-swap": "innerHTML",
                     "hx-trigger": "click",
+                    "hx-indicator": "#global-loader",
                     "hx-on::after-request": r#"
                         document.getElementById('view-logs').style.display='none';
                         document.getElementById('view-dashboard').style.display='block';
@@ -72,17 +73,18 @@ pub fn Header(props: HeaderProps) -> Element {
 
             div { class: "flex items-center gap-4 controls-right",
                 
-                // THEME SELECT
+                // THEME SELECT - HTMX pur, NO JavaScript
                 select { 
                     id: "themeSelect",
                     name: "theme",
                     class: "input-glass theme-select",
                     "hx-get": "/api/theme",
-                    "hx-swap": "none",
                     "hx-trigger": "change",
                     "hx-include": "this",
-                    "hx-sync": "this:replace",
-                    "hx-on:change": "window.applyTheme(this.value);",
+                    "hx-indicator": "#global-loader",
+                    "hx-swap": "none",
+                    // CRITICAL: Après que le cookie soit set, recharger la page
+                    "hx-on::after-request": "window.location.reload();",
                     
                     option { value: "onyx-glass", selected: props.theme == "onyx-glass", "FLAGSHIP // ONYX GLASS" }
                     option { value: "cyber-tactical", selected: props.theme == "cyber-tactical", "FLAGSHIP // CYBER TACTICAL" }

@@ -112,15 +112,15 @@ async fn run_app() -> std::io::Result<()> {
             .wrap(tracing_actix_web::TracingLogger::default())
             .wrap(
                 middleware::DefaultHeaders::new()
-                    // CSP CONFIGURÉE POUR ASSETS LOCAUX + GOOGLE FONTS
+                    // CSP CONFIGURÉE POUR ASSETS LOCAUX UNIQUEMENT (100% offline)
                     .add(("Content-Security-Policy", 
                         [
                             "default-src 'self'",
                             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
                             "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval'",
-                            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-                            "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-                            "font-src 'self' https://fonts.gstatic.com https://raw.githubusercontent.com",
+                            "style-src 'self' 'unsafe-inline'",
+                            "style-src-elem 'self' 'unsafe-inline'",
+                            "font-src 'self'",
                             "img-src 'self' data: blob:",
                             "connect-src 'self' ws: wss:",
                             "object-src 'none'",
@@ -138,6 +138,7 @@ async fn run_app() -> std::io::Result<()> {
             // ROUTES ASSETS EMBEDDED (Build Time)
             .route("/css/{filename:.*}", web::get().to(serve_static_asset))
             .route("/js/{filename:.*}", web::get().to(serve_static_asset))
+            .route("/fonts/{filename:.*}", web::get().to(serve_static_asset))
             .route("/favicon.svg", web::get().to(serve_favicon))
             .route("/favicon.ico", web::get().to(serve_favicon))
             .route("/api/themes.bundle.css", web::get().to(serve_megacss))

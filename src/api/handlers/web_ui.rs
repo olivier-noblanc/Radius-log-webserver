@@ -28,32 +28,6 @@ pub struct LoginQuery {
     pub theme: Option<String>,
 }
 
-// Fonction utilitaire pour mapper les thèmes vers des fichiers CSS (Thèmes uniquement)
-fn get_theme_css_files(theme: &str) -> Vec<String> {
-    let mut files = Vec::new(); // Le CSS de base (style.css) est maintenant permanent dans le Layout
-    
-    match theme {
-        "win31" => files.push("/css/themes/win31.css".to_string()),
-        "win95" => files.push("/css/themes/win95.css".to_string()),
-        "xp" => files.push("/css/themes/xp.css".to_string()),
-        "macos" => files.push("/css/themes/macos.css".to_string()),
-        "dos" => files.push("/css/themes/dos.css".to_string()),
-        "terminal" => files.push("/css/themes/terminal.css".to_string()),
-        "c64" => files.push("/css/themes/c64.css".to_string()),
-        "nes" => files.push("/css/themes/nes.css".to_string()),
-        "snes" => files.push("/css/themes/snes.css".to_string()),
-        "onyx-glass" => files.push("/css/themes/onyx-glass.css".to_string()),
-        "cyber-tactical" => files.push("/css/themes/cyber-tactical.css".to_string()),
-        "aero" => files.push("/css/themes/aero.css".to_string()),
-        "amber" => files.push("/css/themes/amber.css".to_string()),
-        "dsfr" => files.push("/css/themes/dsfr.css".to_string()),
-        "compact" => files.push("/css/themes/compact.css".to_string()),
-        _ => {} 
-    }
-    
-    files
-}
-
 // --- HELPER LOCALHOST ---
 
 fn is_local_dev(req: &HttpRequest) -> bool {
@@ -101,7 +75,6 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
 
     let build_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
     let files = get_all_log_files().unwrap_or_default();
-    let css_files = get_theme_css_files(&theme);
     let search_val = query.search.clone();
 
     let html = dioxus_ssr::render_element(rsx! {
@@ -110,7 +83,6 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
             theme: theme,
             build_version: build_version,
             git_sha: GIT_SHA.to_string(),
-            css_files: css_files,
             is_authorized: is_auth,
             
             div { id: "view-logs",
@@ -120,6 +92,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
                     "hx-target": "#log-table-container",
                     "hx-swap": "innerHTML",
                     "hx-trigger": "change from:select, change from:input[type=checkbox], input delay:500ms from:input[type=text]",
+                    "hx-indicator": "#global-loader",
                     class: "flex items-center mb-4 glass-panel panel-main",
                     
                     div { class: "flex-grow",
@@ -158,11 +131,18 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
                     input { r#type: "hidden", id: "sort_desc", name: "sort_desc", value: "true" }
 
                     div {
-                        button { r#type: "submit", class: "btn-glass btn-primary", id: "loadBtn", "REFRESH" }
+                        button { 
+                            r#type: "submit", 
+                            class: "btn-glass btn-primary", 
+                            id: "loadBtn", 
+                            "hx-indicator": "#global-loader",
+                            "REFRESH" 
+                        }
                         a { 
                             href: "/api/export?file={current_file}&search={search_val}",
                             class: "btn-glass", 
                             id: "exportBtn",
+                            "hx-indicator": "#global-loader",
                             "EXPORT CSV"
                         }
                     }
@@ -215,20 +195,18 @@ pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
 pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
     let theme = query.theme.clone().unwrap_or_else(|| "neon".into());
     
+    tracing::info!("Theme change requested: {}", theme);
+    
     let theme_cookie = actix_web::cookie::Cookie::build("theme", theme.clone())
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(365))
+        .http_only(false)  // Must be accessible to JS for HTMX
         .finish();
 
-    // Cache busting simple via timestamp
-    let _cache_buster = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs()
-        .to_string();
-
+    // Return 200 OK - HTMX will trigger page reload via hx-on::after-request
     HttpResponse::Ok()
         .cookie(theme_cookie)
+        .insert_header(("HX-Trigger", "themeChanged"))  // Custom event (optionnel)
         .finish()
 }
 
@@ -273,40 +251,168 @@ pub async fn serve_static_asset(req: HttpRequest) -> impl Responder {
     }
 }
 
-pub async fn serve_megacss() -> impl Responder {
-    let mut bundle = String::with_capacity(50_000);
-    bundle.push_str("/* RAD LOG CORE - THEME BUNDLE */\n\n");
-
-    // On parcourt tous les fichiers embarqués
-    for file_path in Assets::iter() {
-        if file_path.starts_with("css/themes/") && file_path.ends_with(".css") {
-            if let Some(asset) = Assets::get(&file_path) {
-                let theme_name = file_path
-                    .strip_prefix("css/themes/")
-                    .unwrap()
-                    .strip_suffix(".css")
-                    .unwrap();
-                
-                let content = std::str::from_utf8(&asset.data).unwrap_or_default();
-                
-                // On encapsulate le contenu pour qu'il ne s'applique que sous [data-theme="..."]
-                // On fait des remplacements simples pour gérer :root et body qui sont souvent utilisés
-                let scoped_content = content
-                    .replace(":root", &format!("[data-theme=\"{}\"]", theme_name))
-                    .replace("body", &format!("[data-theme=\"{}\"]", theme_name));
-                
-                bundle.push_str(&format!("/* THEME: {} */\n", theme_name));
-                bundle.push_str(&scoped_content);
-                bundle.push_str("\n\n");
+/// Scope CSS rules to a specific data-theme attribute
+fn scope_theme_css(css: &str, theme_name: &str) -> String {
+    let selector = format!("[data-theme=\"{}\"]", theme_name);
+    let mut result = String::with_capacity(css.len() + 1000);
+    let mut in_media_query = false;
+    let mut brace_depth = 0;
+    
+    for line in css.lines() {
+        let trimmed = line.trim();
+        
+        // Skip empty lines
+        if trimmed.is_empty() {
+            result.push_str(line);
+            result.push('\n');
+            continue;
+        }
+        
+        // Keep comments as-is
+        if trimmed.starts_with("/*") || trimmed.starts_with("*/") || trimmed.starts_with("*") {
+            result.push_str(line);
+            result.push('\n');
+            continue;
+        }
+        
+        // Track media queries
+        if trimmed.starts_with("@media") {
+            in_media_query = true;
+            brace_depth = 0;
+            result.push_str(line);
+            result.push('\n');
+            continue;
+        }
+        
+        // Count braces to exit media query
+        if in_media_query {
+            for c in trimmed.chars() {
+                if c == '{' { brace_depth += 1; }
+                if c == '}' { brace_depth -= 1; }
             }
+            if brace_depth == 0 && trimmed.ends_with('}') {
+                in_media_query = false;
+            }
+        }
+        
+        // Handle :root replacement
+        if trimmed.starts_with(":root") {
+            result.push_str(&line.replace(":root", &selector));
+            result.push('\n');
+            continue;
+        }
+        
+        // Handle body replacement
+        if trimmed.starts_with("body") && trimmed.contains('{') {
+            let scoped = line.replace("body", &format!("{} body", selector));
+            result.push_str(&scoped);
+            result.push('\n');
+            continue;
+        }
+        
+        // Skip lines that are already scoped
+        if trimmed.starts_with(&format!("[data-theme=\"{}\"]", theme_name)) {
+            result.push_str(line);
+            result.push('\n');
+            continue;
+        }
+        
+        // Skip @-rules (keyframes, font-face, etc.)
+        if trimmed.starts_with('@') {
+            result.push_str(line);
+            result.push('\n');
+            continue;
+        }
+        
+        // Scope regular CSS rules
+        if trimmed.contains('{') && !trimmed.starts_with('}') {
+            // Split selector from properties
+            if let Some(brace_pos) = line.find('{') {
+                let (selectors_part, props_part) = line.split_at(brace_pos);
+                let selectors = selectors_part.trim();
+                
+                // Don't scope if it's a closing brace or property
+                if !selectors.is_empty() && !selectors.ends_with('}') {
+                    // Split multiple selectors
+                    let scoped_selectors: Vec<String> = selectors
+                        .split(',')
+                        .map(|s| {
+                            let s = s.trim();
+                            // If selector already contains the theme, don't add again
+                            if s.contains(&format!("[data-theme=\"{}\"]", theme_name)) {
+                                s.to_string()
+                            } else if in_media_query {
+                                // Inside media query, scope more carefully
+                                format!("{} {}", selector, s)
+                            } else {
+                                format!("{} {}", selector, s)
+                            }
+                        })
+                        .collect();
+                    
+                    let indentation = line.len() - line.trim_start().len();
+                    result.push_str(&" ".repeat(indentation));
+                    result.push_str(&scoped_selectors.join(", "));
+                    result.push_str(props_part);
+                    result.push('\n');
+                    continue;
+                }
+            }
+        }
+        
+        // Default: keep line as-is
+        result.push_str(line);
+        result.push('\n');
+    }
+    
+    result
+}
+
+pub async fn serve_megacss() -> impl Responder {
+    let mut bundle = String::with_capacity(100_000);
+    
+    bundle.push_str("/*!\n");
+    bundle.push_str(" * RADIUS LOG CORE - UNIFIED THEME BUNDLE\n");
+    bundle.push_str(" * All themes compiled with proper data-theme scoping\n");
+    bundle.push_str(" * Future-proof: Works without build tools\n");
+    bundle.push_str(" */\n\n");
+
+    // Collect and sort theme files for consistent output
+    let mut theme_files: Vec<String> = Assets::iter()
+        .filter(|p| p.starts_with("css/themes/") && p.ends_with(".css"))
+        .map(|s| s.to_string())
+        .collect();
+    
+    theme_files.sort();
+
+    for file_path in theme_files {
+        if let Some(asset) = Assets::get(&file_path) {
+            let theme_name = file_path
+                .strip_prefix("css/themes/")
+                .unwrap()
+                .strip_suffix(".css")
+                .unwrap();
+            
+            let content = std::str::from_utf8(&asset.data).unwrap_or_default();
+            
+            // Apply scoping
+            let scoped_content = scope_theme_css(content, theme_name);
+            
+            bundle.push_str(&format!(
+                "\n/* ========================================\n   THEME: {}\n   ======================================== */\n\n",
+                theme_name.to_uppercase()
+            ));
+            bundle.push_str(&scoped_content);
         }
     }
 
     HttpResponse::Ok()
-        .content_type("text/css")
-        .insert_header(("Cache-Control", "public, max-age=31536000"))
+        .content_type("text/css; charset=utf-8")
+        .insert_header(("Cache-Control", "public, max-age=31536000, immutable"))
+        .insert_header(("ETag", GIT_SHA))
         .body(bundle)
 }
+
 
 pub async fn robots_txt() -> impl Responder {
     HttpResponse::Ok()

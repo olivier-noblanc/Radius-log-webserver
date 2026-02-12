@@ -32,42 +32,16 @@
             setTimeout(connectWebSocket, 5000);
         };
         ws.onmessage = function () {
-            // Reload logs table via HTMX using the new container target
             htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
         };
     }
 
-    // --- THEME ENGINE ---
-    window.applyTheme = function (themeName) {
-        console.log('[RADIUS] Applying theme:', themeName);
-
-        // 1. Update Attributes (MegaCSS handles the rest instantly)
-        document.documentElement.setAttribute('data-theme', themeName);
-        document.body.setAttribute('data-theme', themeName);
-
-        // 2. Trigger Refresh
-        setTimeout(function () {
-            var loadBtn = document.getElementById('loadBtn');
-            var dashBtn = document.getElementById('btn-nav-dashboard');
-
-            if (document.getElementById('view-logs').style.display !== 'none' && loadBtn) {
-                loadBtn.click();
-            } else if (dashBtn) {
-                dashBtn.click();
-            }
-        }, 50);
-    };
+    // --- HTMX GLOBAL EVENTS ---
+    // (Managed by hx-indicator and CSS .htmx-request)
 
     // --- INIT ---
     function init() {
         connectWebSocket();
-
-        // Global HTMX Event Listener (Keep as fallback/diagnostics)
-        document.addEventListener('htmx:afterSwap', function (evt) {
-            if (evt.detail.target.id === 'log-table-container') {
-                console.log('[RADIUS] Logs refreshed');
-            }
-        });
 
         // Error filter toggle
         var errorToggle = document.getElementById('errorToggle');
