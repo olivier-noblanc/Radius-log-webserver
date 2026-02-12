@@ -133,14 +133,18 @@ pub async fn log_rows_htmx(req: HttpRequest, query: web::Query<ParseQuery>, cach
              }
 
              // Mise à jour cache seulement si recherche vide et fichier principal
-             if query.search.is_empty() && target_file == get_latest_log_file().and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string())).unwrap_or_default() {
+             let latest_name = get_latest_log_file().and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string())).unwrap_or_default();
+             if query.search.is_empty() && target_file == latest_name {
                  cache.set(reqs.clone());
-                 reqs
-             } else {
-                 reqs
              }
+             reqs
          } else {
-             vec![]
+             // Fallback: si on ne peut pas ouvrir le fichier spécifié, et que c'est une requête vide, essayer le dernier fichier
+             if target_file.is_empty() {
+                 vec![]
+             } else {
+                 vec![]
+             }
          }
     } else {
         cache.get_latest(query.limit)

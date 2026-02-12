@@ -39,8 +39,7 @@ pub fn Layout(props: LayoutProps) -> Element {
 
             script { 
                 defer: true,
-                src: "https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.14.1/dist/cdn.min.js",
-                crossorigin: "anonymous"
+                src: "/js/cdn/alpine.js"
             }
             script {
                 r#type: "text/javascript",
@@ -105,6 +104,7 @@ pub fn Layout(props: LayoutProps) -> Element {
                                         .then(html => {{
                                             document.getElementById('theme-css').innerHTML = html;
                                             document.documentElement.setAttribute('data-theme', this.theme);
+                                            htmx.ajax('GET', '/api/logs/rows', '#logTableBody');
                                         }});
                                 }}
                             }}

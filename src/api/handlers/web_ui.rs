@@ -25,7 +25,7 @@ const GIT_SHA: &str = env!("VERGEN_GIT_SHA");
 
 #[derive(Deserialize)]
 pub struct LoginQuery {
-    pub theme: String,
+    pub theme: Option<String>,
 }
 
 // Fonction utilitaire pour mapper les thèmes vers des fichiers CSS
@@ -70,22 +70,31 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
     let is_auth = is_authorized(&req);
     let theme = req.cookie("theme").map(|c| c.value().to_string()).unwrap_or_else(|| "neon".into());
 
-    let mut logs = cache.get_latest(100);
+    let latest_file = get_latest_log_file()
+        .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+        .unwrap_or_default();
+
     let current_file = if query.file.is_empty() {
-        get_latest_log_file()
-            .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
-            .unwrap_or_default()
+        latest_file.clone()
     } else {
         query.file.clone()
     };
 
-    if logs.is_empty() {
-        if let Some(path) = get_latest_log_file() {
-            if let Ok(file) = File::open(path) {
+    let mut logs = cache.get_latest(100);
+    if logs.is_empty() || (!query.file.is_empty() && query.file != latest_file) {
+        let target_file = if query.file.is_empty() { &latest_file } else { &query.file };
+        let log_dir = crate::infrastructure::win32::get_log_path_from_registry();
+        if let Ok(safe_path) = crate::utils::security::resolve_safe_path(&log_dir, target_file) {
+            if let Ok(file) = File::open(safe_path) {
                 let mut reader = Reader::from_reader(std::io::BufReader::new(file));
                 let all_reqs = parse_xml_bytes(&mut reader, None, 1000);
-                cache.set(all_reqs.clone());
-                logs = cache.get_latest(100);
+                if query.file.is_empty() && query.search.is_empty() {
+                    cache.set(all_reqs.clone());
+                }
+                logs = all_reqs;
+                if logs.len() > 100 {
+                    logs.truncate(100);
+                }
             }
         }
     }
@@ -180,29 +189,31 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
         .body(format!("<!DOCTYPE html><html lang=\"fr\">{}</html>", html))
 }
 
-pub async fn login(query: web::Form<LoginQuery>) -> impl Responder {
-    // Suppression de la variable dev_mode inutilisée
+pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
+    let theme = query.theme.clone().unwrap_or_else(|| "onyx-glass".to_string());
+    
     let auth_cookie = actix_web::cookie::Cookie::build("radius_auth", "authorized")
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(30))
         .http_only(true)
         .finish();
 
-    let theme_cookie = actix_web::cookie::Cookie::build("theme", query.theme.clone())
+    let theme_cookie = actix_web::cookie::Cookie::build("theme", theme)
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(365))
         .finish();
 
-    HttpResponse::Ok()
+    HttpResponse::Found()
+        .insert_header(("Location", "/"))
         .cookie(auth_cookie)
         .cookie(theme_cookie)
         .insert_header(("HX-Redirect", "/"))
         .insert_header(("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"))
-        .body("Login successful")
+        .finish()
 }
 
 pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
-    let theme = query.theme.clone();
+    let theme = query.theme.clone().unwrap_or_else(|| "neon".into());
     let css_files = get_theme_css_files(&theme);
     
     let theme_cookie = actix_web::cookie::Cookie::build("theme", theme.clone())
@@ -233,7 +244,7 @@ pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
     HttpResponse::Ok()
         .cookie(theme_cookie)
         .content_type("text/html")
-        .insert_header(("HX-Trigger", format!("{{\"themeChanged\": \"{}\"}}", theme)))
+        .insert_header(("HX-Trigger", format!("{{\"themeChanged\": \"{}\", \"refreshLogs\": true}}", theme)))
         .insert_header(("HX-Reswap", "outerHTML")) // Changed from innerHTML to outerHTML
         .body(html)
 }

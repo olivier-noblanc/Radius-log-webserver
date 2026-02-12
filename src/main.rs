@@ -116,8 +116,8 @@ async fn run_app() -> std::io::Result<()> {
                     .add(("Content-Security-Policy", 
                         [
                             "default-src 'self'",
-                            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-                            "script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+                            "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval'",
                             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
                             "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
                             "font-src 'self' https://fonts.gstatic.com https://raw.githubusercontent.com",
@@ -151,7 +151,7 @@ async fn run_app() -> std::io::Result<()> {
             .route("/api/stats", web::get().to(get_stats))
             .route("/api/debug", web::get().to(get_debug_info))
             .route("/api/security-config", web::get().to(get_security_config))
-            .route("/api/login", web::post().to(login))
+            .route("/api/login", web::get().to(login))
             .route("/api/theme", web::get().to(set_theme))
             .route("/robots.txt", web::get().to(robots_txt))
     })
