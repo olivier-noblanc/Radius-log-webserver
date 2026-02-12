@@ -28,8 +28,6 @@ pub struct LoginQuery {
     pub theme: Option<String>,
 }
 
-<<<<<<< Updated upstream
-=======
 // Fonction utilitaire pour mapper les thèmes vers des fichiers CSS (Thèmes uniquement)
 fn get_theme_css_files(theme: &str) -> Vec<String> {
     let mut files = Vec::new();
@@ -58,8 +56,6 @@ fn get_theme_css_files(theme: &str) -> Vec<String> {
     
     files
 }
-
->>>>>>> Stashed changes
 // --- HELPER LOCALHOST ---
 
 fn is_local_dev(req: &HttpRequest) -> bool {
