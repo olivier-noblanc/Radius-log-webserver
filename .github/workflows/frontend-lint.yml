@@ -31,17 +31,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Installation via cargo-binstall pour dprint
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-          cargo binstall --no-confirm dprint
+          # Ajouter ~/.cargo/bin au PATH
+          export PATH="$HOME/.cargo/bin:$PATH"
 
-          # Direct GitHub Release download for oxlint and lightningcss (pour éviter les erreurs "not found" sur crates.io)
-          # gh est pré-installé sur ubuntu-latest
-          
+          # INSTALL DPRINT (via cargo install pour éviter les problèmes CI)
+          cargo install dprint --version 0.51.1
+
           # INSTALL OXLINT
           gh release download --repo oxc-project/oxc --pattern "oxlint-linux-x64-musl.tar.gz"
           tar -xzf oxlint-linux-x64-musl.tar.gz
-          # On s'assure que oxlint est executable et dans le PATH
           chmod +x oxlint
           sudo mv oxlint /usr/local/bin/oxlint
 
