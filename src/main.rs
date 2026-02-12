@@ -15,7 +15,7 @@ use radius_log_webserver::api::handlers::{
     audit::{get_debug_info, get_security_config},
     logs::{export_csv, log_rows_htmx, list_logs, log_detail_htmx},
     stats::get_stats,
-    web_ui::{index, robots_txt, serve_favicon, serve_static_asset, dashboard_htmx, login, set_theme},
+    web_ui::{index, robots_txt, serve_favicon, serve_static_asset, dashboard_htmx, login, set_theme, serve_megacss},
     websocket::{ws_route, Broadcaster},
 };
 use radius_log_webserver::infrastructure::{
@@ -140,6 +140,7 @@ async fn run_app() -> std::io::Result<()> {
             .route("/js/{filename:.*}", web::get().to(serve_static_asset))
             .route("/favicon.svg", web::get().to(serve_favicon))
             .route("/favicon.ico", web::get().to(serve_favicon))
+            .route("/api/themes.bundle.css", web::get().to(serve_megacss))
             .service(
                 web::scope("/api/logs")
                     .route("/list", web::get().to(list_logs))

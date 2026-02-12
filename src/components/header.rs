@@ -39,7 +39,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     id: "btn-nav-logs",
                     class: "btn-glass btn-nav active",
                     "hx-get": "/api/logs/rows",
-                    "hx-target": "#logTableBody",
+                    "hx-target": "#log-table-container",
                     "hx-swap": "innerHTML",
                     "hx-trigger": "click",
                     // Show/hide via HTMX events
@@ -78,20 +78,11 @@ pub fn Header(props: HeaderProps) -> Element {
                     name: "theme",
                     class: "input-glass theme-select",
                     "hx-get": "/api/theme",
-                    "hx-target": "#theme-css",
-                    "hx-swap": "innerHTML",
+                    "hx-swap": "none",
                     "hx-trigger": "change",
                     "hx-include": "this",
-                    "hx-vals": r#"js:{{theme: this.value}}"#,
-                    // Reload data after theme change
-                    "hx-on::after-swap": r#"
-                        document.documentElement.setAttribute('data-theme', this.value);
-                        if (document.getElementById('view-logs').style.display !== 'none') {{
-                            htmx.ajax('GET', '/api/logs/rows', '#logTableBody');
-                        }} else {{
-                            htmx.ajax('GET', '/api/dashboard', '#view-dashboard');
-                        }}
-                    "#,
+                    "hx-sync": "this:replace",
+                    "hx-on:change": "window.applyTheme(this.value);",
                     
                     option { value: "onyx-glass", selected: props.theme == "onyx-glass", "FLAGSHIP // ONYX GLASS" }
                     option { value: "cyber-tactical", selected: props.theme == "cyber-tactical", "FLAGSHIP // CYBER TACTICAL" }

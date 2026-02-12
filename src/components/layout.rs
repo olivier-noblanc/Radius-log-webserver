@@ -36,16 +36,14 @@ pub fn Layout(props: LayoutProps) -> Element {
             }
             link { rel: "stylesheet", href: "/css/bootstrap-icons.min.css" }
             link { rel: "icon", r#type: "image/svg+xml", href: "/favicon.svg" }
+            
+            // PERMANENT BASE CSS
+            link { rel: "stylesheet", href: "/css/style.css?v={props.git_sha}" }
 
-
-            for css in props.css_files {
-                link { 
-                    id: if css.contains("/themes/") { "theme-link" } else { "" },
-                    rel: "stylesheet", 
-                    href: "{css}?v={props.git_sha}"
-                }
-            }
-            div { id: "theme-css" }
+            // MEGACSS BUNDLE (All themes pre-scoped)
+            link { rel: "stylesheet", href: "/api/themes.bundle.css?v={props.git_sha}" }
+            
+            script { r#"window.GIT_SHA = "{props.git_sha}";"# }
 
             svg { width: "0", height: "0", style: "position: absolute;",
                 defs {
@@ -66,45 +64,31 @@ pub fn Layout(props: LayoutProps) -> Element {
             if !props.is_authorized {
                 div { 
                     id: "human-gate",
-                    div { class: "gate-content",
-                        h1 { 
-                            class: "glitch-text gate-logo", 
-                            "data-text": "HUMAN GATE",
-                            "HUMAN GATE" 
-                        }
-                        p { class: "gate-subtitle", "SECURED ACCESS ONLY // IDENTITY VERIFICATION REQUIRED" }
-                        a { 
-                            href: "/api/login", 
-                            class: "btn-glass btn-primary mt-6",
-                            style: "padding: 0.8rem 2.5rem; font-size: 1rem; border-width: 2px;",
-                            "INITIALIZE AUTHENTICATION" 
-                        }
+                    class: "nes-container is-centered with-title",
+                    p { "ACCÈS RESTREINT" }
+                    a { 
+                        href: "/api/login",
+                        class: "nes-btn is-primary", 
+                        "INITIALIZE AUTH" 
                     }
                 }
-            }
-
-            div { 
-                id: "app-root", 
-                class: "app-root",
-                class: if props.is_authorized { "visible" } else { "" },
-                
-                div { class: "crt-overlay" }
-                div { class: "scanlines" }
-
+            } else {
                 Header { 
                     build_version: props.build_version.clone(), 
                     theme: props.theme.clone()
                 }
 
-                {props.children}
-
-                div { id: "view-dashboard", style: "display: none;" }
+                main {
+                    {props.children}
+                    div { id: "view-dashboard", style: "display: none;" }
+                }
 
                 SecurityModal {}
                 DetailModal {}
             }
-            script { src: "/js/htmx.min.js" }
-            script { src: "/js/app.js" }
+            
+            script { src: "/js/htmx.min.js?v={props.git_sha}" }
+            script { src: "/js/app.js?v={props.git_sha}" }
         }
     }
 }

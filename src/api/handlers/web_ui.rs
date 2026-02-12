@@ -28,9 +28,9 @@ pub struct LoginQuery {
     pub theme: Option<String>,
 }
 
-// Fonction utilitaire pour mapper les thèmes vers des fichiers CSS
+// Fonction utilitaire pour mapper les thèmes vers des fichiers CSS (Thèmes uniquement)
 fn get_theme_css_files(theme: &str) -> Vec<String> {
-    let mut files = vec!["/css/style.css".to_string()]; // Base CSS toujours inclus
+    let mut files = Vec::new(); // Le CSS de base (style.css) est maintenant permanent dans le Layout
     
     match theme {
         "win31" => files.push("/css/themes/win31.css".to_string()),
@@ -48,7 +48,7 @@ fn get_theme_css_files(theme: &str) -> Vec<String> {
         "amber" => files.push("/css/themes/amber.css".to_string()),
         "dsfr" => files.push("/css/themes/dsfr.css".to_string()),
         "compact" => files.push("/css/themes/compact.css".to_string()),
-        _ => {} // Le thème par défaut (Neon) utilise juste style.css
+        _ => {} 
     }
     
     files
@@ -117,7 +117,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
                 form { 
                     id: "log-filters", 
                     "hx-get": "/api/logs/rows", 
-                    "hx-target": "#logTableBody",
+                    "hx-target": "#log-table-container",
                     "hx-swap": "innerHTML",
                     "hx-trigger": "change from:select, change from:input[type=checkbox], input delay:500ms from:input[type=text]",
                     class: "flex items-center mb-4 glass-panel panel-main",
@@ -214,7 +214,6 @@ pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
 
 pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
     let theme = query.theme.clone().unwrap_or_else(|| "neon".into());
-    let css_files = get_theme_css_files(&theme);
     
     let theme_cookie = actix_web::cookie::Cookie::build("theme", theme.clone())
         .path("/")
@@ -228,25 +227,9 @@ pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
         .as_secs()
         .to_string();
 
-    let html = dioxus_ssr::render_element(rsx! {
-        // Conteneur pour le CSS dynamique (Thèmes)
-        div { id: "theme-css", style: "display: contents;",
-            for css in css_files {
-                link { 
-                    id: if css.contains("/themes/") { "theme-link" } else { "" },
-                    rel: "stylesheet", 
-                    href: "{css}?v={GIT_SHA}" 
-                }
-            }
-        }
-    });
-
     HttpResponse::Ok()
         .cookie(theme_cookie)
-        .content_type("text/html")
-        .insert_header(("HX-Trigger", format!("{{\"themeChanged\": \"{}\", \"refreshLogs\": true}}", theme)))
-        .insert_header(("HX-Reswap", "outerHTML")) // Changed from innerHTML to outerHTML
-        .body(html)
+        .finish()
 }
 
 pub async fn dashboard_htmx(req: HttpRequest, cache: web::Data<Arc<LogCache>>) -> impl Responder {
@@ -288,6 +271,41 @@ pub async fn serve_static_asset(req: HttpRequest) -> impl Responder {
         }
         None => HttpResponse::NotFound().body("Asset not found"),
     }
+}
+
+pub async fn serve_megacss() -> impl Responder {
+    let mut bundle = String::with_capacity(50_000);
+    bundle.push_str("/* RAD LOG CORE - THEME BUNDLE */\n\n");
+
+    // On parcourt tous les fichiers embarqués
+    for file_path in Assets::iter() {
+        if file_path.starts_with("css/themes/") && file_path.ends_with(".css") {
+            if let Some(asset) = Assets::get(&file_path) {
+                let theme_name = file_path
+                    .strip_prefix("css/themes/")
+                    .unwrap()
+                    .strip_suffix(".css")
+                    .unwrap();
+                
+                let content = std::str::from_utf8(&asset.data).unwrap_or_default();
+                
+                // On encapsulate le contenu pour qu'il ne s'applique que sous [data-theme="..."]
+                // On fait des remplacements simples pour gérer :root et body qui sont souvent utilisés
+                let scoped_content = content
+                    .replace(":root", &format!("[data-theme=\"{}\"]", theme_name))
+                    .replace("body", &format!("[data-theme=\"{}\"]", theme_name));
+                
+                bundle.push_str(&format!("/* THEME: {} */\n", theme_name));
+                bundle.push_str(&scoped_content);
+                bundle.push_str("\n\n");
+            }
+        }
+    }
+
+    HttpResponse::Ok()
+        .content_type("text/css")
+        .insert_header(("Cache-Control", "public, max-age=31536000"))
+        .body(bundle)
 }
 
 pub async fn robots_txt() -> impl Responder {
