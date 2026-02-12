@@ -102,10 +102,32 @@ pub fn Layout(props: LayoutProps) -> Element {
                                     fetch('/api/theme?theme=' + this.theme)
                                         .then(r => r.text())
                                         .then(html => {{
-                                            document.getElementById('theme-css').innerHTML = html;
+                                            // Update theme CSS
+                                            const themeContainer = document.getElementById('theme-css');
+                                            if (themeContainer) {{
+                                                themeContainer.innerHTML = html;
+                                            }}
                                             document.documentElement.setAttribute('data-theme', this.theme);
-                                            htmx.ajax('GET', '/api/logs/rows', '#logTableBody');
-                                        }});
+                                            
+                                            // Reload current view content
+                                            const viewLogs = document.getElementById('view-logs');
+                                            const viewDashboard = document.getElementById('view-dashboard');
+                                            
+                                            if (viewLogs && viewLogs.style.display !== 'none') {{
+                                                // Logs view is active - reload logs
+                                                htmx.ajax('GET', '/api/logs/rows', {{
+                                                    target: '#logTableBody', 
+                                                    swap: 'innerHTML'
+                                                }});
+                                            }} else if (viewDashboard && viewDashboard.style.display !== 'none') {{
+                                                // Dashboard view is active - reload dashboard
+                                                htmx.ajax('GET', '/api/dashboard', {{
+                                                    target: '#view-dashboard', 
+                                                    swap: 'innerHTML'
+                                                }});
+                                            }}
+                                        }})
+                                        .catch(err => console.error('Theme change error:', err));
                                 }}
                             }}
                         }});
