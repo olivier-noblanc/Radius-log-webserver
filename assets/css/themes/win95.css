@@ -3,7 +3,7 @@
    Classic 32-bit Windows look
    ========================================== */
 
-:root {
+[data-theme="win95"] {
     --bg-deep: #008080;
     --bg-panel: #c0c0c0;
     --text-main: #000;
@@ -22,26 +22,35 @@
 
 [data-theme="win95"] body {
     background-color: #008080;
+    font-family: var(--font-ui) !important;
 }
 
-/* Title Bar */
+/* Title Bar - Chicago Style Gradient */
 [data-theme="win95"] .main-header {
     background: linear-gradient(to right, #000080, #1084d0) !important;
     color: #ffffff !important;
-    border-bottom: 1px solid #000 !important;
-    /* NO MARGIN OVERRIDE */
+    border-top: 2px solid #dfdfdf !important;
+    border-left: 2px solid #dfdfdf !important;
+    border-right: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+    margin: 4px !important;
+    padding: 2px 6px !important;
+    border-radius: 0 !important;
 }
 
-/* Logo colors */
+/* Logo and Header Text */
 [data-theme="win95"] .brand-logo,
-[data-theme="win95"] .architect-info,
-[data-theme="win95"] .brand-logo svg {
+[data-theme="win95"] .architect-info {
     color: #fff !important;
     text-shadow: none !important;
-    filter: brightness(0) invert(1);
 }
 
-/* Panels - 3D effect */
+[data-theme="win95"] .brand-logo svg {
+    filter: brightness(0) invert(1) !important;
+    color: #fff !important;
+}
+
+/* Panels - True 3D Outset Border */
 [data-theme="win95"] .glass-panel {
     background: #c0c0c0 !important;
     border-top: 2px solid #dfdfdf !important;
@@ -50,54 +59,59 @@
     border-bottom: 2px solid #000000 !important;
     border-radius: 0 !important;
     backdrop-filter: none !important;
-    box-shadow: none !important;
+    box-shadow: 1px 1px 0 #808080 inset !important;
+    animation: none !important;
 }
 
-/* Buttons */
+/* Buttons - 3D State Management */
 [data-theme="win95"] .btn-glass {
     background: #c0c0c0 !important;
-    border-top: 2px solid #dfdfdf !important;
-    border-left: 2px solid #dfdfdf !important;
+    border-top: 2px solid #ffffff !important;
+    border-left: 2px solid #ffffff !important;
     border-right: 2px solid #000000 !important;
     border-bottom: 2px solid #000000 !important;
     color: #000 !important;
     border-radius: 0 !important;
-    padding: 3px 12px !important;
+    padding: 4px 12px !important;
     font-size: 13px !important;
+    box-shadow: 1px 1px 0 #dfdfdf inset !important;
+    transition: none !important;
+}
+
+[data-theme="win95"] .btn-glass:active,
+[data-theme="win95"] .btn-nav.active {
+    border-top: 2px solid #000000 !important;
+    border-left: 2px solid #000000 !important;
+    border-right: 2px solid #ffffff !important;
+    border-bottom: 2px solid #ffffff !important;
+    padding: 5px 11px 3px 13px !important;
+    background: #dfdfdf !important;
     box-shadow: none !important;
 }
 
-/* Button pressed - KEEP RELIEF */
-[data-theme="win95"] .btn-glass:active {
-    border-top: 2px solid #000000 !important;
-    border-left: 2px solid #000000 !important;
-    border-right: 2px solid #dfdfdf !important;
-    border-bottom: 2px solid #dfdfdf !important;
-    padding: 4px 11px 2px 13px !important;
-}
-
-/* Inputs */
+/* Inputs & Table Container - True 3D Inset Border */
 [data-theme="win95"] .input-glass,
 [data-theme="win95"] .table-container,
 [data-theme="win95"] select.input-glass {
     background: #fff !important;
     color: #000 !important;
-    border-top: 2px solid #000000 !important;
-    border-left: 2px solid #000000 !important;
+    border-top: 2px solid #808080 !important;
+    border-left: 2px solid #808080 !important;
     border-right: 2px solid #dfdfdf !important;
     border-bottom: 2px solid #dfdfdf !important;
     border-radius: 0 !important;
-    box-shadow: none !important;
+    box-shadow: 1px 1px 0 #000 inset !important;
 }
 
-/* Table */
+/* Table Design */
 [data-theme="win95"] th {
     background: #c0c0c0 !important;
-    border-top: 2px solid #dfdfdf !important;
-    border-left: 2px solid #dfdfdf !important;
-    border-right: 2px solid #000000 !important;
-    border-bottom: 2px solid #000000 !important;
+    border-top: 1px solid #ffffff !important;
+    border-left: 1px solid #ffffff !important;
+    border-right: 1px solid #808080 !important;
+    border-bottom: 1px solid #808080 !important;
     color: #000 !important;
+    font-family: var(--font-ui) !important;
 }
 
 [data-theme="win95"] td {
@@ -105,27 +119,39 @@
     color: #000 !important;
 }
 
-/* Select options */
-[data-theme="win95"] select option {
-    background-color: #ffffff;
-    color: #000000;
+[data-theme="win95"] tr:hover td {
+    background: #000080 !important;
+    color: #fff !important;
 }
 
-/* Loader */
-.theme-win95.loader-box {
+/* Loader Chicago Style */
+[data-theme="win95"] .loader-box {
     background: #c0c0c0 !important;
-    border-top: 2px solid #000000 !important;
-    border-left: 2px solid #000000 !important;
-    border-right: 2px solid #dfdfdf !important;
-    border-bottom: 2px solid #dfdfdf !important;
-    border-radius: 0 !important;
-}
-
-.theme-win95 .loader-title,
-.theme-win95 .loader-sub {
-    color: #000 !important;
+    border: 2px solid #000 !important;
+    box-shadow: 2px 2px 0 #fff inset, -2px -2px 0 #808080 inset !important;
 }
 
 [data-theme="win95"] .loader-progress-bar {
     background: #000080 !important;
+    height: 20px !important;
+    border: 1px solid #fff !important;
+}
+
+/* Scrollbars */
+[data-theme="win95"] ::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+}
+
+[data-theme="win95"] ::-webkit-scrollbar-track {
+    background: #dfdfdf;
+    box-shadow: 1px 1px 0 #808080 inset;
+}
+
+[data-theme="win95"] ::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #000000;
+    border-bottom: 2px solid #000000;
 }

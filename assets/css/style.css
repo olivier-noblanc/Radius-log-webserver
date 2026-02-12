@@ -367,19 +367,6 @@ body {
     transform: scale(1.1) rotate(5deg);
 }
 
-/* Spécifique thème Win95 (enlève le glow) */
-[data-theme="win95"] .brand-logo,
-[data-theme="win31"] .brand-logo {
-    text-shadow: none;
-    color: #000;
-}
-
-[data-theme="win95"] .brand-logo svg,
-[data-theme="win31"] .brand-logo svg {
-    filter: none;
-    color: #000;
-}
-
 /* Input Fields */
 .input-glass {
     background: rgba(255, 255, 255, 0.03);

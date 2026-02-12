@@ -1,89 +1,155 @@
 /* =========================================
    MACOS CLASSIC (PLATINUM)
+   System 8 / 9 Aesthetic
    ========================================= */
 
-:root {
-    --bg-deep: #c0c0c0;
-    --bg-panel: #ffffff;
-    --text-main: #000;
-    --status-success-bg: #d9ffdf;
-    --status-danger-bg: #ffd9d9;
+[data-theme="macos"] {
+    --bg-deep: #999999;
+    --bg-panel: #cccccc;
+    --text-main: #000000;
+    --text-muted: #333333;
+    --accent-blue: #000066;
+    --font-ui: "Geneva", "Charcoal", "Chicago", "Helvetica", Arial, sans-serif;
+    --font-code: "Monaco", "Courier", monospace;
+    --status-success-bg: #ccffcc;
+    --status-danger-bg: #ffcccc;
 }
 
 [data-theme="macos"] body {
-    background-color: #c0c0c0;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' fill='%23c0c0c0'/%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.2'/%3E%3C/svg%3E");
+    background-color: #999999;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2'%3E%3Crect width='1' height='1' fill='%23aaaaaa'/%3E%3C/svg%3E");
+    font-family: var(--font-ui) !important;
 }
 
+/* System 8/9 Header - Horizontal Stripes Title Bar */
 [data-theme="macos"] .main-header {
-    background-color: #e0e0e0 !important;
-    color: #000000 !important;
-    border-bottom: 2px solid #000000 !important;
+    background-color: #cccccc !important;
     background-image: repeating-linear-gradient(to bottom,
-            #d0d0d0 0px, #d0d0d0 1px,
-            transparent 1px, transparent 2px,
-            #808080 2px, #808080 3px,
-            transparent 3px, transparent 4px) !important;
-    background-size: 100% 4px !important;
-    background-repeat: repeat !important;
-    margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
-    padding: 6px 12px !important;
-    font-family: "Geneva", "Chicago", "Arial", sans-serif !important;
+            #000 0, #000 1px,
+            transparent 1px, transparent 3px) !important;
+    background-size: 100% 3px !important;
+    background-repeat: repeat-x !important;
+    background-position: 0 center !important;
+    border: 1px solid #000 !important;
+    box-shadow: inset 1px 1px 0 #fff, 1px 1px 0 #000 !important;
+    margin: 4px !important;
+    padding: 8px 12px !important;
+    border-radius: 0 !important;
+    color: #000 !important;
 }
 
+/* Force header child transparency to show stripes */
+[data-theme="macos"] .main-header>* {
+    background: #cccccc;
+    padding: 2px 8px;
+    border: 1px solid #000;
+    box-shadow: 1px 1px 0 #fff inset;
+}
+
+/* Logo & Text in Platinum Style */
+[data-theme="macos"] .brand-logo,
+[data-theme="macos"] .architect-info {
+    color: #000 !important;
+    text-shadow: none !important;
+}
+
+[data-theme="macos"] .brand-logo svg {
+    filter: none !important;
+    color: #000 !important;
+}
+
+/* Panels - Layered Platinum Border */
 [data-theme="macos"] .glass-panel {
-    background: #ffffff !important;
+    background: #cccccc !important;
     border: 1px solid #000000 !important;
-    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 1px 1px 0 #ffffff inset, 2px 2px 5px rgba(0, 0, 0, 0.3) !important;
     border-radius: 0 !important;
     backdrop-filter: none !important;
+    animation: none !important;
 }
 
+/* Buttons - Rounder inside square */
 [data-theme="macos"] .btn-glass {
-    background: #e0e0e0 !important;
-    border: 1px solid #000000 !important;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5), inset 1px 1px 0 #fff !important;
+    background: #dddddd !important;
+    border: 1px solid #666666 !important;
+    box-shadow: 1px 1px 0 #ffffff inset, 1px 1px 2px rgba(0, 0, 0, 0.2) !important;
     color: #000 !important;
-    border-radius: 0 !important;
-    padding: 4px 12px !important;
+    border-radius: 4px !important;
+    /* Mac buttons were slightly rounded */
+    padding: 4px 14px !important;
+    font-weight: 600 !important;
+    transition: none !important;
 }
 
-[data-theme="macos"] .btn-glass:active {
+[data-theme="macos"] .btn-glass:active,
+[data-theme="macos"] .btn-nav.active {
     background: #000000 !important;
     color: #ffffff !important;
+    border-color: #000000 !important;
     box-shadow: none !important;
-    transform: translate(2px, 2px);
 }
 
+/* Inputs & Tables - Platinum Recess */
 [data-theme="macos"] .input-glass,
-[data-theme="macos"] .table-container {
+[data-theme="macos"] .table-container,
+[data-theme="macos"] select.input-glass {
     background: #ffffff !important;
-    border: 1px solid #000000 !important;
-    box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1) !important;
-    border-radius: 0 !important;
-}
-
-[data-theme="macos"] select option {
-    background-color: #ffffff;
-    color: #000000;
-}
-
-/* MacOS Loader Adaptation */
-.theme-macos.loader-box {
-    background: #e0e0e0 !important;
-    border: 1px solid #000 !important;
-    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5) !important;
-    border-radius: 0 !important;
-    backdrop-filter: none !important;
-}
-
-.theme-macos .loader-title,
-.theme-macos .loader-sub {
     color: #000 !important;
-    font-family: "Geneva", "Arial", sans-serif !important;
+    border: 1px solid #666666 !important;
+    box-shadow: inset 2px 2px 2px rgba(0, 0, 0, 0.2) !important;
+    border-radius: 0 !important;
+}
+
+/* Table Th - Platinum Gradient-ish */
+[data-theme="macos"] th {
+    background: #dddddd !important;
+    border-right: 1px solid #999999 !important;
+    border-bottom: 1px solid #000000 !important;
+    color: #000 !important;
+    font-weight: bold !important;
+}
+
+[data-theme="macos"] td {
+    border-bottom: 1px solid #eeeeee !important;
+    color: #000 !important;
+}
+
+[data-theme="macos"] tr:hover td {
+    background: #000066 !important;
+    color: #ffffff !important;
+}
+
+/* MacOS Loader Box */
+[data-theme="macos"] .loader-box {
+    background: #cccccc !important;
+    border: 2px solid #000 !important;
+    padding: 20px !important;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5) !important;
 }
 
 [data-theme="macos"] .loader-progress-bar {
-    background: #000 !important;
-    box-shadow: none !important;
+    background: repeating-linear-gradient(45deg,
+            #000,
+            #000 5px,
+            #333 5px,
+            #333 10px) !important;
+    height: 15px !important;
+    border: 1px solid #000 !important;
+}
+
+/* Custom Scrollbar for Mac Classic */
+[data-theme="macos"] ::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+}
+
+[data-theme="macos"] ::-webkit-scrollbar-track {
+    background: #eeeeee;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2'%3E%3Crect width='1' height='1' fill='%23cccccc'/%3E%3C/svg%3E");
+}
+
+[data-theme="macos"] ::-webkit-scrollbar-thumb {
+    background: #cccccc;
+    border: 1px solid #000;
+    box-shadow: 1px 1px 0 #fff inset;
 }

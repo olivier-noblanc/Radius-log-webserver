@@ -29,9 +29,25 @@ jobs:
 
       - name: Install Linting Tools
         run: |
-          # Installation via cargo-binstall pour la rapidité si possible, sinon direct
+          # Installation via cargo-binstall pour dprint
           curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-          cargo binstall --no-confirm oxlint lightningcss-cli dprint
+          cargo binstall --no-confirm dprint
+
+          # Direct GitHub Release download for oxlint and lightningcss (pour éviter les erreurs "not found" sur crates.io)
+          # gh est pré-installé sur ubuntu-latest
+          
+          # INSTALL OXLINT
+          gh release download --repo oxc-project/oxc --pattern "oxlint-linux-x64-musl.tar.gz"
+          tar -xzf oxlint-linux-x64-musl.tar.gz
+          # On s'assure que oxlint est executable et dans le PATH
+          chmod +x oxlint
+          sudo mv oxlint /usr/local/bin/oxlint
+
+          # INSTALL LIGHTNINGCSS
+          gh release download --repo parcel-bundler/lightningcss --pattern "lightningcss-linux-x64-musl"
+          mv lightningcss-linux-x64-musl lightningcss
+          chmod +x lightningcss
+          sudo mv lightningcss /usr/local/bin/lightningcss
 
       - name: Run Frontend Audit
         run: cargo run --bin frontend_lint

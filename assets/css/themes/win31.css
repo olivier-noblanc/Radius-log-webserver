@@ -3,7 +3,7 @@
    Authentic 16-bit Windows look
    ========================================== */
 
-:root {
+[data-theme="win31"] {
     --bg-deep: #008080;
     --bg-panel: #c0c0c0;
     --text-main: #000000;
@@ -19,6 +19,19 @@
 [data-theme="win31"] body {
     background-color: #008080;
     background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucgpZD4cGF0aQkAAAAiJ0RU5ErkJggg==");
+    font-family: var(--font-ui) !important;
+}
+
+/* Logos & Icons Isolation */
+[data-theme="win31"] .brand-logo,
+[data-theme="win31"] .architect-info {
+    color: #fff !important;
+    text-shadow: none !important;
+}
+
+[data-theme="win31"] .brand-logo svg {
+    filter: brightness(0) invert(1) !important;
+    color: #fff !important;
 }
 
 /* Header - Active Window Title Bar */
