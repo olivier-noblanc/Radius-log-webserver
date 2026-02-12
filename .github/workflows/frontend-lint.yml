@@ -13,6 +13,8 @@ jobs:
   frontend-lint:
     name: Frontend Audit (Rust-based)
     runs-on: ubuntu-latest
+    env:
+      PATH: ${{ github.workspace }}/.cargo/bin:/usr/local/bin:${{ env.PATH }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,26 +30,24 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install Linting Tools
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          # Ajouter ~/.cargo/bin au PATH
+          # Ajouter ~/.cargo/bin au PATH pour Cargo
           export PATH="$HOME/.cargo/bin:$PATH"
 
-          # INSTALL DPRINT (via cargo install pour éviter les problèmes CI)
+          # INSTALL DPRINT via cargo install (stable, exit code fiable)
           cargo install dprint --version 0.51.1
 
-          # INSTALL OXLINT
+          # INSTALL OXLINT (binaire Linux MUSL)
           gh release download --repo oxc-project/oxc --pattern "oxlint-linux-x64-musl.tar.gz"
           tar -xzf oxlint-linux-x64-musl.tar.gz
           chmod +x oxlint
           sudo mv oxlint /usr/local/bin/oxlint
 
-          # INSTALL LIGHTNINGCSS
+          # INSTALL LIGHTNINGCSS (binaire Linux MUSL)
           gh release download --repo parcel-bundler/lightningcss --pattern "lightningcss-linux-x64-musl"
           mv lightningcss-linux-x64-musl lightningcss
           chmod +x lightningcss
           sudo mv lightningcss /usr/local/bin/lightningcss
 
       - name: Run Frontend Audit
-        run: cargo run --bin frontend_lint
+        run: cargo run --bin frontend_lint --verbose
