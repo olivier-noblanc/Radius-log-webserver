@@ -1029,20 +1029,11 @@ td[data-status="challenge"] {
 .loader-box {
     background: rgba(16, 16, 20, 0.95) !important;
     backdrop-filter: blur(12px);
-    <<<<<<< Updated upstream -webkit-backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-glass);
     padding: 0.75rem 1.5rem;
     border-radius: 50px;
-    min-width: unset;
-    text-align: center;
-    font-family: var(--font-ui);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-    transform: translateY(-20px);
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    =======border: 1px solid var(--border-glass);
-    padding: 0.75rem 1.5rem;
-    border-radius: 50px;
-    >>>>>>>Stashed changes display: flex;
+    display: flex;
     align-items: center;
     gap: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
@@ -1071,8 +1062,7 @@ td[data-status="challenge"] {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1px;
-    <<<<<<< Updated upstream margin: 0;
-    =======>>>>>>>Stashed changes color: var(--text-main);
+    color: var(--text-main);
 }
 
 .loader-sub {
@@ -1081,22 +1071,8 @@ td[data-status="challenge"] {
     opacity: 0.8;
 }
 
-<<<<<<< Updated upstream .loader-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* LOADER ICONS - All visible by default, themed via class on .loader-box */
-.loader-icon>div {
-    display: block;
-}
-
-/* NEON (Default) */
-=======
-
 /* Loader Icons */
->>>>>>>Stashed changes .neon-ring {
+.neon-ring {
     width: 24px;
     height: 24px;
     border: 3px solid rgba(0, 242, 255, 0.1);
