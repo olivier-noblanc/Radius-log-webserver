@@ -960,29 +960,15 @@ td[data-status="challenge"] {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0s 0.3s;
-<<<<<<< Updated upstream
-    /* Delay visibility after opacity */
 }
 
-/* HTMX adds .htmx-request automatically when ANY request is pending */
-=======
-}
-
->>>>>>> Stashed changes
 #global-loader.active,
 #global-loader.htmx-request {
     opacity: 1;
     visibility: visible;
     transition: opacity 0.3s ease, visibility 0s 0s;
-<<<<<<< Updated upstream
-    /* No delay on show */
 }
 
-/* Backdrop semi-transparent */
-=======
-}
-
->>>>>>> Stashed changes
 #global-loader::before {
     content: "";
     position: fixed;
@@ -992,7 +978,6 @@ td[data-status="challenge"] {
     -webkit-backdrop-filter: blur(3px);
     z-index: -1;
     animation: fadeIn 0.3s ease;
-<<<<<<< Updated upstream
 }
 
 @keyframes fadeIn {
@@ -1003,8 +988,8 @@ td[data-status="challenge"] {
     to {
         opacity: 1;
     }
-=======
->>>>>>> Stashed changes
+
+    =======>>>>>>>Stashed changes
 }
 
 .loader-progress-bar {
@@ -1044,8 +1029,7 @@ td[data-status="challenge"] {
 .loader-box {
     background: rgba(16, 16, 20, 0.95) !important;
     backdrop-filter: blur(12px);
-<<<<<<< Updated upstream
-    -webkit-backdrop-filter: blur(12px);
+    <<<<<<< Updated upstream -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-glass);
     padding: 0.75rem 1.5rem;
     border-radius: 50px;
@@ -1055,12 +1039,10 @@ td[data-status="challenge"] {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
     transform: translateY(-20px);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-=======
-    border: 1px solid var(--border-glass);
+    =======border: 1px solid var(--border-glass);
     padding: 0.75rem 1.5rem;
     border-radius: 50px;
->>>>>>> Stashed changes
-    display: flex;
+    >>>>>>>Stashed changes display: flex;
     align-items: center;
     gap: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
@@ -1089,11 +1071,8 @@ td[data-status="challenge"] {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1px;
-<<<<<<< Updated upstream
-    margin: 0;
-=======
->>>>>>> Stashed changes
-    color: var(--text-main);
+    <<<<<<< Updated upstream margin: 0;
+    =======>>>>>>>Stashed changes color: var(--text-main);
 }
 
 .loader-sub {
@@ -1102,8 +1081,7 @@ td[data-status="challenge"] {
     opacity: 0.8;
 }
 
-<<<<<<< Updated upstream
-.loader-icon {
+<<<<<<< Updated upstream .loader-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1116,9 +1094,9 @@ td[data-status="challenge"] {
 
 /* NEON (Default) */
 =======
+
 /* Loader Icons */
->>>>>>> Stashed changes
-.neon-ring {
+>>>>>>>Stashed changes .neon-ring {
     width: 24px;
     height: 24px;
     border: 3px solid rgba(0, 242, 255, 0.1);

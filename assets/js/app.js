@@ -40,10 +40,6 @@
         };
     }
 
-<<<<<<< Updated upstream
-    // --- HTMX GLOBAL EVENTS ---
-    // (Managed by hx-indicator and CSS .htmx-request)
-=======
     // --- HTMX GLOBAL EVENTS (Loader Management) ---
     document.addEventListener('htmx:beforeRequest', function () {
         var loader = document.getElementById('global-loader');
@@ -54,17 +50,12 @@
         var loader = document.getElementById('global-loader');
         if (loader) loader.classList.remove('active');
     });
->>>>>>> Stashed changes
 
     // --- INIT ---
     function init() {
         connectWebSocket();
 
-<<<<<<< Updated upstream
-        // Error filter toggle
-=======
         // Error filter toggle (client-side only)
->>>>>>> Stashed changes
         var errorToggle = document.getElementById('errorToggle');
         if (errorToggle) {
             errorToggle.onchange = function () {

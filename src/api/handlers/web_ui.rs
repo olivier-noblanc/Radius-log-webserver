@@ -441,9 +441,6 @@ pub async fn serve_megacss() -> impl Responder {
         .insert_header(("ETag", GIT_SHA))
         .body(bundle)
 }
-=======
-
->>>>>>> Stashed changes
 
 
 pub async fn robots_txt() -> impl Responder {
