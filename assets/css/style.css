@@ -679,6 +679,7 @@ td[data-status="fail"] {
         background-color: var(--accent-green);
         transform: scale(1.02);
     }
+
     100% {
         background-color: var(--status-success-bg);
         transform: scale(1);
@@ -690,6 +691,7 @@ td[data-status="fail"] {
         background-color: var(--accent-red);
         transform: scale(1.02);
     }
+
     100% {
         background-color: var(--status-danger-bg);
         transform: scale(1);
@@ -1295,3 +1297,29 @@ noscript {
     content: "â—‹ ";
 }
 
+/* ==========================================
+   FIX MODALE DARK MODE (Black on Black)
+   ========================================== */
+
+/* Force les titres et paragraphes à prendre la couleur du thème */
+.modal-content h1,
+.modal-content h2,
+.modal-content h3,
+.modal-content p,
+.modal-content label {
+    color: var(--text-main) !important;
+}
+
+/* Correction spécifique pour le lien "VALIDATE IDENTITY" */
+.modal-content .btn-glass,
+.modal-content a[href="/api/login"] {
+    color: var(--text-main) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-glass) !important;
+}
+
+/* Assurer que le bouton principal ressort */
+.modal-content .btn-primary {
+    color: var(--accent-cyan) !important;
+    border-color: var(--accent-cyan) !important;
+}
