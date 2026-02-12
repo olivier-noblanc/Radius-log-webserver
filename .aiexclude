@@ -1,0 +1,6 @@
+﻿archive/
+archives/
+target/
+logs/
+data/
+.env

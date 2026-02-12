@@ -98,8 +98,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     option { value: "macos", selected: props.theme == "macos", "MACINTOSH // CLASSIC" }
                     option { value: "dos", selected: props.theme == "dos", "MS-DOS // COMSPEC" }
                     option { value: "c64", selected: props.theme == "c64", "COMMODORE // 64" }
-                    option { value: "nes", selected: props.theme == "nes", "NINTENDO // 8-BIT" }
-                    option { value: "snes", selected: props.theme == "snes", "S-NINTENDO // 16-BIT" }
+                    option { value: "win2000", selected: props.theme == "win2000", "WINDOWS 2000 // PROFESSIONAL" }
                     option { value: "aero", selected: props.theme == "aero", "AERO // VISTA" }
                     option { value: "amber", selected: props.theme == "amber", "AMBER // MONO" }
                 }

@@ -1,0 +1,38 @@
+# Rust / Cargo
+/target/
+/**/*.rs.bk
+/**/*.rs.old
+/**/*.rmeta
+/**/*.rlib
+/**/*.d
+/**/Cargo.lock
+
+# Build artifacts
+/debug/
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Antigravity cache / temporary files
+.antigravity/
+cache/
+tmp/
+
+# Ignore external CDN / downloads
+**/*.min.js
+**/*.min.css

@@ -1,157 +1,185 @@
 /* ==========================================
    WINDOWS 95 (CHICAGO)
-   Classic 32-bit Windows look
+   Authentic 32-bit Windows look
    ========================================== */
 
 [data-theme="win95"] {
-    --bg-deep: #008080;
-    --bg-panel: #c0c0c0;
-    --text-main: #000;
-    --text-muted: #444;
-    --accent-cyan: #000080;
-    --accent-green: #008000;
-    --accent-red: #800000;
-    --font-ui: 'MS Sans Serif', 'Tahoma', Arial, sans-serif;
-    --font-code: 'Fixedsys', 'Lucida Console', monospace;
-    --border-glass: #808080;
-    --status-success-bg: #c0ffc0;
-    --status-danger-bg: #ffc0c0;
-    --status-success-text: #000;
-    --status-danger-text: #000;
+    --bg-desktop: #008080;
+    /* Teal background */
+    --bg-face: #c0c0c0;
+    /* Standard Windows button face */
+    --text-main: #000000;
+    --text-disabled: #808080;
+    --accent-blue: #000080;
+    /* Active Title Bar */
+    --accent-grey: #808080;
+    /* Shadow */
+    --accent-white: #ffffff;
+    /* Highlight */
+    --font-ui: 'MS Sans Serif', 'Arial', sans-serif;
+    --border-light: #dfdfdf;
+    --border-dark: #404040;
 }
 
 [data-theme="win95"] body {
-    background-color: #008080;
+    background-color: var(--bg-desktop);
     font-family: var(--font-ui) !important;
+    color: var(--text-main);
+    font-size: 13px;
+    /* Standard Win95 font size */
 }
 
-/* Title Bar - Chicago Style Gradient */
-[data-theme="win95"] .main-header {
-    background: linear-gradient(to right, #000080, #1084d0) !important;
-    color: #ffffff !important;
-    border-top: 2px solid #dfdfdf !important;
-    border-left: 2px solid #dfdfdf !important;
-    border-right: 2px solid #000000 !important;
-    border-bottom: 2px solid #000000 !important;
-    margin: 4px !important;
-    padding: 2px 6px !important;
+/* Base Panel / Window Style */
+[data-theme="win95"] .glass-panel,
+[data-theme="win95"] .loader-box {
+    background: var(--bg-face) !important;
+    border-top: 2px solid #ffffff !important;
+    border-left: 2px solid #ffffff !important;
+    border-right: 2px solid #404040 !important;
+    border-bottom: 2px solid #404040 !important;
+    box-shadow: 1px 1px 0px #000000 !important;
+    /* Outer black border */
     border-radius: 0 !important;
+    backdrop-filter: none !important;
+    color: #000 !important;
+    padding: 2px !important;
 }
 
-/* Logo and Header Text */
+/* Header - Gradient Title Bar */
+[data-theme="win95"] .main-header {
+    background: linear-gradient(90deg, #000080, #1084d0) !important;
+    color: #ffffff !important;
+    padding: 2px 4px !important;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    border: none !important;
+    box-shadow: none !important;
+    margin-bottom: 4px;
+}
+
+/* Logos & Icons */
 [data-theme="win95"] .brand-logo,
 [data-theme="win95"] .architect-info {
     color: #fff !important;
     text-shadow: none !important;
+    font-family: var(--font-ui) !important;
 }
 
 [data-theme="win95"] .brand-logo svg {
     filter: brightness(0) invert(1) !important;
-    color: #fff !important;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
 }
 
-/* Panels - True 3D Outset Border */
-[data-theme="win95"] .glass-panel {
-    background: #c0c0c0 !important;
-    border-top: 2px solid #dfdfdf !important;
-    border-left: 2px solid #dfdfdf !important;
-    border-right: 2px solid #000000 !important;
-    border-bottom: 2px solid #000000 !important;
-    border-radius: 0 !important;
-    backdrop-filter: none !important;
-    box-shadow: 1px 1px 0 #808080 inset !important;
-    animation: none !important;
-}
-
-/* Buttons - 3D State Management */
+/* Buttons - True Chicago 3D Button */
 [data-theme="win95"] .btn-glass {
-    background: #c0c0c0 !important;
-    border-top: 2px solid #ffffff !important;
-    border-left: 2px solid #ffffff !important;
-    border-right: 2px solid #000000 !important;
-    border-bottom: 2px solid #000000 !important;
+    background: var(--bg-face) !important;
+    border-top: 1px solid #ffffff !important;
+    border-left: 1px solid #ffffff !important;
+    border-right: 1px solid #404040 !important;
+    border-bottom: 1px solid #404040 !important;
+    box-shadow: 1px 1px 0 #000000 !important;
+    /* Sharp outer border */
     color: #000 !important;
     border-radius: 0 !important;
     padding: 4px 12px !important;
-    font-size: 13px !important;
-    box-shadow: 1px 1px 0 #dfdfdf inset !important;
+    font-family: var(--font-ui) !important;
+    text-transform: none !important;
+    /* Default was uppercase in other themes */
+    /* Remove any transition for snappiness */
     transition: none !important;
 }
 
+/* Active Button State (Pressed) */
 [data-theme="win95"] .btn-glass:active,
 [data-theme="win95"] .btn-nav.active {
-    border-top: 2px solid #000000 !important;
-    border-left: 2px solid #000000 !important;
-    border-right: 2px solid #ffffff !important;
-    border-bottom: 2px solid #ffffff !important;
+    border-top: 1px solid #404040 !important;
+    border-left: 1px solid #404040 !important;
+    border-right: 1px solid #ffffff !important;
+    border-bottom: 1px solid #ffffff !important;
+    box-shadow: 1px 1px 0 #dfdfdf inset !important;
+    /* Soften inside */
     padding: 5px 11px 3px 13px !important;
-    background: #dfdfdf !important;
-    box-shadow: none !important;
+    /* 1px shift */
+    background: var(--bg-face) !important;
 }
 
-/* Inputs & Table Container - True 3D Inset Border */
+/* Input Fields - Sunken 3D */
 [data-theme="win95"] .input-glass,
-[data-theme="win95"] .table-container,
 [data-theme="win95"] select.input-glass {
-    background: #fff !important;
+    background: #ffffff !important;
+    border-top: 1px solid #404040 !important;
+    border-left: 1px solid #404040 !important;
+    border-right: 1px solid #ffffff !important;
+    border-bottom: 1px solid #ffffff !important;
+    box-shadow: 1px 1px 0 #000000 inset !important;
+    /* Inner shadow */
     color: #000 !important;
-    border-top: 2px solid #808080 !important;
-    border-left: 2px solid #808080 !important;
-    border-right: 2px solid #dfdfdf !important;
-    border-bottom: 2px solid #dfdfdf !important;
     border-radius: 0 !important;
-    box-shadow: 1px 1px 0 #000 inset !important;
+    padding: 2px 4px !important;
 }
 
-/* Table Design */
+/* Table - Sunken Container */
+[data-theme="win95"] .table-container {
+    background: #ffffff !important;
+    border: 2px solid #808080 !important;
+    border-style: inset !important;
+    /* CSS inset mimics this well */
+}
+
 [data-theme="win95"] th {
-    background: #c0c0c0 !important;
+    background: var(--bg-face) !important;
+    border-bottom: 1px solid #808080 !important;
+    border-right: 1px solid #808080 !important;
     border-top: 1px solid #ffffff !important;
     border-left: 1px solid #ffffff !important;
-    border-right: 1px solid #808080 !important;
-    border-bottom: 1px solid #808080 !important;
     color: #000 !important;
-    font-family: var(--font-ui) !important;
+    font-weight: normal !important;
+    padding: 2px 6px !important;
 }
 
 [data-theme="win95"] td {
-    border-bottom: 1px solid #dfdfdf !important;
+    border: 1px dotted #cccccc !important;
     color: #000 !important;
 }
 
 [data-theme="win95"] tr:hover td {
     background: #000080 !important;
-    color: #fff !important;
+    color: #ffffff !important;
 }
 
-/* Loader Chicago Style */
-[data-theme="win95"] .loader-box {
-    background: #c0c0c0 !important;
-    border: 2px solid #000 !important;
-    box-shadow: 2px 2px 0 #fff inset, -2px -2px 0 #808080 inset !important;
-}
-
-[data-theme="win95"] .loader-progress-bar {
-    background: #000080 !important;
-    height: 20px !important;
-    border: 1px solid #fff !important;
-}
-
-/* Scrollbars */
+/* Scrollbars - Standard Windows 95 */
 [data-theme="win95"] ::-webkit-scrollbar {
     width: 16px;
     height: 16px;
-}
-
-[data-theme="win95"] ::-webkit-scrollbar-track {
-    background: #dfdfdf;
-    box-shadow: 1px 1px 0 #808080 inset;
+    background: #c0c0c0;
 }
 
 [data-theme="win95"] ::-webkit-scrollbar-thumb {
     background: #c0c0c0;
-    border-top: 2px solid #ffffff;
-    border-left: 2px solid #ffffff;
-    border-right: 2px solid #000000;
-    border-bottom: 2px solid #000000;
+    border-top: 1px solid #ffffff;
+    border-left: 1px solid #ffffff;
+    border-right: 1px solid #404040;
+    border-bottom: 1px solid #404040;
+    box-shadow: 1px 1px 0 #000;
+}
+
+[data-theme="win95"] ::-webkit-scrollbar-track {
+    background: repeating-linear-gradient(45deg,
+            #c0c0c0,
+            #c0c0c0 2px,
+            #ffffff 2px,
+            #ffffff 4px);
+    background: #dfdfdf;
+    /* Fallback to checkboard simulation */
+}
+
+/* Loader Progress Bar */
+[data-theme="win95"] .loader-progress-bar {
+    background-color: #000080 !important;
+    border: 1px solid #808080 !important;
+    height: 16px !important;
+    box-shadow: inset 1px 1px 0 #000;
 }

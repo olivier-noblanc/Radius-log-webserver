@@ -1,0 +1,39 @@
+﻿# .geminiignore – Empêche Google Antigravity de scanner/indexer ces dossiers
+# Documentation officieuse : https://github.com/google-gemini/gemini-cli/issues/14546
+
+# RUST : Dossier de compilation (souvent volumineux)
+target/
+/target
+**/target/
+
+# LOGS & TRACES
+*.log
+logs/
+**/logs/
+
+# DONNÉES VOLUMINEUSES (à exclure du contexte IA)
+data/
+large_files/
+archive/
+archives/
+temp/
+tmp/
+
+# CONFIG LOCALE / SECRETS (évite les fuites)
+.env
+.env.*
+*.pem
+*.key
+service-account*.json
+credentials.json
+
+# DOSSIERS SYSTÈME & ÉDITEUR
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# AUTRES ARTEFACTS (non pertinents pour l'agent)
+**/*.rs.bk
+**/*.bak
+**/__pycache__/
