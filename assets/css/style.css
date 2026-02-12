@@ -83,10 +83,10 @@ textarea {
     --spacing-panel: 1.5rem;
 
     /* Tailles de police */
-    --font-size-xs: 0.65rem;
-    /* 10.4px */
-    --font-size-sm: 0.75rem;
+    --font-size-xs: 0.75rem;
     /* 12px */
+    --font-size-sm: 0.8rem;
+    /* 12.8px */
     --font-size-base: 14px;
     --font-size-md: 1rem;
     /* 16px */
@@ -173,6 +173,9 @@ textarea {
         transform: translate(0);
     }
 }
+
+
+
 
 /* ========== GLOBAL STYLES ========== */
 body {
@@ -557,7 +560,7 @@ table {
 th {
     position: relative;
     text-align: left;
-    padding: 0.75rem 0.5rem;
+    padding: 16px 1rem;
     color: var(--text-muted);
     font-weight: 600;
     border-bottom: 2px solid var(--border-glass);
@@ -593,7 +596,7 @@ th:hover {
 }
 
 td {
-    padding: 0.5rem;
+    padding: 16px 1rem;
     border-bottom: 1px solid var(--border-glass);
     color: var(--text-main);
     white-space: nowrap;
@@ -626,54 +629,91 @@ tr:hover td {
     color: var(--status-danger-text) !important;
 }
 
-/* Status Colors */
+/* ========== STATUS COLORS (Enhanced Visibility) ========== */
+
 .status-success,
 td[data-status="success"] {
     color: var(--status-success-text) !important;
+    background: var(--status-success-bg) !important;
+    padding: 4px 8px !important;
+    border-left: 3px solid var(--accent-green) !important;
+    font-weight: 600 !important;
+    position: relative;
+}
+
+.status-success::before {
+    content: "✓";
+    display: inline-block;
+    margin-right: 6px;
+    font-weight: bold;
 }
 
 .status-fail,
 td[data-status="fail"] {
     color: var(--status-danger-text) !important;
+    background: var(--status-danger-bg) !important;
+    padding: 4px 8px !important;
+    border-left: 3px solid var(--accent-red) !important;
+    font-weight: 600 !important;
+    position: relative;
 }
 
-.row-new {
-    animation: flash-cyan 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+.status-fail::before {
+    content: "✗";
+    display: inline-block;
+    margin-right: 6px;
+    font-weight: bold;
 }
 
-@keyframes flash-cyan {
+.status-challenge,
+td[data-status="challenge"] {
+    color: #ffb100 !important;
+    background: rgba(255, 177, 0, 0.1) !important;
+    padding: 4px 8px !important;
+    border-left: 3px solid #ffb100 !important;
+    font-weight: 600 !important;
+    position: relative;
+}
+
+.status-challenge::before {
+    content: "⚡";
+    display: inline-block;
+    margin-right: 6px;
+}
+
+/* Animation flash pour nouveaux logs */
+.row-new.table-success td {
+    animation: flash-success 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.row-new.table-danger td {
+    animation: flash-danger 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes flash-success {
     0% {
-        background-color: rgba(0, 242, 255, 0.3);
+        background-color: var(--accent-green);
+        transform: scale(1.02);
     }
 
     100% {
-        background-color: transparent;
+        background-color: var(--status-success-bg);
+        transform: scale(1);
     }
 }
 
-.row-warning {
-    animation: flash-warning 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes flash-warning {
+@keyframes flash-danger {
     0% {
-        background-color: rgba(255, 193, 7, 0.3);
+        background-color: var(--accent-red);
+        transform: scale(1.02);
     }
 
     100% {
-        background-color: transparent;
+        background-color: var(--status-danger-bg);
+        transform: scale(1);
     }
 }
 
-@keyframes flash {
-    0% {
-        background-color: rgba(0, 242, 255, 0.2);
-    }
-
-    100% {
-        background-color: transparent;
-    }
-}
 
 /* ========== MODAL & OVERLAYS ========== */
 .modal-overlay {
@@ -746,11 +786,11 @@ td[data-status="fail"] {
 }
 
 .text-xs {
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
 }
 
 .text-xxs {
-    font-size: 0.65rem;
+    font-size: var(--font-size-xs);
 }
 
 .ml-4 {
@@ -920,19 +960,29 @@ td[data-status="fail"] {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0s 0.3s;
+<<<<<<< Updated upstream
     /* Delay visibility after opacity */
 }
 
 /* HTMX adds .htmx-request automatically when ANY request is pending */
+=======
+}
+
+>>>>>>> Stashed changes
 #global-loader.active,
 #global-loader.htmx-request {
     opacity: 1;
     visibility: visible;
     transition: opacity 0.3s ease, visibility 0s 0s;
+<<<<<<< Updated upstream
     /* No delay on show */
 }
 
 /* Backdrop semi-transparent */
+=======
+}
+
+>>>>>>> Stashed changes
 #global-loader::before {
     content: "";
     position: fixed;
@@ -942,6 +992,7 @@ td[data-status="fail"] {
     -webkit-backdrop-filter: blur(3px);
     z-index: -1;
     animation: fadeIn 0.3s ease;
+<<<<<<< Updated upstream
 }
 
 @keyframes fadeIn {
@@ -952,9 +1003,10 @@ td[data-status="fail"] {
     to {
         opacity: 1;
     }
+=======
+>>>>>>> Stashed changes
 }
 
-/* Barre de progression style GitHub/YouTube */
 .loader-progress-bar {
     position: fixed;
     top: 0;
@@ -989,10 +1041,10 @@ td[data-status="fail"] {
     }
 }
 
-/* Badge discret en haut au centre */
 .loader-box {
     background: rgba(16, 16, 20, 0.95) !important;
     backdrop-filter: blur(12px);
+<<<<<<< Updated upstream
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-glass);
     padding: 0.75rem 1.5rem;
@@ -1003,9 +1055,17 @@ td[data-status="fail"] {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
     transform: translateY(-20px);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+=======
+    border: 1px solid var(--border-glass);
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+>>>>>>> Stashed changes
     display: flex;
     align-items: center;
     gap: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    transform: translateY(-20px);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 #global-loader.active .loader-box,
@@ -1013,10 +1073,15 @@ td[data-status="fail"] {
     transform: translateY(0);
 }
 
+.loader-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .loader-text {
     display: flex;
     flex-direction: column;
-    text-align: left;
 }
 
 .loader-title {
@@ -1024,7 +1089,10 @@ td[data-status="fail"] {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1px;
+<<<<<<< Updated upstream
     margin: 0;
+=======
+>>>>>>> Stashed changes
     color: var(--text-main);
 }
 
@@ -1032,10 +1100,9 @@ td[data-status="fail"] {
     font-size: 0.7rem;
     color: var(--text-muted);
     opacity: 0.8;
-    margin: 0;
-    white-space: nowrap;
 }
 
+<<<<<<< Updated upstream
 .loader-icon {
     display: flex;
     align-items: center;
@@ -1048,6 +1115,9 @@ td[data-status="fail"] {
 }
 
 /* NEON (Default) */
+=======
+/* Loader Icons */
+>>>>>>> Stashed changes
 .neon-ring {
     width: 24px;
     height: 24px;
@@ -1057,17 +1127,6 @@ td[data-status="fail"] {
     animation: spin 1s linear infinite;
 }
 
-/* DSFR */
-.dsfr-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid #eee;
-    border-top: 3px solid #000091;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-/* XP Pulse */
 .xp-pulse {
     display: flex;
     gap: 3px;
@@ -1102,10 +1161,8 @@ td[data-status="fail"] {
     }
 }
 
-/* WIN 3.1 Hourglass */
 .win31-hourglass {
     font-size: 20px;
-    line-height: 1;
     animation: win31-flip 1s steps(2) infinite;
 }
 
@@ -1119,12 +1176,10 @@ td[data-status="fail"] {
     }
 }
 
-/* DOS Spin */
 .dos-spin {
     font-family: var(--font-code);
     font-size: 18px;
     color: #fff;
-    min-width: 1ch;
 }
 
 .dos-spin::after {
@@ -1147,86 +1202,6 @@ td[data-status="fail"] {
 
     75% {
         content: "\\";
-    }
-}
-
-/* MACOS Watch */
-.macos-watch {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #000;
-    border-radius: 50%;
-    position: relative;
-    background: #fff;
-}
-
-.macos-watch::before {
-    content: "";
-    position: absolute;
-    top: 9px;
-    left: 9px;
-    width: 7px;
-    height: 2px;
-    background: #000;
-    transform-origin: left center;
-    animation: spin 2s linear infinite;
-}
-
-/* TERMINAL Progress Bar */
-.terminal-bar {
-    font-family: var(--font-code);
-    color: var(--accent-green);
-    font-size: 0.9rem;
-}
-
-.terminal-bar::after {
-    content: "[          ]";
-    animation: term-load 1s steps(11) infinite;
-}
-
-@keyframes term-load {
-    0% {
-        content: "[          ]";
-    }
-
-    10% {
-        content: "[#         ]";
-    }
-
-    20% {
-        content: "[##        ]";
-    }
-
-    30% {
-        content: "[###       ]";
-    }
-
-    40% {
-        content: "[####      ]";
-    }
-
-    50% {
-        content: "[#####     ]";
-    }
-
-    60% {
-        content: "[######    ]";
-    }
-
-    70% {
-        content: "[#######   ]";
-    }
-
-    80% {
-        content: "[########  ]";
-    }
-
-    90% {
-        content: "[######### ]";
-    }
-
-    100% {
-        content: "[##########]";
     }
 }
 
@@ -1352,158 +1327,35 @@ noscript {
     font-family: var(--font-code);
 }
 
-/* --- THEME NEON SPECIFICS --- */
-[data-theme="neon"] #human-gate h1.glitch-text {
-    position: relative;
-    animation: glitch-skew 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+/* Connection Status Badge */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
 }
 
-@keyframes glitch-skew {
-    0% {
-        transform: skew(0deg);
-    }
-
-    20% {
-        transform: skew(-2deg);
-    }
-
-    40% {
-        transform: skew(2deg);
-    }
-
-    60% {
-        transform: skew(-1deg);
-    }
-
-    80% {
-        transform: skew(1deg);
-    }
-
-    100% {
-        transform: skew(0deg);
-    }
+.status-badge.connected {
+    color: var(--status-success-text) !important;
+    background: rgba(57, 255, 20, 0.1);
+    border-color: var(--status-success-text);
 }
 
-[data-theme="neon"] #human-gate h1.glitch-text::before,
-[data-theme="neon"] #human-gate h1.glitch-text::after {
-    content: attr(data-text);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0.8;
+.status-badge.connected::before {
+    content: "● ";
 }
 
-[data-theme="neon"] #human-gate h1.glitch-text::before {
-    color: #ff00ff;
-    z-index: -1;
-    animation: glitch-anim-1 2s infinite linear alternate-reverse;
+.status-badge.disconnected {
+    color: var(--status-danger-text) !important;
+    background: rgba(255, 49, 49, 0.1);
+    border-color: var(--status-danger-text);
 }
 
-[data-theme="neon"] #human-gate h1.glitch-text::after {
-    color: #00ffff;
-    z-index: -2;
-    animation: glitch-anim-2 3s infinite linear alternate-reverse;
-}
-
-@keyframes glitch-anim-1 {
-    0% {
-        clip-path: inset(20% 0 80% 0);
-        transform: translate(-2px, 0);
-    }
-
-    20% {
-        clip-path: inset(60% 0 10% 0);
-        transform: translate(2px, 0);
-    }
-
-    40% {
-        clip-path: inset(40% 0 50% 0);
-        transform: translate(-2px, 0);
-    }
-
-    60% {
-        clip-path: inset(80% 0 5% 0);
-        transform: translate(2px, 0);
-    }
-
-    80% {
-        clip-path: inset(10% 0 70% 0);
-        transform: translate(-2px, 0);
-    }
-
-    100% {
-        clip-path: inset(30% 0 50% 0);
-        transform: translate(2px, 0);
-    }
-}
-
-@keyframes glitch-anim-2 {
-    0% {
-        clip-path: inset(10% 0 60% 0);
-        transform: translate(2px, 0);
-    }
-
-    20% {
-        clip-path: inset(30% 0 20% 0);
-        transform: translate(-2px, 0);
-    }
-
-    40% {
-        clip-path: inset(70% 0 10% 0);
-        transform: translate(2px, 0);
-    }
-
-    60% {
-        clip-path: inset(20% 0 50% 0);
-        transform: translate(-2px, 0);
-    }
-
-    80% {
-        clip-path: inset(50% 0 30% 0);
-        transform: translate(2px, 0);
-    }
-
-    100% {
-        clip-path: inset(0% 0 70% 0);
-        transform: translate(-2px, 0);
-    }
-}
-
-[data-theme="neon"] .loader-box {
-    border-color: #00f2ff;
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
-    color: #00f2ff;
-}
-
-[data-theme="neon"] .loader-title {
-    text-shadow: 0 0 10px rgba(0, 242, 255, 0.7);
-    animation: neon-glitch-loader 0.5s infinite;
-}
-
-@keyframes neon-glitch-loader {
-    0% {
-        transform: translate(0);
-    }
-
-    20% {
-        transform: translate(-2px, 2px);
-    }
-
-    40% {
-        transform: translate(-2px, -2px);
-    }
-
-    60% {
-        transform: translate(2px, 2px);
-    }
-
-    80% {
-        transform: translate(2px, -2px);
-    }
-
-    100% {
-        transform: translate(0);
-    }
+.status-badge.disconnected::before {
+    content: "○ ";
 }

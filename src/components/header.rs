@@ -83,6 +83,7 @@ pub fn Header(props: HeaderProps) -> Element {
                     "hx-include": "this",
                     "hx-indicator": "#global-loader",
                     "hx-swap": "none",
+<<<<<<< Updated upstream
                     // CRITICAL: Après que le cookie soit set, recharger la page
                     "hx-on::after-request": "window.location.reload();",
                     
@@ -101,6 +102,27 @@ pub fn Header(props: HeaderProps) -> Element {
                     option { value: "win2000", selected: props.theme == "win2000", "WINDOWS 2000 // PROFESSIONAL" }
                     option { value: "aero", selected: props.theme == "aero", "AERO // VISTA" }
                     option { value: "amber", selected: props.theme == "amber", "AMBER // MONO" }
+=======
+                    // ✅ Reload après que le cookie soit setté
+                    "hx-on::after-request": "window.location.reload();",
+                    
+                    option { value: "onyx-glass", selected: props.theme == "onyx-glass", "🎯 FLAGSHIP // ONYX GLASS" }
+                    option { value: "light", selected: props.theme == "light", "☀️ LIGHT // PROFESSIONAL" }
+                    option { value: "dark", selected: props.theme == "dark", "🌙 DARK // OLED" }
+                    option { value: "neon", selected: props.theme == "neon", "🌃 NEON // CYBERPUNK" }
+
+                    optgroup { label: "━━━ SYSADMIN HERITAGE ━━━",
+                        option { value: "win31", selected: props.theme == "win31", "🪟 WINDOWS 3.1 // LEGACY" }
+                        option { value: "xp", selected: props.theme == "xp", "🖥️ WINDOWS XP // LUNA" }
+                        option { value: "macos", selected: props.theme == "macos", "🍎 MACINTOSH // CLASSIC" }
+                    }
+
+                    optgroup { label: "━━━ SPECIALIZED ━━━",
+                        option { value: "terminal", selected: props.theme == "terminal", "⌨️ TERMINAL // SSH" }
+                        option { value: "compact", selected: props.theme == "compact", "📊 COMPACT // DENSE" }
+                        option { value: "dsfr", selected: props.theme == "dsfr", "🇫🇷 RÉPUBLIQUE // FR" }
+                    }
+>>>>>>> Stashed changes
                 }
 
                 a { 

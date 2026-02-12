@@ -1,14 +1,12 @@
 /*!
- * RADIUS LOG CORE - Future-proof JavaScript
- * Pure ES5, no dependencies, browser standard only
+ * RADIUS LOG CORE - Pure HTMX, Minimal JS
  * Compatible: IE11+, Chrome 20+, Firefox 20+, Safari 6+
- * Expected to work until 2035+ without modifications
  */
 
 (function () {
     'use strict';
 
-    console.log('[RADIUS] app.js loaded');
+    console.log('[RADIUS] app.js loaded - HTMX Pure Mode');
 
     // --- WEBSOCKET ---
     var ws = null;
@@ -18,7 +16,13 @@
         if (!statusBadge) statusBadge = document.getElementById('statusBadge');
         if (statusBadge) {
             statusBadge.textContent = connected ? 'CONNECTED' : 'DISCONNECTED';
-            statusBadge.style.color = connected ? '#39ff14' : '#ff3131';
+            if (connected) {
+                statusBadge.classList.add('connected');
+                statusBadge.classList.remove('disconnected');
+            } else {
+                statusBadge.classList.add('disconnected');
+                statusBadge.classList.remove('connected');
+            }
         }
     }
 
@@ -36,14 +40,31 @@
         };
     }
 
+<<<<<<< Updated upstream
     // --- HTMX GLOBAL EVENTS ---
     // (Managed by hx-indicator and CSS .htmx-request)
+=======
+    // --- HTMX GLOBAL EVENTS (Loader Management) ---
+    document.addEventListener('htmx:beforeRequest', function () {
+        var loader = document.getElementById('global-loader');
+        if (loader) loader.classList.add('active');
+    });
+
+    document.addEventListener('htmx:afterRequest', function () {
+        var loader = document.getElementById('global-loader');
+        if (loader) loader.classList.remove('active');
+    });
+>>>>>>> Stashed changes
 
     // --- INIT ---
     function init() {
         connectWebSocket();
 
+<<<<<<< Updated upstream
         // Error filter toggle
+=======
+        // Error filter toggle (client-side only)
+>>>>>>> Stashed changes
         var errorToggle = document.getElementById('errorToggle');
         if (errorToggle) {
             errorToggle.onchange = function () {

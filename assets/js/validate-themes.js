@@ -3,7 +3,7 @@
     const themes = [
         'neon', 'onyx-glass', 'cyber-tactical',
         'win31', 'win95', 'xp', 'macos',
-        'dos', 'terminal', 'c64', 'nes', 'snes',
+        'terminal', 'c64', 'nes', 'snes',
         'dsfr', 'compact', 'aero', 'amber'
     ];
 

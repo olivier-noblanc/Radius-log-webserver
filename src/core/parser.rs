@@ -211,6 +211,7 @@ pub fn process_group(group: &[RadiusEvent]) -> RadiusRequest {
             match p_type {
                 "2" => req.status = Some("success".to_string()),
                 "3" => req.status = Some("fail".to_string()),
+                "11" => req.status = Some("challenge".to_string()),
                 _ => {}
             }
         }

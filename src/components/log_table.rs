@@ -115,8 +115,16 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             td { "{log.mac}" }
                             td { "{log.user}" }
                             td { 
-                                class: if log.status.as_deref() == Some("fail") { "status-fail" } else { "status-success" },
-                                "data-status": if log.status.as_deref() == Some("fail") { "fail" } else { "success" },
+                                class: match log.status.as_deref() {
+                                    Some("fail") => "status-fail",
+                                    Some("challenge") => "status-challenge",
+                                    _ => "status-success",
+                                },
+                                "data-status": match log.status.as_deref() {
+                                    Some("fail") => "fail",
+                                    Some("challenge") => "challenge",
+                                    _ => "success",
+                                },
                                 "{log.resp_type}" 
                             }
                             td { "{log.reason}" }

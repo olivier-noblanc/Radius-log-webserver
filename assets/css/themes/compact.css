@@ -9,8 +9,8 @@
     /* Was 0.2rem - too tight */
     --font-size-base: 12px;
     /* Was 11px - too small */
-    --font-size-table: 11px;
-    /* Was 10px - too small */
+    --font-size-table: 12px;
+    /* Respect WCAG minimum */
     --bg-deep: #1a1c1e;
     --bg-panel: rgba(30, 32, 35, 0.9);
     --accent-cyan: #f2a100;
@@ -35,8 +35,9 @@
 
 [data-theme="compact"] th,
 [data-theme="compact"] td {
-    padding: 2px 4px !important;
-    line-height: 1.1;
+    padding: 14px 10px !important;
+    /* Improved touch target density */
+    line-height: 1.2;
     border-width: 1px;
 }
 

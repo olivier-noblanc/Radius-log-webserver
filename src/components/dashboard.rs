@@ -18,7 +18,7 @@ pub fn Dashboard(props: DashboardProps) -> Element {
             div { class: "stat-card glass-panel p-4 flex flex-col items-center justify-center",
                 div { class: "text-xs text-muted uppercase tracking-widest mb-2", "Total Transactions" }
                 div { class: "text-4xl font-bold tracking-tighter text-glow", "{props.stats.total_requests}" }
-                div { class: "text-[10px] mt-2 opacity-50", "24H ACTIVITY WINDOW" }
+                div { class: "text-xxs mt-2 opacity-50", "24H ACTIVITY WINDOW" }
             }
 
             // Stat Card: Success Rate
@@ -34,7 +34,7 @@ pub fn Dashboard(props: DashboardProps) -> Element {
             div { class: "stat-card glass-panel p-4 flex flex-col items-center justify-center",
                 div { class: "text-xs text-muted uppercase tracking-widest mb-2", "Access Denied" }
                 div { class: "text-4xl font-bold tracking-tighter text-fail", "{rejection_count}" }
-                div { class: "text-[10px] mt-2 opacity-50", "SECURITY REJECTIONS" }
+                div { class: "text-xxs mt-2 opacity-50", "SECURITY REJECTIONS" }
             }
 
             // NEW: Security Health Status
@@ -46,10 +46,10 @@ pub fn Dashboard(props: DashboardProps) -> Element {
                 
                 if props.stats.security_vulnerabilities.is_empty() {
                     div { class: "text-2xl font-bold text-success text-glow", "SECURE" }
-                    div { class: "text-[10px] mt-2 opacity-50", "NO CRITICAL THREATS" }
+                    div { class: "text-xxs mt-2 opacity-50", "NO CRITICAL THREATS" }
                 } else {
                     div { class: "text-2xl font-bold text-fail text-glow", "ALERT" }
-                    div { class: "text-[10px] mt-2 text-fail animate-pulse", "{props.stats.security_vulnerabilities.len()} ISSUES DETECTED" }
+                    div { class: "text-xxs mt-2 text-fail animate-pulse", "{props.stats.security_vulnerabilities.len()} ISSUES DETECTED" }
                 }
                 
                 // Overlay for critical alerts

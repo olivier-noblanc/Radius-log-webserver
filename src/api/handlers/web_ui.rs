@@ -28,6 +28,38 @@ pub struct LoginQuery {
     pub theme: Option<String>,
 }
 
+<<<<<<< Updated upstream
+=======
+// Fonction utilitaire pour mapper les thèmes vers des fichiers CSS (Thèmes uniquement)
+fn get_theme_css_files(theme: &str) -> Vec<String> {
+    let mut files = Vec::new();
+    
+    match theme {
+        // Nouveaux thèmes
+        "light" => files.push("/css/themes/light.css".to_string()),
+        "dark" => files.push("/css/themes/dark.css".to_string()),
+        
+        // Sysadmin heritage
+        "win31" => files.push("/css/themes/win31.css".to_string()),
+        "xp" => files.push("/css/themes/xp.css".to_string()),
+        "macos" => files.push("/css/themes/macos9.css".to_string()),
+        
+        // Modern
+        "neon" => {}, // Pas de CSS additionnel (déjà dans style.css)
+        "onyx-glass" => files.push("/css/themes/onyx-glass.css".to_string()),
+        
+        // Specialized
+        "terminal" => files.push("/css/themes/terminal.css".to_string()),
+        "compact" => files.push("/css/themes/compact.css".to_string()),
+        "dsfr" => files.push("/css/themes/dsfr.css".to_string()),
+        
+        _ => {} // Fallback to neon (base CSS)
+    }
+    
+    files
+}
+
+>>>>>>> Stashed changes
 // --- HELPER LOCALHOST ---
 
 fn is_local_dev(req: &HttpRequest) -> bool {
@@ -251,6 +283,7 @@ pub async fn serve_static_asset(req: HttpRequest) -> impl Responder {
     }
 }
 
+<<<<<<< Updated upstream
 /// Scope CSS rules to a specific data-theme attribute
 fn scope_theme_css(css: &str, theme_name: &str) -> String {
     let selector = format!("[data-theme=\"{}\"]", theme_name);
@@ -412,6 +445,9 @@ pub async fn serve_megacss() -> impl Responder {
         .insert_header(("ETag", GIT_SHA))
         .body(bundle)
 }
+=======
+
+>>>>>>> Stashed changes
 
 
 pub async fn robots_txt() -> impl Responder {
