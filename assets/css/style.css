@@ -749,3 +749,19 @@ body:not([data-theme]) .neon-ring {
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+/* ==========================================
+   FORCE MACOS LOADER (OVERWRITE)
+   ========================================== */
+
+/* Cacher impérativement le loader Flagship (Neon Ring) quand on est sur Mac */
+[data-theme="macos"] .neon-ring,
+[data-theme="macos9"] .neon-ring {
+    display: none !important;
+}
+
+/* Forcer l'affichage de l'horloge Mac */
+[data-theme="macos"] .macos-watch,
+[data-theme="macos9"] .macos-watch {
+    display: block !important;
+}

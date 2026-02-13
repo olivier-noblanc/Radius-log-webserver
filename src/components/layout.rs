@@ -81,6 +81,7 @@ pub fn Layout(props: LayoutProps) -> Element {
                                     "shape-rendering": "crispEdges",
                                     width: "100%",
                                     height: "100%",
+                                    
                                     circle {
                                         cx: "16",
                                         cy: "16",
@@ -91,6 +92,7 @@ pub fn Layout(props: LayoutProps) -> Element {
                                     }
                                     rect { x: "14", y: "0", width: "4", height: "2", fill: "black" }
                                     rect { x: "15", y: "28", width: "2", height: "4", fill: "black" }
+                                    
                                     line {
                                         x1: "16", y1: "16",
                                         x2: "16", y2: "8",
