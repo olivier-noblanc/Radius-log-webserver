@@ -1,84 +1,321 @@
 /* ==========================================
-   THEME: MACOS 9 PLATINUM
-   APPLE RETRO OVERRIDES
+   THEME: MACINTOSH SYSTEM 7 / 8 (PLATINUM)
+   Authentic 90s Look
    ========================================== */
 
 :root {
-  --bg-deep: #9999CC;
-  /* Desktop Teal */
-  --bg-panel: #DDDDDD;
-  /* Platinum Gray */
+  /* Couleurs System 7/8 */
+  --bg-deep: #808080;
+  /* Fond d'écran par défaut */
+  --bg-panel: #E0E0E0;
+  /* Gris "Platinum" */
   --text-main: #000000;
-  --text-muted: #444444;
-  --accent-cyan: #0066CC;
-  --accent-green: #34C759;
-  --accent-red: #FF3B30;
-  --border-glass: #999999;
-  --font-ui: 'Geneva', 'Charcoal', system-ui, sans-serif;
+  --text-muted: #404040;
+  --accent-cyan: #0000FF;
+  /* Bleu system standard */
+  --accent-green: #008000;
+  --accent-red: #FF0000;
+  --border-glass: #000000;
+
+  /* Fonte System */
+  --font-ui: 'Geneva', 'Helvetica Neue', 'Helvetica', sans-serif;
+  --font-code: 'Monaco', 'Courier New', monospace;
 }
 
 body {
   background-color: var(--bg-deep) !important;
-  background-image: none !important;
+  /* Motif de fond rayé/bruité typique de Mac OS */
+  /* Ce pattern SVG crée des rayures nettes (1px noir, 1px gris, 1px blanc) */
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4" shape-rendering="crispEdges"><rect width="1" height="4" fill="%23808080"/><rect x="1" width="1" height="4" fill="%23A0A0A0"/><rect x="2" width="1" height="4" fill="%23E0E0E0"/><rect x="3" width="1" height="4" fill="%23C0C0C0"/></svg>');
+
+  /* Répétition classique */
+  background-repeat: repeat;
+  /* Force le rendu pixel parfait sur le fond */
+  image-rendering: pixelated;
+
+  background-size: 4px 4px;
+  background-position: 0 0, 2px 2px;
+
   font-family: var(--font-ui) !important;
+  color: var(--text-main);
+  -webkit-font-smoothing: none;
+  /* Rendre le texte un peu plus "carré" comme les vieux écrans */
 }
 
-/* Platinum Panels */
-.glass-panel {
-  background: #DDDDDD !important;
-  border: 1px solid #666666 !important;
-  border-radius: 4px !important;
-  box-shadow: 1px 1px 0 #FFFFFF inset, -1px -1px 0 #999999 inset, 2px 2px 5px rgba(0, 0, 0, 0.2) !important;
+/* --- EFFET BISEAU 3D (LE SECRET DU PLATINUM) --- */
+.glass-panel,
+.main-header,
+.modal-content {
+  background: var(--bg-panel) !important;
+
+  /* Le bord extérieur sombre */
+  border: 1px solid #404040 !important;
+
+  /* Ombre portée dure (très années 90) */
+  box-shadow:
+    1px 1px 0 #000000,
+    inset 1px 1px 0 #FFFFFF,
+    inset -1px -1px 0 #808080,
+    inset -2px -2px 0 #C0C0C0 !important;
+
+  border-radius: 3px !important;
+  /* Légèrement arrondi mais pas trop */
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
-/* Platinum Buttons */
-.btn-glass {
-  background: #EEEEEE !important;
-  border: 1px solid #999999 !important;
-  border-radius: 4px !important;
-  color: #000 !important;
-  box-shadow: 1px 1px 0 #FFFFFF inset !important;
-}
-
-.btn-glass:active {
-  background: #CCCCCC !important;
-  box-shadow: 1px 1px 0 #999999 inset !important;
-}
-
-/* MacOS Loader */
-.neon-ring {
-  display: none !important;
-}
-
-.macos-watch {
-  display: block !important;
-}
-
-/* Status Colors MacOS */
-.status-success,
-td[data-status="success"] {
-  background: #E8F5E9 !important;
-  color: #2E7D32 !important;
-  border-color: #2E7D32 !important;
-}
-
-.status-fail,
-td[data-status="fail"] {
-  background: #FFEBEE !important;
-  color: #C62828 !important;
-  border-color: #C62828 !important;
-}
-
-/* Header MacOS 9 style */
+/* Titre des fenêtres (Rayures) */
 .main-header {
-  background: linear-gradient(to bottom, #EEEEEE, #CCCCCC) !important;
-  border-bottom: 1px solid #666666 !important;
-  border-radius: 0 !important;
+  background: #E0E0E0 !important;
+  background-image: repeating-linear-gradient(90deg,
+      #E0E0E0,
+      #E0E0E0 2px,
+      #D0D0D0 3px,
+      #E0E0E0 4px) !important;
+  border-bottom: 1px solid #404040 !important;
+  padding: 6px 8px !important;
+  /* Plus compact */
 }
 
+/* --- BOUTONS (OUTSET) --- */
+.btn-glass {
+  background: #D8D8D8 !important;
+  border: 1px solid #404040 !important;
+  border-top: 1px solid #FFFFFF !important;
+  border-left: 1px solid #FFFFFF !important;
+  border-right: 1px solid #000000 !important;
+  border-bottom: 1px solid #000000 !important;
+
+  box-shadow: 1px 1px 0 #000000 !important;
+  color: #000 !important;
+  font-family: var(--font-ui) !important;
+  font-weight: bold !important;
+  font-size: 12px !important;
+  border-radius: 2px !important;
+  text-shadow: none !important;
+}
+
+.btn-glass:active,
+.btn-glass.active {
+  background: #C0C0C0 !important;
+  border: 1px solid #404040 !important;
+  border-top: 1px solid #000000 !important;
+  border-left: 1px solid #000000 !important;
+  border-right: 1px solid #FFFFFF !important;
+  border-bottom: 1px solid #FFFFFF !important;
+
+  box-shadow: none !important;
+  transform: translate(1px, 1px) !important;
+}
+
+/* Brand Logo */
 .brand-logo {
   color: #000 !important;
   text-shadow: none !important;
+  font-family: var(--font-ui) !important;
+  font-weight: 800 !important;
+}
+
+.brand-logo svg {
+  filter: drop-shadow(1px 1px 0 #FFF) drop-shadow(-1px -1px 0 #000) !important;
+}
+
+/* --- INPUTS (INSET) --- */
+.input-glass,
+select {
+  background: #FFFFFF !important;
+  border: 1px solid #808080 !important;
+  border-top: 1px solid #404040 !important;
+  border-left: 1px solid #404040 !important;
+  border-right: 1px solid #FFFFFF !important;
+  border-bottom: 1px solid #FFFFFF !important;
+
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.2) !important;
+  color: #000 !important;
+  font-family: var(--font-ui) !important;
+  border-radius: 0 !important;
+  /* Inputs carrés */
+}
+
+/* --- TABLES --- */
+table {
+  border: 2px outset #FFFFFF !important;
+  background: #FFFFFF !important;
+}
+
+th {
+  background: #E0E0E0 !important;
+  border: 1px solid #808080 !important;
+  border-bottom: 2px solid #000000 !important;
+  color: #000 !important;
+  font-weight: bold !important;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+td {
+  border: 1px solid #D0D0D0 !important;
+  color: #000 !important;
+}
+
+.log-row:hover td {
+  background: #000080 !important;
+  color: #FFFFFF !important;
+}
+
+/* --- STATUS COLORS --- */
+.status-success {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  font-weight: bold !important;
+}
+
+.status-success::before {
+  content: "✔ ";
+}
+
+.status-fail {
+  background: #000000 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #000000 !important;
+  font-weight: bold !important;
+}
+
+.status-fail::before {
+  content: "✖ ";
+}
+
+/* --- FIX LOADER MAC WATCH --- */
+/* On s'assure que tout le monde est caché sauf l'horloge */
+.neon-ring,
+.win31-hourglass,
+.xp-pulse,
+.terminal-bar,
+.dos-spin {
+  display: none !important;
+}
+
+/* On force l'affichage de l'horloge et on la style */
+.macos-watch {
+  display: block !important;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #000;
+  background: #FFF;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 1px 1px 0 #808080;
+  /* Petit effet de profondeur */
+}
+
+/* Aiguilles */
+.macos-watch::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 2px;
+  height: 8px;
+  background: #000;
+  transform: translateX(-50%);
+  transform-origin: bottom center;
+  animation: mac-spin 2s linear infinite;
+}
+
+.macos-watch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 6px;
+  height: 2px;
+  background: #000;
+  transform: translateX(-50%);
+  animation: mac-spin 12s linear infinite;
+}
+
+@keyframes mac-spin {
+  from {
+    transform: translateX(-50%) rotate(0deg);
+  }
+
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+/* --- SCROLLBAR (Style Mac OS Classic) --- */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background: #E0E0E0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E0E0E0;
+  border: 2px outset #FFFFFF;
+  border-top: 2px outset #FFFFFF;
+  border-left: 2px outset #FFFFFF;
+  border-right: 2px inset #808080;
+  border-bottom: 2px inset #808080;
+  background-image: repeating-linear-gradient(0deg, #E0E0E0, #E0E0E0 2px, #FFF 3px, #E0E0E0 4px);
+}
+
+::-webkit-scrollbar-button {
+  background: #E0E0E0;
+  border: 2px outset #FFFFFF;
+  height: 16px;
+  width: 16px;
+}
+
+/* Animation des SVG Mac Watch */
+.macos-watch .hour-hand {
+  transform-origin: 16px 16px;
+  animation: rotate-hour 43200s linear infinite;
+  /* 12h */
+}
+
+.macos-watch .minute-hand {
+  transform-origin: 16px 16px;
+  animation: rotate-minute 3600s linear infinite;
+  /* 1h */
+}
+
+/* Animation rapide pour le demo (si tu veux qu'elle tourne vite) */
+.macos-watch.loading .hour-hand {
+  animation: rotate-seconds 4s linear infinite;
+}
+
+.macos-watch.loading .minute-hand {
+  animation: rotate-seconds 0.5s linear infinite;
+}
+
+@keyframes rotate-seconds {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotate-hour {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotate-minute {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }

@@ -10,6 +10,7 @@ use windows_service::{
     service_control_handler::{self, ServiceControlHandlerResult},
     service_dispatcher,
 };
+use tokio::sync::broadcast;
 
 use radius_log_webserver::api::handlers::{
     audit::{get_debug_info, get_security_config},
@@ -22,7 +23,6 @@ use radius_log_webserver::infrastructure::{
     cache::LogCache, file_watcher::FileWatcher, win32::get_log_path_from_registry, cache::StatsCache,
 };
 use radius_log_webserver::utils::logging::init_logging;
-// Retrait de LiveView
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
@@ -31,7 +31,8 @@ const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
 
 define_windows_service!(ffi_service_main, system_service_main);
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = init_logging();
     human_panic::setup_panic!();
 
@@ -39,26 +40,61 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let is_service = args.iter().any(|arg| arg == "--service");
 
     if is_service {
+        // En mode Service, on délègue à system_service_main qui va gérer son propre Runtime
         service_dispatcher::start(SERVICE_NAME, ffi_service_main)?;
     } else {
-        run_app()?;
+        // En mode Console (Développement)
+        // On crée un canal pour gérer le Ctrl+C
+        let (shutdown_tx, shutdown_rx) = broadcast::channel::<()>(1);
+        
+        // Tâche en arrière-plan pour écouter Ctrl+C
+        let tx_clone = shutdown_tx.clone();
+        tokio::spawn(async move {
+            match tokio::signal::ctrl_c().await {
+                Ok(()) => {
+                    tracing::info!("Ctrl+C received, initiating graceful shutdown...");
+                    let _ = tx_clone.send(());
+                }
+                Err(err) => {
+                    eprintln!("Unable to listen for shutdown signal: {}", err);
+                }
+            }
+        });
+
+        // Lancement de l'app
+        run_app(shutdown_rx).await?;
     }
 
     Ok(())
 }
 
+/// Point d'entrée du Service Windows
 fn system_service_main(_args: Vec<std::ffi::OsString>) {
+    // On doit créer un runtime explicite car cette fonction est synchrone (appelée par l'OS)
+    let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+    
+    // Création du canal de communication pour l'arrêt
+    let (shutdown_tx, _) = broadcast::channel::<()>(1);
+    let tx_clone = shutdown_tx.clone();
+
+    // Enregistrement du gestionnaire d'événements du service
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
         match control_event {
-            ServiceControl::Stop => ServiceControlHandlerResult::NoError,
+            ServiceControl::Stop => {
+                tracing::info!("Service stop requested.");
+                // On envoie le signal d'arrêt au serveur HTTP via le broadcast
+                let _ = tx_clone.send(());
+                ServiceControlHandlerResult::NoError
+            }
             ServiceControl::Interrogate => ServiceControlHandlerResult::NoError,
             _ => ServiceControlHandlerResult::NotImplemented,
-        };
-        ServiceControlHandlerResult::NoError
+        }
     };
 
-    let status_handle = service_control_handler::register(SERVICE_NAME, event_handler).unwrap();
+    let status_handle = service_control_handler::register(SERVICE_NAME, event_handler)
+        .expect("Failed to register service handler");
 
+    // On signale au gestionnaire de services que le service est en cours de démarrage
     status_handle.set_service_status(ServiceStatus {
         service_type: SERVICE_TYPE,
         current_state: ServiceState::Running,
@@ -67,10 +103,18 @@ fn system_service_main(_args: Vec<std::ffi::OsString>) {
         checkpoint: 0,
         wait_hint: Duration::default(),
         process_id: None,
-    }).unwrap();
+    }).expect("Failed to set service status to Running");
 
-    let _ = run_app();
+    // On lance l'application web en bloquant sur le runtime
+    // On passe le receiver qui écoutera le signal envoyé par event_handler
+    let result = rt.block_on(run_app(shutdown_tx.subscribe()));
 
+    match result {
+        Ok(_) => tracing::info!("Service shutdown gracefully."),
+        Err(e) => tracing::error!("Service error: {}", e),
+    }
+
+    // On signale au gestionnaire de services que le service est arrêté
     status_handle.set_service_status(ServiceStatus {
         service_type: SERVICE_TYPE,
         current_state: ServiceState::Stopped,
@@ -79,11 +123,10 @@ fn system_service_main(_args: Vec<std::ffi::OsString>) {
         checkpoint: 0,
         wait_hint: Duration::default(),
         process_id: None,
-    }).unwrap();
+    }).expect("Failed to set service status to Stopped");
 }
 
-#[tokio::main]
-async fn run_app() -> std::io::Result<()> {
+async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
     let broadcaster = Arc::new(Broadcaster::new());
     let cache = Arc::new(LogCache::new());
 
@@ -106,7 +149,8 @@ async fn run_app() -> std::io::Result<()> {
     tracing::info!("Server running at http://0.0.0.0:{}", port);
     tracing::info!("Build: {} (v{})", env!("VERGEN_GIT_SHA"), BUILD_VERSION);
 
-    HttpServer::new(move || {
+    // Création du serveur HTTP
+    let server = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::default())
             .wrap(tracing_actix_web::TracingLogger::default())
@@ -158,7 +202,16 @@ async fn run_app() -> std::io::Result<()> {
             .route("/security-audit", web::get().to(radius_log_webserver::api::handlers::web_ui::security_audit_page))
             .route("/robots.txt", web::get().to(robots_txt))
     })
-    .bind(format!("0.0.0.0:{}", port))?
-    .run()
-    .await
+    .bind(format!("0.0.0.0:{}", port))?;
+
+    // Gestion du graceful shutdown
+    // On attend le signal sur le receiver, puis on arrête le serveur
+    server
+        .run()
+        .with_graceful_shutdown(async move {
+            // Cette tâche attend que quelqu'un envoie un message sur le canal (ex: Ctrl+C ou Stop Service)
+            shutdown.recv().await.ok();
+            tracing::info!("Graceful shutdown signal received, closing server...");
+        })
+        .await
 }
