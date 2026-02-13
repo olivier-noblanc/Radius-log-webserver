@@ -62,60 +62,64 @@ pub fn Layout(props: LayoutProps) -> Element {
                 main { class: "container app-wrapper",
                     {props.children}
                 }
+                
+                // Global Loader
                 div { id: "global-loader",
                     div { class: "loader-progress-bar" }
                     div { class: "loader-box",
                         div { class: "loader-icon",
+                            // Flagship Loader
                             div { class: "neon-ring", style: "display: none;" }
+                            
+                            // Windows 3.1 Loader
                             div { class: "win31-hourglass", style: "display: none;", "⏳" }
-                             div { class: "macos-watch", style: "display: none;",
-                               // Dans la partie loader (à côté de neon-ring, etc.)
-svg {
-    class: "macos-watch",
-    "view-box": "0 0 32 32",
-    "shape-rendering": "crispEdges", // IMPORTANT : Donne l'aspect pixelisé/net
-    width: "32",
-    height: "32",
-    
-    // Le cadran de la montre
-    circle {
-        cx: "16",
-        cy: "16",
-        r: "14",
-        fill: "none",
-        stroke: "black",
-        "stroke-width": "2"
-    }
-    // Boutons de la montre (haut et bas)
-    rect { x: "14", y: "0", width: "4", height: "2", fill: "black" }
-    rect { x: "15", y: "28", width: "2", height: "4", fill: "black" }
-    
-    // L'aiguille des heures (courte)
-    line {
-        x1: "16", y1: "16",
-        x2: "16", y2: "8",
-        stroke: "black",
-        "stroke-width": "2",
-        "stroke-linecap": "square", // Extrémités carrées
-        class: "hour-hand"
-    }
-    // L'aiguille des minutes (longue)
-    line {
-        x1: "16", y1: "16",
-        x2: "24", y2: "16",
-        stroke: "black",
-        "stroke-width": "2",
-        "stroke-linecap": "square",
-        class: "minute-hand"
-    }
-    // Le centre
-    circle { cx: "16", cy: "16", r: "1", fill: "black" }
-}
+                            
+                            // Mac OS Watch Loader (SVG)
+                            div { class: "macos-watch", style: "display: none;",
+                                svg { 
+                                    "view-box": "0 0 32 32",
+                                    "shape-rendering": "crispEdges",
+                                    width: "100%",
+                                    height: "100%",
+                                    circle {
+                                        cx: "16",
+                                        cy: "16",
+                                        r: "14",
+                                        fill: "none",
+                                        stroke: "black",
+                                        "stroke-width": "2"
+                                    }
+                                    rect { x: "14", y: "0", width: "4", height: "2", fill: "black" }
+                                    rect { x: "15", y: "28", width: "2", height: "4", fill: "black" }
+                                    line {
+                                        x1: "16", y1: "16",
+                                        x2: "16", y2: "8",
+                                        stroke: "black",
+                                        "stroke-width": "2",
+                                        "stroke-linecap": "square",
+                                        class: "hour-hand"
+                                    }
+                                    line {
+                                        x1: "16", y1: "16",
+                                        x2: "24", y2: "16",
+                                        stroke: "black",
+                                        "stroke-width": "2",
+                                        "stroke-linecap": "square",
+                                        class: "minute-hand"
+                                    }
+                                    circle { cx: "16", cy: "16", r: "1", fill: "black" }
+                                }
                             }
+                            
+                            // XP Loader
                             div { class: "xp-pulse", style: "display: none;",
                                 div {} div {} div {}
                             }
+                            
+                            // Terminal Loader
                             div { class: "terminal-bar", style: "display: none;" }
+                            
+                            // DOS Loader
                             div { class: "dos-spin", style: "display: none;" }
                         }
                         div { class: "loader-text",

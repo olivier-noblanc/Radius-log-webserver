@@ -149,8 +149,8 @@ async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
     tracing::info!("Server running at http://0.0.0.0:{}", port);
     tracing::info!("Build: {} (v{})", env!("VERGEN_GIT_SHA"), BUILD_VERSION);
 
-    // Création du serveur HTTP
-    let server = HttpServer::new(move || {
+    // Création du future du serveur (il ne démarre pas tout de suite, il est défini ici)
+    let server_future = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::default())
             .wrap(tracing_actix_web::TracingLogger::default())
@@ -202,16 +202,22 @@ async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
             .route("/security-audit", web::get().to(radius_log_webserver::api::handlers::web_ui::security_audit_page))
             .route("/robots.txt", web::get().to(robots_txt))
     })
-    .bind(format!("0.0.0.0:{}", port))?;
+    .bind(format!("0.0.0.0:{}", port))?
+    .run();
 
-    // Gestion du graceful shutdown
-    // On attend le signal sur le receiver, puis on arrête le serveur
-    server
-        .run()
-        .with_graceful_shutdown(async move {
-            // Cette tâche attend que quelqu'un envoie un message sur le canal (ex: Ctrl+C ou Stop Service)
-            shutdown.recv().await.ok();
+    // Gestion du graceful shutdown via tokio::select! (Spécifique Actix-Web 4)
+    // On attend soit que le serveur plante/se termine, soit qu'on reçoive le signal d'arrêt
+    tokio::select! {
+        // Cas 1 : Le serveur s'arrête de lui-même (rare)
+        res = server_future => {
+            res
+        }
+        // Cas 2 : On reçoit le signal d'arrêt (via shutdown.recv())
+        _ = shutdown.recv() => {
             tracing::info!("Graceful shutdown signal received, closing server...");
-        })
-        .await
+            // En sortant de ce bloc, 'server_future' est droppé (abandonné),
+            // ce qui déclenche automatiquement le mécanisme d'arrêt gracieux d'Actix.
+            Ok(())
+        }
+    }
 }
