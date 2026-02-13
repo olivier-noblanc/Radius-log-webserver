@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::core::models::RadiusRequest;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct LogDetailProps {
@@ -22,9 +22,9 @@ pub fn LogDetail(props: LogDetailProps) -> Element {
                 }
                 div { class: "detail-item",
                     div { class: "text-xxs text-muted uppercase", "Status" }
-                    div { 
+                    div {
                         class: if props.log.status.as_deref() == Some("fail") { "text-fail" } else { "text-success" },
-                        "{props.log.resp_type}" 
+                        "{props.log.resp_type}"
                     }
                 }
                 div { class: "detail-item",

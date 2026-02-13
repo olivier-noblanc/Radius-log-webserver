@@ -1,12 +1,12 @@
 use crate::core::models::{RadiusEvent, RadiusRequest};
 use crate::core::reason_map::{map_packet_type, map_reason};
+use aho_corasick::AhoCorasick;
+use memmap2::Mmap;
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::reader::Reader;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::io::Cursor;
-use memmap2::Mmap;
-use aho_corasick::AhoCorasick;
 
 pub fn parse_log_with_mmap(mmap: &Mmap, search: Option<&str>, limit: usize) -> Vec<RadiusRequest> {
     let mut reader = Reader::from_reader(Cursor::new(&mmap[..]));
@@ -28,7 +28,7 @@ pub fn parse_xml_bytes<R: std::io::BufRead>(
                 blob.push(b'<');
                 blob.extend_from_slice(&buf);
                 blob.push(b'>');
-                
+
                 let mut depth = 1;
                 while depth > 0 {
                     let mut inner_buf = Vec::new();
@@ -64,7 +64,9 @@ pub fn parse_xml_bytes<R: std::io::BufRead>(
                             blob.extend_from_slice(&inner_buf);
                             blob.extend_from_slice(b"-->");
                         }
-                        Ok(XmlEvent::Eof) => { break; },
+                        Ok(XmlEvent::Eof) => {
+                            break;
+                        }
                         _ => {
                             blob.extend_from_slice(&inner_buf);
                         }
@@ -113,15 +115,19 @@ pub fn parse_xml_bytes<R: std::io::BufRead>(
 
     let events_all: Vec<RadiusEvent> = filtered_blobs
         .into_par_iter()
-        .filter_map(|blob| {
-            match quick_xml::de::from_reader::<&[u8], RadiusEvent>(&blob[..]) {
+        .filter_map(
+            |blob| match quick_xml::de::from_reader::<&[u8], RadiusEvent>(&blob[..]) {
                 Ok(ev) => Some(ev),
                 Err(e) => {
-                    tracing::error!("Failed to deserialize Event XML: {}. Blob: {}", e, String::from_utf8_lossy(&blob));
+                    tracing::error!(
+                        "Failed to deserialize Event XML: {}. Blob: {}",
+                        e,
+                        String::from_utf8_lossy(&blob)
+                    );
                     None
                 }
-            }
-        })
+            },
+        )
         .collect();
 
     let mut groups: Vec<Vec<RadiusEvent>> = Vec::new();
@@ -147,7 +153,7 @@ pub fn parse_xml_bytes<R: std::io::BufRead>(
     }
 
     let mut reqs: Vec<RadiusRequest> = groups.into_par_iter().map(|g| process_group(&g)).collect();
-    
+
     // Reverse time sort is often desired for "latest" logs
     reqs.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
 
@@ -171,7 +177,7 @@ pub fn process_group(group: &[RadiusEvent]) -> RadiusRequest {
             if let Some(val) = &event.server {
                 req.server.clone_from(val);
             }
-            
+
             // FIX: Try Client-IP-Address first, then fallback to NAS-IP-Address
             if let Some(val) = &event.ap_ip {
                 req.ap_ip.clone_from(val);
@@ -221,13 +227,18 @@ pub fn process_group(group: &[RadiusEvent]) -> RadiusRequest {
 
 /// Recherche ultra-rapide utilisant Aho-Corasick.
 pub fn fast_search(reqs: &mut Vec<RadiusRequest>, query: &str) {
-    if query.is_empty() { return; }
+    if query.is_empty() {
+        return;
+    }
     let ac = AhoCorasick::builder()
         .ascii_case_insensitive(true)
         .build([query])
         .unwrap();
     reqs.retain(|r| {
-        ac.is_match(&r.user) || ac.is_match(&r.mac) || ac.is_match(&r.ap_ip) || ac.is_match(&r.server) || ac.is_match(&r.reason)
+        ac.is_match(&r.user)
+            || ac.is_match(&r.mac)
+            || ac.is_match(&r.ap_ip)
+            || ac.is_match(&r.server)
+            || ac.is_match(&r.reason)
     });
 }
-

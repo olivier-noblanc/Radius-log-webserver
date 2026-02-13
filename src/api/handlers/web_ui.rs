@@ -1,16 +1,16 @@
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
-use dioxus::prelude::*;
-use std::sync::Arc;
-use crate::infrastructure::cache::LogCache;
-use crate::utils::security::is_authorized;
-use crate::api::handlers::logs::{get_latest_log_file, get_all_log_files, ParseQuery};
+use crate::api::handlers::logs::{get_all_log_files, get_latest_log_file, ParseQuery};
 use crate::api::handlers::stats::get_stats_data;
 use crate::core::parser::parse_xml_bytes;
+use crate::infrastructure::cache::LogCache;
+use crate::utils::security::is_authorized;
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use dioxus::prelude::*;
 use quick_xml::reader::Reader;
-use std::fs::File;
-use serde::Deserialize;
 use rust_embed::RustEmbed;
-use std::collections::HashMap; // Required to parse query params
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::fs::File;
+use std::sync::Arc; // Required to parse query params
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
@@ -30,20 +30,18 @@ pub struct LoginQuery {
 // Utility function to map themes to CSS files
 fn get_theme_css_files(theme: &str) -> Vec<String> {
     let mut files = Vec::new();
-    
+
     match theme {
         "light" => files.push("/css/themes/light.css".to_string()),
         "win31" => files.push("/css/themes/win31.css".to_string()),
         "macos" => files.push("/css/themes/macos.css".to_string()),
-        
+
         // onyx-glass est le défaut dans style.css
         _ => {}
     }
-    
+
     files
 }
-
-
 
 // --- HELPER LOCALHOST ---
 
@@ -56,15 +54,18 @@ fn is_local_dev(req: &HttpRequest) -> bool {
 
 // --- HANDLERS ---
 
-pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web::Query<ParseQuery>) -> impl Responder {
-    
+pub async fn index(
+    req: HttpRequest,
+    cache: web::Data<Arc<LogCache>>,
+    query: web::Query<ParseQuery>,
+) -> impl Responder {
     // 1. MANUAL PARSING OF EXTRA PARAMETERS (Logged & Theme)
     // Actix doesn't have direct query_param() on Request, so we parse the query string
     let qs = req.query_string();
     let params: HashMap<String, String> = serde_urlencoded::from_str(qs).unwrap_or_default();
-    
+
     let is_manual_login = params.get("logged").is_some_and(|s| s == "yes");
-    
+
     // 2. THEME MANAGEMENT (URL takes precedence over Cookie)
     let theme = match params.get("theme") {
         Some(t) => t.clone(), // Priority 1: URL Parameter (Login)
@@ -74,14 +75,19 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
                 .unwrap_or_else(|| "onyx-glass".into()) // Priority 2: Cookie
         }
     };
-    
+
     let css_files = get_theme_css_files(&theme);
 
     let dev_mode = is_local_dev(&req);
     let is_auth = is_authorized(&req);
 
     let latest_file = get_latest_log_file()
-        .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+        .map(|p| {
+            p.file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string()
+        })
         .unwrap_or_default();
 
     let current_file = if query.file.is_empty() {
@@ -92,7 +98,11 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
 
     let mut logs = cache.get_latest(100);
     if logs.is_empty() || (!query.file.is_empty() && query.file != latest_file) {
-        let target_file = if query.file.is_empty() { &latest_file } else { &query.file };
+        let target_file = if query.file.is_empty() {
+            &latest_file
+        } else {
+            &query.file
+        };
         let log_dir = crate::infrastructure::win32::get_log_path_from_registry();
         if let Ok(safe_path) = crate::utils::security::resolve_safe_path(&log_dir, target_file) {
             if let Ok(file) = File::open(safe_path) {
@@ -121,7 +131,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
             git_sha: GIT_SHA.to_string(),
             is_authorized: is_auth,
             css_files: css_files,
-            
+
             div { id: "view-logs",
                 crate::components::log_filters::LogFilters {
                     files: files,
@@ -129,7 +139,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
                     search_val: search_val
                 }
 
-                crate::components::log_table::LogTable { 
+                crate::components::log_table::LogTable {
                     logs: logs,
                     sort_by: "timestamp".to_string(),
                     sort_desc: true
@@ -161,7 +171,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
             .same_site(actix_web::cookie::SameSite::Lax)
             .secure(false)
             .finish();
-        
+
         // IMPORTANT FIX: Passing the reference (&auth_cookie)
         let _ = response.add_cookie(&auth_cookie);
     }
@@ -175,17 +185,20 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
             .same_site(actix_web::cookie::SameSite::Lax)
             .secure(false)
             .finish();
-            
+
         // IMPORTANT FIX: Passing the reference (&theme_cookie)
-       let _ = response.add_cookie(&theme_cookie);
+        let _ = response.add_cookie(&theme_cookie);
     }
 
     response
 }
 
 pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
-    let theme = query.theme.clone().unwrap_or_else(|| "onyx-glass".to_string());
-    
+    let theme = query
+        .theme
+        .clone()
+        .unwrap_or_else(|| "onyx-glass".to_string());
+
     let auth_cookie = actix_web::cookie::Cookie::build("radius_auth", "authorized")
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(30))
@@ -197,7 +210,7 @@ pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
     let theme_cookie = actix_web::cookie::Cookie::build("theme", theme)
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(365))
-        .http_only(false) 
+        .http_only(false)
         .same_site(actix_web::cookie::SameSite::Lax)
         .secure(false)
         .finish();
@@ -207,19 +220,22 @@ pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
         .cookie(auth_cookie)
         .cookie(theme_cookie)
         .insert_header(("HX-Redirect", "/"))
-        .insert_header(("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"))
+        .insert_header((
+            "Cache-Control",
+            "no-store, no-cache, must-revalidate, max-age=0",
+        ))
         .finish()
 }
 
 pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
     let theme = query.theme.clone().unwrap_or_else(|| "onyx-glass".into());
-    
+
     tracing::info!("Theme change requested: {}", theme);
-    
+
     let theme_cookie = actix_web::cookie::Cookie::build("theme", theme.clone())
         .path("/")
         .max_age(actix_web::cookie::time::Duration::days(365))
-        .http_only(false)  // Must be accessible to JS for HTMX
+        .http_only(false) // Must be accessible to JS for HTMX
         .same_site(actix_web::cookie::SameSite::Lax)
         .secure(false)
         .finish();
@@ -227,18 +243,20 @@ pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
     // Return 200 OK - HTMX will trigger page reload via hx-on::after-request
     HttpResponse::Ok()
         .cookie(theme_cookie)
-        .insert_header(("HX-Trigger", "themeChanged"))  // Custom event (optionnel)
+        .insert_header(("HX-Trigger", "themeChanged")) // Custom event (optionnel)
         .finish()
 }
 
 pub async fn dashboard_htmx(req: HttpRequest, cache: web::Data<Arc<LogCache>>) -> impl Responder {
-    if !is_authorized(&req) { return HttpResponse::Forbidden().body("Access Denied"); }
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().body("Access Denied");
+    }
     let stats = get_stats_data(&cache);
 
     let html = dioxus_ssr::render_element(rsx! {
         crate::components::dashboard::Dashboard { stats: stats }
     });
-    
+
     HttpResponse::Ok().content_type("text/html").body(html)
 }
 
@@ -246,7 +264,7 @@ pub async fn dashboard_htmx(req: HttpRequest, cache: web::Data<Arc<LogCache>>) -
 
 fn handle_static_asset(req: HttpRequest, content: &[u8], content_type: &str) -> HttpResponse {
     let etag = GIT_SHA;
-    
+
     if let Some(if_none_match) = req.headers().get("If-None-Match") {
         if if_none_match == etag {
             return HttpResponse::NotModified().finish();
@@ -262,7 +280,7 @@ fn handle_static_asset(req: HttpRequest, content: &[u8], content_type: &str) -> 
 
 pub async fn serve_static_asset(req: HttpRequest) -> impl Responder {
     let path = req.path().trim_start_matches('/');
-    
+
     match Assets::get(path) {
         Some(content) => {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
@@ -271,7 +289,6 @@ pub async fn serve_static_asset(req: HttpRequest) -> impl Responder {
         None => HttpResponse::NotFound().body("Asset not found"),
     }
 }
-
 
 pub async fn robots_txt() -> impl Responder {
     HttpResponse::Ok()
@@ -286,19 +303,25 @@ pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
             .insert_header(("Location", "/"))
             .finish();
     }
-    
+
     let report = crate::infrastructure::security_audit::perform_security_audit();
-    
-    let theme = req.cookie("theme")
+
+    let theme = req
+        .cookie("theme")
         .map(|c| c.value().to_string())
         .unwrap_or_else(|| "onyx-glass".into());
-    
+
     let css_files = get_theme_css_files(&theme);
     let build_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
-    
+
     let files = get_all_log_files().unwrap_or_default();
     let latest_file = get_latest_log_file()
-        .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+        .map(|p| {
+            p.file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string()
+        })
         .unwrap_or_default();
 
     let html = dioxus_ssr::render_element(rsx! {
@@ -309,7 +332,7 @@ pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
             git_sha: GIT_SHA.to_string(),
             is_authorized: true,
             css_files: css_files,
-            
+
             div { id: "view-logs", style: "display: none;",
                 crate::components::log_filters::LogFilters {
                     files: files,
@@ -326,7 +349,7 @@ pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
             }
         }
     });
-    
+
     HttpResponse::Ok()
         .content_type("text/html")
         .body(format!("<!DOCTYPE html><html lang=\"en\">{}</html>", html))

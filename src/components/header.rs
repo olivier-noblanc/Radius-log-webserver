@@ -9,17 +9,17 @@ pub struct HeaderProps {
 #[component]
 pub fn Header(props: HeaderProps) -> Element {
     rsx! {
-        header { 
+        header {
             class: "main-header glass-panel mb-6",
-            
+
             div { class: "flex flex-col",
                 a { href: "/", class: "brand-logo",
                     // Icône LOGO Pixelisée (System 7)
-                    svg { 
-                        width: "24", height: "24", view_box: "0 0 24 24", 
+                    svg {
+                        width: "24", height: "24", view_box: "0 0 24 24",
                         fill: "none", stroke: "currentColor", stroke_width: "2",
                         // Attributs pour le rendu pixelisé net
-                        shape_rendering: "crispEdges", 
+                        shape_rendering: "crispEdges",
                         stroke_linejoin: "miter",
                         path { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }
                         path { d: "M8 12h8" }
@@ -34,11 +34,11 @@ pub fn Header(props: HeaderProps) -> Element {
                 }
             }
 
-            nav { 
+            nav {
                 class: "nav-main",
-                
+
                 // LOGS button - Pure HTMX
-                button { 
+                button {
                     id: "btn-nav-logs",
                     class: "btn-glass btn-nav active",
                     "hx-get": "/api/logs/rows",
@@ -53,11 +53,11 @@ pub fn Header(props: HeaderProps) -> Element {
                         this.classList.add('active');
                         const bl = document.getElementById('btn-nav-dashboard'); if(bl) bl.classList.remove('active');
                     "#,
-                    "LOG STREAM" 
+                    "LOG STREAM"
                 }
-                
+
                 // DASHBOARD button - Pure HTMX
-                button { 
+                button {
                     id: "btn-nav-dashboard",
                     class: "btn-glass btn-nav",
                     "hx-get": "/api/dashboard",
@@ -72,13 +72,13 @@ pub fn Header(props: HeaderProps) -> Element {
                         this.classList.add('active');
                         const bl = document.getElementById('btn-nav-logs'); if(bl) bl.classList.remove('active');
                     "#,
-                    "ANALYTICS" 
+                    "ANALYTICS"
                 }
             }
 
             div { class: "flex items-center gap-4 controls-right",
-                
-                select { 
+
+                select {
                     id: "themeSelect",
                     name: "theme",
                     class: "input-glass theme-select",
@@ -88,29 +88,29 @@ pub fn Header(props: HeaderProps) -> Element {
                     "hx-indicator": "#global-loader",
                     "hx-swap": "none",
                     "hx-on::after-request": "window.location.reload();",
-                    
+
                     option { value: "onyx-glass", selected: props.theme == "onyx-glass", "[FLAGSHIP] Onyx Glass" }
                     option { value: "light", selected: props.theme == "light", "[LIGHT] Professional" }
 
                     option { value: "win31", selected: props.theme == "win31", "Windows 3.1" }
                     option { value: "macos", selected: props.theme == "macos", "Macintosh Classic" }
                 }
-                    
-                a { 
+
+                a {
                     href: "#securityModal",
                     class: "btn-glass btn-audit",
-                    
+
                     // Icône SÉCURITÉ Pixelisée (Bouclier)
-                    svg { 
-                        width: "20", height: "20", view_box: "0 0 24 24", 
+                    svg {
+                        width: "20", height: "20", view_box: "0 0 24 24",
                         fill: "none", stroke: "currentColor", stroke_width: "2",
                         // Attributs pour le rendu pixelisé net
-                        shape_rendering: "crispEdges", 
-                        stroke_linecap: "square", 
+                        shape_rendering: "crispEdges",
+                        stroke_linecap: "square",
                         stroke_linejoin: "miter",
                         path { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }
                     }
-                    
+
                     " SECURITY AUDIT"
                 }
 

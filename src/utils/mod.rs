@@ -1,2 +1,2 @@
-pub mod security;
 pub mod logging;
+pub mod security;

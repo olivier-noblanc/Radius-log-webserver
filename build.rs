@@ -19,10 +19,11 @@ fn main() {
     match Emitter::default()
         .add_instructions(&Git2Builder::all_git().unwrap())
         .unwrap()
-        .emit() {
-            Ok(_) => println!("vergen emitted instructions"),
-            Err(e) => eprintln!("vergen failed: {}", e),
-        }
+        .emit()
+    {
+        Ok(_) => println!("vergen emitted instructions"),
+        Err(e) => eprintln!("vergen failed: {}", e),
+    }
 
     // Generate Legacy Build Info (Fallback or additional info)
     let out_dir = std::env::var("OUT_DIR").unwrap();
@@ -34,10 +35,7 @@ fn main() {
 
     std::fs::write(
         &dest_path,
-        format!(
-            "pub const BUILD_VERSION: &str = \"{}\";\n",
-            timestamp
-        ),
+        format!("pub const BUILD_VERSION: &str = \"{}\";\n", timestamp),
     )
     .unwrap();
 

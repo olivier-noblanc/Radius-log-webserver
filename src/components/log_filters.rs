@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::api::handlers::logs::LogFile;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct LogFiltersProps {
@@ -11,20 +11,20 @@ pub struct LogFiltersProps {
 #[component]
 pub fn LogFilters(props: LogFiltersProps) -> Element {
     rsx! {
-        form { 
-            id: "log-filters", 
-            "hx-get": "/api/logs/rows", 
+        form {
+            id: "log-filters",
+            "hx-get": "/api/logs/rows",
             "hx-target": "#log-table-container",
             "hx-swap": "innerHTML",
             "hx-trigger": "change from:select, change from:input[type=checkbox], input delay:500ms from:input[type=text]",
             "hx-indicator": "#global-loader",
             class: "flex items-center mb-4 glass-panel panel-main",
-            
+
             div { class: "flex-grow",
                 select { id: "fileSelect", name: "file", class: "input-glass",
                     for file in props.files {
-                        option { 
-                            value: "{file.path}", 
+                        option {
+                            value: "{file.path}",
                             selected: file.path == props.current_file,
                             "{file.name} ({file.formatted_size})"
                         }
@@ -32,22 +32,22 @@ pub fn LogFilters(props: LogFiltersProps) -> Element {
                 }
             }
             div { class: "flex-grow",
-                input { 
-                    r#type: "text", 
-                    id: "searchInput", 
-                    name: "search", 
+                input {
+                    r#type: "text",
+                    id: "searchInput",
+                    name: "search",
                     class: "input-glass",
-                    placeholder: "Search (User, IP, Reason)...", 
+                    placeholder: "Search (User, IP, Reason)...",
                     value: "{props.search_val}"
                 }
             }
             div { class: "flex items-center ml-4 gap-8 text-xs text-muted",
-                input { 
-                    r#type: "checkbox", 
-                    id: "errorToggle", 
-                    name: "error_only", 
+                input {
+                    r#type: "checkbox",
+                    id: "errorToggle",
+                    name: "error_only",
                     value: "true",
-                    class: "cursor-pointer w-18 h-18" 
+                    class: "cursor-pointer w-18 h-18"
                 }
                 label { r#for: "errorToggle", class: "error-only-label", "ERRORS ONLY" }
             }
@@ -56,16 +56,16 @@ pub fn LogFilters(props: LogFiltersProps) -> Element {
             input { r#type: "hidden", id: "sort_desc", name: "sort_desc", value: "true" }
 
             div {
-                button { 
-                    r#type: "submit", 
-                    class: "btn-glass btn-primary", 
-                    id: "loadBtn", 
+                button {
+                    r#type: "submit",
+                    class: "btn-glass btn-primary",
+                    id: "loadBtn",
                     "hx-indicator": "#global-loader",
-                    "REFRESH" 
+                    "REFRESH"
                 }
-                a { 
+                a {
                     href: "/api/export?file={props.current_file}&search={props.search_val}",
-                    class: "btn-glass", 
+                    class: "btn-glass",
                     id: "exportBtn",
                     "hx-indicator": "#global-loader",
                     "EXPORT CSV"

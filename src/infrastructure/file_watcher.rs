@@ -1,6 +1,8 @@
+use crate::core::models::RadiusRequest;
 use crate::core::parser::parse_xml_bytes;
 use crate::infrastructure::cache::LogCache;
-use crate::core::models::RadiusRequest;
+use crate::infrastructure::MessageBroadcaster;
+use dashmap::DashMap;
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use quick_xml::reader::Reader;
 use std::fs::{self, File};
@@ -8,8 +10,6 @@ use std::io::{BufReader, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
-use dashmap::DashMap;
-use crate::infrastructure::MessageBroadcaster;
 
 pub struct FileWatcher {
     broadcaster: Arc<dyn MessageBroadcaster>,
@@ -34,12 +34,13 @@ impl FileWatcher {
 
     pub fn start(&self, path_str: String) {
         let path = PathBuf::from(path_str);
-        
+
         // Initial scan
         if let Ok(entries) = fs::read_dir(&path) {
             for entry in entries.flatten() {
                 if let Ok(meta) = entry.metadata() {
-                    self.file_sizes.insert(entry.path().to_string_lossy().to_string(), meta.len());
+                    self.file_sizes
+                        .insert(entry.path().to_string_lossy().to_string(), meta.len());
                 }
             }
         }
@@ -64,7 +65,13 @@ impl FileWatcher {
                         if event.kind.is_modify() {
                             for p in event.paths {
                                 if p.extension().is_some_and(|e| e == "log") {
-                                    process_file_change(&p, &broadcaster, &file_sizes, &cache, &stats_cache);
+                                    process_file_change(
+                                        &p,
+                                        &broadcaster,
+                                        &file_sizes,
+                                        &cache,
+                                        &stats_cache,
+                                    );
                                 }
                             }
                         }
@@ -101,10 +108,7 @@ fn process_file_change(
                         stats_cache.invalidate();
 
                         // Broadcast fragment
-                        let html_fragment: String = new_reqs
-                            .iter()
-                            .map(render_row)
-                            .collect();
+                        let html_fragment: String = new_reqs.iter().map(render_row).collect();
 
                         broadcaster.broadcast(html_fragment);
                         file_sizes.insert(path_str, new_size);

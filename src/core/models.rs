@@ -38,7 +38,7 @@ pub struct RadiusRequest {
     // FIX: ID Unique pour éviter le bug d'indexation
     #[serde(skip_deserializing)]
     pub id: Option<usize>,
-    
+
     pub timestamp: String,
     pub req_type: String,
     pub server: String,

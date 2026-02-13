@@ -1,0 +1,10 @@
+{
+    "rust": {},
+    "excludes": [
+        "**/target",
+        "Cargo.lock"
+    ],
+    "plugins": [
+        "https://plugins.dprint.dev/rust-0.23.1.wasm"
+    ]
+}

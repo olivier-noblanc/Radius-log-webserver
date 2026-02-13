@@ -7,7 +7,7 @@ pub fn SecurityModal(is_authorized: bool) -> Element {
         div { id: "securityModal", class: "modal-overlay",
             a { href: "#", class: "close-overlay" }
             div { class: "modal-content glass-panel p-6 max-w-md w-full animate-pop",
-                
+
                 // LOGIQUE CONDITIONNELLE
                 if is_authorized {
                     // CAS 1 : Utilisateur connecté -> Afficher l'audit (ou un lien)
@@ -16,7 +16,7 @@ pub fn SecurityModal(is_authorized: bool) -> Element {
                         div { class: "text-4xl mb-2", "🔓" }
                         p { class: "opacity-80", "Identity Verified. Access Granted." }
                     }
-                    a { 
+                    a {
                         href: "/security-audit",
                         class: "btn-glass btn-primary w-full text-center",
                         "🔍 VIEW FULL SECURITY AUDIT"

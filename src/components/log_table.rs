@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::core::models::RadiusRequest;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct LogTableProps {
@@ -12,20 +12,24 @@ pub struct LogTableProps {
 pub fn LogTable(props: LogTableProps) -> Element {
     let get_sort_desc = |col: &str| {
         if props.sort_by == col {
-            if props.sort_desc { "false" } else { "true" }
+            if props.sort_desc {
+                "false"
+            } else {
+                "true"
+            }
         } else {
             "true"
         }
     };
 
     rsx! {
-        div { 
+        div {
             id: "log-table-container",
             class: "glass-panel table-container",
             table { id: "logTable",
                 thead {
                     tr {
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=timestamp&sort_desc={get_sort_desc(\"timestamp\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -33,7 +37,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "TIMESTAMP"
                             div { class: "resizer" }
                         }
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=req_type&sort_desc={get_sort_desc(\"req_type\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -41,7 +45,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "TYPE"
                             div { class: "resizer" }
                         }
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=server&sort_desc={get_sort_desc(\"server\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -49,7 +53,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "SERVER"
                             div { class: "resizer" }
                         }
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=ap_ip&sort_desc={get_sort_desc(\"ap_ip\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -57,7 +61,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "AP IP"
                             div { class: "resizer" }
                         }
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=ap_name&sort_desc={get_sort_desc(\"ap_name\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -65,7 +69,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "AP NAME"
                             div { class: "resizer" }
                         }
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=mac&sort_desc={get_sort_desc(\"mac\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -73,7 +77,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "MAC"
                             div { class: "resizer" }
                         }
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=user&sort_desc={get_sort_desc(\"user\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -81,7 +85,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "USER"
                             div { class: "resizer" }
                         }
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=resp_type&sort_desc={get_sort_desc(\"resp_type\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -89,7 +93,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "RESULT"
                             div { class: "resizer" }
                         }
-                        th { 
+                        th {
                             class: "sortable",
                             "hx-get": "/api/logs/rows?sort_by=reason&sort_desc={get_sort_desc(\"reason\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
@@ -101,12 +105,12 @@ pub fn LogTable(props: LogTableProps) -> Element {
                 }
                 tbody { id: "logTableBody",
                     for log in props.logs {
-                        tr { 
+                        tr {
                             class: "log-row cursor-pointer",
                             "hx-get": "/api/logs/detail?id={log.id.unwrap_or_default()}",
                             "hx-target": "#modalBody",
                             "hx-trigger": "click",
-                            
+
                             td { "{log.timestamp}" }
                             td { "{log.req_type}" }
                             td { "{log.server}" }
@@ -114,7 +118,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             td { "{log.ap_name}" }
                             td { "{log.mac}" }
                             td { "{log.user}" }
-                            td { 
+                            td {
                                 class: match log.status.as_deref() {
                                     Some("fail") => "status-fail",
                                     Some("challenge") => "status-challenge",
@@ -125,7 +129,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                                     Some("challenge") => "challenge",
                                     _ => "success",
                                 },
-                                "{log.resp_type}" 
+                                "{log.resp_type}"
                             }
                             td { "{log.reason}" }
                         }

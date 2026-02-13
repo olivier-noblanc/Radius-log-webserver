@@ -18,11 +18,11 @@ pub fn Layout(props: LayoutProps) -> Element {
             meta { charset: "utf-8" }
             meta { name: "viewport", content: "width=device-width, initial-scale=1.0" }
             title { "{props.title}" }
-            
+
             // Base CSS
             link { rel: "stylesheet", href: "/css/style.css" }
             link { rel: "stylesheet", href: "/css/fonts.css" }
-            
+
             // Theme specific CSS files (Dynamic injection)
             for file in &props.css_files {
                 link { rel: "stylesheet", href: "{file}" }
@@ -62,7 +62,7 @@ pub fn Layout(props: LayoutProps) -> Element {
                 main { class: "container app-wrapper",
                     {props.children}
                 }
-                
+
                 // Global Loader
                 div { id: "global-loader",
                     div { class: "loader-progress-bar" }
@@ -77,10 +77,10 @@ pub fn Layout(props: LayoutProps) -> Element {
                             span {}
                             span {}
                         }
-                            
+
                             // Windows 3.1 Loader (Hourglass)
                             div { class: "win31-hourglass", style: "display: none;", "⏳" }
-                            
+
                         }
                         // Loader text (varies by theme)
                         div { class: "loader-text",

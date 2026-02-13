@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::api::handlers::stats::Stats;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct DashboardProps {
@@ -8,12 +8,13 @@ pub struct DashboardProps {
 
 #[component]
 pub fn Dashboard(props: DashboardProps) -> Element {
-    let rejection_count = props.stats.total_requests - (props.stats.total_requests as f64 * props.stats.success_rate / 100.0).round() as usize;
+    let rejection_count = props.stats.total_requests
+        - (props.stats.total_requests as f64 * props.stats.success_rate / 100.0).round() as usize;
     let success_rate_rounded = props.stats.success_rate.round() as u32;
 
     rsx! {
         div { class: "dashboard-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 animate-fade-in",
-            
+
             // Stat Card: Total Requests
             div { class: "stat-card glass-panel p-4 flex flex-col items-center justify-center",
                 div { class: "text-xs text-muted uppercase tracking-widest mb-2", "Total Transactions" }
@@ -38,12 +39,12 @@ pub fn Dashboard(props: DashboardProps) -> Element {
             }
 
             // NEW: Security Health Status
-            div { 
+            div {
                 class: "stat-card glass-panel p-4 flex flex-col items-center justify-center relative overflow-hidden",
                 class: if !props.stats.security_vulnerabilities.is_empty() { "animate-pulse border-red-500/50" } else { "" },
-                
+
                 div { class: "text-xs text-muted uppercase tracking-widest mb-2", "Security Status" }
-                
+
                 if props.stats.security_vulnerabilities.is_empty() {
                     div { class: "text-2xl font-bold text-success text-glow", "SECURE" }
                     div { class: "text-xxs mt-2 opacity-50", "NO CRITICAL THREATS" }
@@ -51,7 +52,7 @@ pub fn Dashboard(props: DashboardProps) -> Element {
                     div { class: "text-2xl font-bold text-fail text-glow", "ALERT" }
                     div { class: "text-xxs mt-2 text-fail animate-pulse", "{props.stats.security_vulnerabilities.len()} ISSUES DETECTED" }
                 }
-                
+
                 // Overlay for critical alerts
                 if !props.stats.security_vulnerabilities.is_empty() {
                     div { class: "absolute inset-0 bg-red-500/5 pointer-events-none" }
@@ -75,11 +76,11 @@ pub fn Dashboard(props: DashboardProps) -> Element {
                 } else {
                     div { class: "absolute inset-0 opacity-10 pointer-events-none",
                         svg { width: "100%", height: "100%", view_box: "0 0 1000 200", preserve_aspect_ratio: "none",
-                            path { 
-                                d: "M0 150 Q 250 50, 500 150 T 1000 150", 
-                                fill: "none", 
-                                stroke: "var(--primary-glow)", 
-                                stroke_width: "2" 
+                            path {
+                                d: "M0 150 Q 250 50, 500 150 T 1000 150",
+                                fill: "none",
+                                stroke: "var(--primary-glow)",
+                                stroke_width: "2"
                             }
                         }
                     }

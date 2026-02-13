@@ -16,7 +16,11 @@ impl LogCache {
     }
 
     pub fn read(&self) -> Vec<RadiusRequest> {
-        let mut v: Vec<_> = self.items.iter().map(|entry| entry.value().clone()).collect();
+        let mut v: Vec<_> = self
+            .items
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect();
         v.sort_by(|a, b| b.timestamp.cmp(&a.timestamp)); // Tri décroissant pour l'affichage
         v
     }
@@ -58,9 +62,9 @@ impl Default for LogCache {
     }
 }
 
+use crate::api::handlers::stats::Stats;
 use std::sync::RwLock;
 use std::time::{Duration, Instant};
-use crate::api::handlers::stats::Stats;
 
 pub struct StatsCache {
     data: RwLock<Option<(Stats, Instant)>>,
@@ -74,7 +78,7 @@ impl StatsCache {
             ttl: Duration::from_secs(ttl_seconds),
         }
     }
-    
+
     pub fn get_or_compute<F>(&self, compute_fn: F) -> Stats
     where
         F: FnOnce() -> Stats,
@@ -88,19 +92,19 @@ impl StatsCache {
                 }
             }
         }
-        
+
         // Compute new stats (slow path)
         let new_stats = compute_fn();
-        
+
         // Write to cache
         {
             let mut write = self.data.write().unwrap();
             *write = Some((new_stats.clone(), Instant::now()));
         }
-        
+
         new_stats
     }
-    
+
     pub fn invalidate(&self) {
         let mut write = self.data.write().unwrap();
         *write = None;

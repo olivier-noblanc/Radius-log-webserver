@@ -1,7 +1,7 @@
-use actix_web::{web, HttpResponse, HttpRequest, Responder};
-use serde::{Deserialize, Serialize};
-use crate::utils::security::get_auth_status;
 use crate::infrastructure::win32::*;
+use crate::utils::security::get_auth_status;
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct DebugQuery {
@@ -21,14 +21,13 @@ pub async fn get_debug_info(req: HttpRequest, _query: web::Query<DebugQuery>) ->
     if !authorized {
         return HttpResponse::Forbidden().body(format!("Security Rejection: {}", reason));
     }
-    
+
     tracing::info!("Performing comprehensive security audit (Crate-based)...");
-    
+
     let report = crate::infrastructure::security_audit::perform_security_audit();
-    
+
     HttpResponse::Ok().json(report)
 }
-
 
 pub async fn get_security_config(req: HttpRequest) -> impl Responder {
     let (authorized, reason) = get_auth_status(&req);

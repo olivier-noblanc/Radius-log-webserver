@@ -1,11 +1,11 @@
+use crate::infrastructure::MessageBroadcaster;
+use crate::utils::security::is_authorized;
 use actix::prelude::*;
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
+use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use dashmap::DashMap;
-use crate::infrastructure::MessageBroadcaster;
-use crate::utils::security::is_authorized;
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
@@ -21,7 +21,9 @@ impl Actor for WsSession {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
-        self.broadcaster.sessions.insert(self.id, ctx.address().recipient());
+        self.broadcaster
+            .sessions
+            .insert(self.id, ctx.address().recipient());
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
@@ -109,7 +111,7 @@ pub async fn ws_route(
     if !is_authorized(&req) {
         return Err(actix_web::error::ErrorForbidden("Access Denied"));
     }
-    
+
     use std::sync::atomic::{AtomicUsize, Ordering};
     static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);

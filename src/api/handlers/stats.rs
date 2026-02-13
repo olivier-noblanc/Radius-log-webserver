@@ -1,9 +1,9 @@
-use actix_web::{web, HttpResponse, HttpRequest, Responder};
+use crate::infrastructure::cache::LogCache;
+use crate::utils::security::is_authorized;
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
-use crate::infrastructure::cache::LogCache;
-use crate::utils::security::is_authorized;
 
 #[derive(Serialize, Clone, PartialEq)]
 pub struct Stats {
@@ -22,20 +22,20 @@ pub struct Stats {
 use crate::infrastructure::cache::StatsCache;
 
 pub async fn get_stats(
-    req: HttpRequest, 
+    req: HttpRequest,
     cache: web::Data<Arc<LogCache>>,
     stats_cache: web::Data<Arc<StatsCache>>,
 ) -> impl Responder {
     if !is_authorized(&req) {
         return HttpResponse::Forbidden().body("Access Denied");
     }
-    
+
     // Utiliser le cache avec TTL 30s
     let stats = stats_cache.get_or_compute(|| {
         tracing::debug!("Computing fresh stats...");
         get_stats_data(&cache)
     });
-    
+
     HttpResponse::Ok()
         .insert_header(("Cache-Control", "public, max-age=30"))
         .json(stats)
@@ -97,7 +97,9 @@ pub fn get_stats_data(cache: &LogCache) -> Stats {
         svg_line_points.push_str(&format!("{:.1},{:.1} ", x, y));
     }
 
-    let colors = ["#dc3545", "#fd7e14", "#ffc107", "#198754", "#0dcaf0", "#6f42c1", "#6610f2", "#e83e8c"];
+    let colors = [
+        "#dc3545", "#fd7e14", "#ffc107", "#198754", "#0dcaf0", "#6f42c1", "#6610f2", "#e83e8c",
+    ];
     let mut pie_gradient = String::new();
     let mut current_percent = 0.0;
     let total_reasons_count: u32 = top_reasons.iter().map(|x| x.1).sum();
@@ -107,15 +109,22 @@ pub fn get_stats_data(cache: &LogCache) -> Stats {
         let color = colors[i % colors.len()];
         let percent = (*count as f32 / total_reasons_count as f32) * 100.0;
         let next_percent = current_percent + percent;
-        if i > 0 { pie_gradient.push_str(", "); }
-        pie_gradient.push_str(&format!("{} {:.1}% {:.1}%", color, current_percent, next_percent));
+        if i > 0 {
+            pie_gradient.push_str(", ");
+        }
+        pie_gradient.push_str(&format!(
+            "{} {:.1}% {:.1}%",
+            color, current_percent, next_percent
+        ));
         reasons_legend.push((reason.clone(), color.to_string(), *count));
         current_percent = next_percent;
     }
 
     // --- AUDIT DE SÉCURITÉ (Synthèse pour Dashboard) ---
     let audit = crate::infrastructure::security_audit::perform_security_audit();
-    let security_vulnerabilities = audit.vulnerabilities.iter()
+    let security_vulnerabilities = audit
+        .vulnerabilities
+        .iter()
         .filter(|v| v.severity == "CRITICAL" || v.severity == "HIGH")
         .map(|v| format!("[{}] {}", v.severity, v.title))
         .collect();

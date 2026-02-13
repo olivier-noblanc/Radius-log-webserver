@@ -1,15 +1,14 @@
-use windows::Win32::System::EventLog::{
-    CloseEventLog, OpenEventLogW, ReadEventLogW, 
-    READ_EVENT_LOG_READ_FLAGS, EVENTLOGRECORD,
-};
-use windows::Win32::Security::Cryptography::{
-    CertOpenStore, CertEnumCertificatesInStore, CertDuplicateCertificateContext,
-    CertCloseStore, CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, PKCS_7_ASN_ENCODING,
-};
+use serde::{Deserialize, Serialize};
 use windows::core::PCWSTR;
-use winreg::RegKey;
+use windows::Win32::Security::Cryptography::{
+    CertCloseStore, CertDuplicateCertificateContext, CertEnumCertificatesInStore, CertOpenStore,
+    CERT_STORE_PROV_SYSTEM_A, PKCS_7_ASN_ENCODING, X509_ASN_ENCODING,
+};
+use windows::Win32::System::EventLog::{
+    CloseEventLog, OpenEventLogW, ReadEventLogW, EVENTLOGRECORD, READ_EVENT_LOG_READ_FLAGS,
+};
 use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
-use serde::{Serialize, Deserialize};
+use winreg::RegKey;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ProtocolInfo {
@@ -36,7 +35,7 @@ pub struct CertInfo {
 /// Retrieves SChannel log details in a safe manner (anti-panic).
 pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
     let mut errors = Vec::new();
-    
+
     // 1. Parsing of target timestamp
     let target_time = if let Ok(ts) = timestamp_str.parse::<i64>() {
         ts as u64
@@ -49,17 +48,17 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
     unsafe {
         let server_name = PCWSTR::null();
         let source_name = windows::core::w!("System");
-        
+
         if let Ok(h_log) = OpenEventLogW(server_name, source_name) {
             // BACKWARDS (8) | SEQUENTIAL (1)
             let flags = READ_EVENT_LOG_READ_FLAGS(8 | 1);
             // Initial 64KB buffer
-            let mut buffer = vec![0u8; 0x10000]; 
+            let mut buffer = vec![0u8; 0x10000];
             let mut bytes_read = 0u32;
             let mut bytes_needed = 0u32;
             let mut events_checked = 0u32;
-            const MAX_EVENTS: u32 = 500; 
-            
+            const MAX_EVENTS: u32 = 500;
+
             'outer: loop {
                 let result = ReadEventLogW(
                     h_log,
@@ -79,7 +78,7 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                         continue;
                     }
                     // Other error (e.g. end of read)
-                    break; 
+                    break;
                 }
 
                 if bytes_read == 0 {
@@ -89,23 +88,23 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                 let mut offset = 0usize;
                 while offset < bytes_read as usize {
                     let record = &*(buffer.as_ptr().add(offset) as *const EVENTLOGRECORD);
-                    
+
                     events_checked += 1;
                     if events_checked > MAX_EVENTS {
                         break 'outer;
                     }
-                    
+
                     // Timestamp check (stop if too old)
                     if (record.TimeGenerated as u64) < target_time {
                         break 'outer;
                     }
-                    
+
                     // Filter on critical SChannel Event IDs
                     if matches!(record.EventID, 36888 | 36874 | 36871 | 36887) {
                         let mut message_parts = Vec::new();
-                        
+
                         // --- START OF SECURE ZONE ---
-                        
+
                         // Safe calculation of string offset
                         let strings_offset = offset + record.StringOffset as usize;
                         let buffer_len = buffer.len();
@@ -113,7 +112,7 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                         // Basic check: is the offset within the buffer?
                         if strings_offset < buffer_len {
                             let mut current_offset = strings_offset;
-                            
+
                             // Read up to NumStrings or max 10 strings
                             for _ in 0..record.NumStrings.min(10) {
                                 // Check: are there at least 2 bytes (1 UTF-16 char) to read?
@@ -125,13 +124,13 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                                 // Look for \0\0 terminator
                                 let mut len_in_chars = 0usize;
                                 let max_possible_chars = (buffer_len - current_offset) / 2;
-                                
+
                                 let char_ptr = buffer.as_ptr().add(current_offset) as *const u16;
 
                                 while len_in_chars < max_possible_chars {
                                     // Read current character
                                     let char_val = *char_ptr.add(len_in_chars);
-                                    
+
                                     if char_val == 0 {
                                         break;
                                     }
@@ -143,7 +142,7 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                                     // Safety is guaranteed because we iterated until len_in_chars < max_possible_chars
                                     let slice = std::slice::from_raw_parts(
                                         buffer.as_ptr().add(current_offset) as *const u16,
-                                        len_in_chars
+                                        len_in_chars,
                                     );
                                     let text = String::from_utf16_lossy(slice);
                                     if !text.trim().is_empty() {
@@ -155,14 +154,15 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                                 current_offset += (len_in_chars * 2) + 2;
                             }
                         }
-                        
+
                         // --- END OF SECURE ZONE ---
 
                         // Message formatting
-                        let timestamp = chrono::DateTime::from_timestamp(record.TimeGenerated as i64, 0)
-                            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
-                            .unwrap_or_else(|| "Unknown time".to_string());
-                        
+                        let timestamp =
+                            chrono::DateTime::from_timestamp(record.TimeGenerated as i64, 0)
+                                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+                                .unwrap_or_else(|| "Unknown time".to_string());
+
                         let event_desc = match record.EventID {
                             36888 => "TLS/SSL Handshake Failure",
                             36874 => "Certificate Validation Error",
@@ -170,37 +170,40 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                             36887 => "Cipher Suite Mismatch",
                             _ => "SChannel Error",
                         };
-                        
+
                         let message = if message_parts.is_empty() {
-                            format!("[{}] Event ID {}: {}", timestamp, record.EventID, event_desc)
+                            format!(
+                                "[{}] Event ID {}: {}",
+                                timestamp, record.EventID, event_desc
+                            )
                         } else {
                             format!(
-                                "[{}] Event ID {}: {} - Details: {}", 
-                                timestamp, 
-                                record.EventID, 
+                                "[{}] Event ID {}: {} - Details: {}",
+                                timestamp,
+                                record.EventID,
                                 event_desc,
                                 message_parts.join(" | ")
                             )
                         };
-                        
+
                         errors.push(message);
                     }
 
                     offset += record.Length as usize;
                 }
             }
-            
+
             let _ = CloseEventLog(h_log);
         } else {
             errors.push("ERROR: Cannot open System event log. Check permissions.".to_string());
         }
     }
-    
+
     if errors.is_empty() {
         errors.push("No SChannel errors found in the specified time range.".to_string());
         errors.push("Note: Ensure 'Event Logging' is enabled in SChannel registry.".to_string());
     }
-    
+
     errors
 }
 
@@ -254,7 +257,7 @@ pub fn get_ciphers_config() -> Vec<CipherInfo> {
     let mut ciphers = Vec::new();
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let ciphers_path = r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers";
-    
+
     if let Ok(ciphers_key) = hklm.open_subkey_with_flags(ciphers_path, KEY_READ) {
         for cipher_name in ciphers_key.enum_keys().filter_map(Result::ok) {
             let enabled = ciphers_key
@@ -266,7 +269,11 @@ pub fn get_ciphers_config() -> Vec<CipherInfo> {
 
             ciphers.push(CipherInfo {
                 id: "---".to_string(),
-                name: format!("{} ({})", cipher_name, get_cipher_display_name(&cipher_name)),
+                name: format!(
+                    "{} ({})",
+                    cipher_name,
+                    get_cipher_display_name(&cipher_name)
+                ),
                 enabled,
             });
         }
@@ -315,7 +322,8 @@ pub fn get_certificates_config() -> Vec<CertInfo> {
 
 pub fn get_log_path_from_registry() -> String {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    if let Ok(key) = hklm.open_subkey(r"SYSTEM\CurrentControlSet\Services\RemoteAccess\Parameters") {
+    if let Ok(key) = hklm.open_subkey(r"SYSTEM\CurrentControlSet\Services\RemoteAccess\Parameters")
+    {
         if let Ok(path) = key.get_value::<String, _>("LogPath") {
             return path;
         }
