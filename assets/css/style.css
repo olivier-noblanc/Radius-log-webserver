@@ -495,34 +495,34 @@ td[data-status="fail"] {
 }
 
 /* --- THEME-SPECIFIC LOADERS --- */
-[data-theme="win31"] .win31-hourglass,
-[data-theme="win95"] .win31-hourglass {
+[data-theme="win31"] .win31-hourglass {
     display: block !important;
 }
 
-[data-theme="macos"] .macos-watch,
-[data-theme="macos9"] .macos-watch {
+[data-theme="macos"] .macos-watch {
     display: block !important;
 }
 
-[data-theme="xp"] .xp-pulse {
-    display: block !important;
+/* ⚠️ AJOUTE CETTE LIGNE ⚠️ */
+[data-theme="macos"] .neon-ring {
+    display: none !important;
 }
 
-[data-theme="terminal"] .terminal-bar {
-    display: block !important;
+/* Default / Onyx / Light use Professional Loader */
+[data-theme="onyx-glass"] .prof-loader,
+[data-theme="light"] .prof-loader,
+body:not([data-theme]):not([data-theme="macos"]):not([data-theme="win31"]) .prof-loader {
+    display: flex !important;
 }
 
-[data-theme="dos"] .dos-spin {
-    display: block !important;
-}
-
-/* Default / Onyx / Light use Neon Ring */
+/* Hide Neon Ring for Professional Themes */
 [data-theme="onyx-glass"] .neon-ring,
 [data-theme="light"] .neon-ring,
-body:not([data-theme]) .neon-ring {
-    display: block !important;
+body:not([data-theme]):not([data-theme="macos"]):not([data-theme="win31"]) .neon-ring {
+    display: none !important;
 }
+
+
 
 /* Icons rotate selectors for themes */
 .neon-ring {
@@ -534,39 +534,70 @@ body:not([data-theme]) .neon-ring {
     animation: spin 1s linear infinite;
 }
 
-.xp-pulse {
-    display: flex;
-    gap: 3px;
+/* === MODER ORBIT LOADER (Professional) === */
+.prof-loader {
+    width: 28px;
+    height: 28px;
+    position: relative;
+    display: none;
+    align-items: center;
+    justify-content: center;
 }
 
-.xp-pulse div {
-    width: 8px;
-    height: 12px;
-    background: linear-gradient(to bottom, #28ca41, #1a9c2d);
-    border-radius: 1px;
-    opacity: 0.3;
-    animation: xp-pulse 1s infinite;
+.prof-loader span {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid transparent;
 }
 
-.xp-pulse div:nth-child(2) {
-    animation-delay: 0.2s;
+/* Outer Ring */
+.prof-loader span:first-child {
+    border-top-color: var(--accent-cyan);
+    border-right-color: var(--accent-cyan);
+    animation: prof-orbit-1 1.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.4));
 }
 
-.xp-pulse div:nth-child(3) {
-    animation-delay: 0.4s;
+/* Inner Ring */
+.prof-loader span:last-child {
+    width: 14px;
+    height: 14px;
+    border-bottom-color: var(--accent-green);
+    border-left-color: var(--accent-green);
+    animation: prof-orbit-2 1.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    filter: drop-shadow(0 0 3px rgba(57, 255, 20, 0.3));
 }
 
-@keyframes xp-pulse {
-
-    0%,
-    100% {
-        opacity: 0.3;
+@keyframes prof-orbit-1 {
+    0% {
+        transform: rotate(0deg) scale(1);
     }
 
     50% {
-        opacity: 1;
+        transform: rotate(180deg) scale(1.1);
+    }
+
+    100% {
+        transform: rotate(360deg) scale(1);
     }
 }
+
+@keyframes prof-orbit-2 {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    50% {
+        transform: rotate(-180deg) scale(0.8);
+    }
+
+    100% {
+        transform: rotate(-360deg) scale(1);
+    }
+}
+
 
 .win31-hourglass {
     font-size: 20px;
@@ -583,114 +614,7 @@ body:not([data-theme]) .neon-ring {
     }
 }
 
-.macos-watch {
-    width: 22px;
-    height: 22px;
-    border: 2px solid #000;
-    background: #fff;
-    border-radius: 50%;
-    position: relative;
-    image-rendering: pixelated;
-}
-
-.macos-watch::before {
-    content: "";
-    position: absolute;
-    top: -5px;
-    left: 50%;
-    width: 6px;
-    height: 4px;
-    background: #000;
-    transform: translateX(-50%);
-}
-
-.macos-watch-hands {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 2px;
-    height: 8px;
-    background: #000;
-    transform-origin: bottom center;
-    transform: translate(-50%, -100%);
-    animation: spin 2s linear infinite;
-}
-
-.terminal-bar {
-    width: 80px;
-    height: 4px;
-    background: rgba(0, 255, 0, 0.2);
-    position: relative;
-    overflow: hidden;
-    border-radius: 2px;
-}
-
-.terminal-bar::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 30%;
-    background: #00ff00;
-    box-shadow: 0 0 10px #00ff00;
-    animation: terminal-slide 1s infinite cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes terminal-slide {
-    0% {
-        transform: translateX(-100%);
-    }
-
-    100% {
-        transform: translateX(350%);
-    }
-}
-
-.dos-spin {
-    font-family: var(--font-code);
-    font-size: 18px;
-    color: #fff;
-}
-
-.dos-spin::after {
-    content: "|";
-    animation: dos-load 0.4s steps(4) infinite;
-}
-
-@keyframes dos-load {
-    0% {
-        content: "|";
-    }
-
-    25% {
-        content: "/";
-    }
-
-    50% {
-        content: "-";
-    }
-
-    75% {
-        content: "\\";
-    }
-}
-
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
+/* MacOS Watch handled in theme files */
 
 /* --- MODALS --- */
 .modal-overlay {
@@ -750,18 +674,4 @@ body:not([data-theme]) .neon-ring {
     background: #555;
 }
 
-/* ==========================================
-   FORCE MACOS LOADER (OVERWRITE)
-   ========================================== */
-
-/* Cacher impérativement le loader Flagship (Neon Ring) quand on est sur Mac */
-[data-theme="macos"] .neon-ring,
-[data-theme="macos9"] .neon-ring {
-    display: none !important;
-}
-
-/* Forcer l'affichage de l'horloge Mac */
-[data-theme="macos"] .macos-watch,
-[data-theme="macos9"] .macos-watch {
-    display: block !important;
-}
+/* Theme loaders handled in themes/ */

@@ -1,10 +1,19 @@
 /* ==========================================
+   CHICAGO - Police Système Macintosh 1-7.5
+   ========================================== */
+@font-face {
+  font-family: 'Chicago';
+  src: url('/fonts/chicago.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==========================================
    THEME: MACINTOSH SYSTEM 7 / 8 (PLATINUM)
-   Authentic 90s Look - NO ANIMATIONS
    ========================================== */
 
 :root {
-  /* Couleurs System 7/8 */
   --bg-deep: #808080;
   --bg-panel: #E0E0E0;
   --text-main: #000000;
@@ -13,25 +22,21 @@
   --accent-green: #008000;
   --accent-red: #FF0000;
   --border-glass: #000000;
-
-  /* Fonte System */
-  --font-ui: 'Geneva', 'Helvetica Neue', 'Helvetica', sans-serif;
+  --font-ui: 'Chicago', 'Geneva', sans-serif;
+  /* Chicago en priorité */
   --font-code: 'Monaco', 'Courier New', monospace;
 }
 
 /* --- KILLER DES ANIMATIONS GLOBALES --- */
-/* On désactive tout le "Spring Physics" du thème Flagship */
 [data-theme="macos"] * {
   animation: none !important;
   transition: none !important;
-  /* Rendu instantané, pas de fondu */
-  -webkit-font-smoothing: none;
+  -webkit-font-smoothing: none !important;
 }
 
 body {
   background-color: var(--bg-deep) !important;
-  /* Motif de fond rayé */
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4" shape-rendering="crispEdges"><rect width="1" height="4" fill="%23808080"/><rect x="1" width="1" height="4" fill="%23A0A0A0"/><rect x="2" width="1" height="4" fill="%23E0E0E0"/><rect x="3" width="1" height="4" fill="%23C0C0C0"/></svg>');
+  background-image: url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4" shape-rendering="crispEdges"><rect width="1" height="4" fill="%23808080"/><rect x="1" width="1" height="4" fill="%23A0A0A0"/><rect x="2" width="1" height="4" fill="%23E0E0E0"/><rect x="3" width="1" height="4" fill="%23C0C0C0"/></svg>');
   background-repeat: repeat;
   background-size: 4px 4px;
   font-family: var(--font-ui) !important;
@@ -51,12 +56,10 @@ body {
     inset -2px -2px 0 #C0C0C0 !important;
   border-radius: 3px !important;
   backdrop-filter: none !important;
-
-  /* FIX IMPORTANT: Annuler le zoom du thème Flagship */
   transform: none !important;
 }
 
-/* Titre des fenêtres (Rayures) */
+/* Titre des fenêtres */
 .main-header {
   background: #E0E0E0 !important;
   background-image: repeating-linear-gradient(90deg,
@@ -83,8 +86,6 @@ body {
   font-size: 12px !important;
   border-radius: 2px !important;
   text-shadow: none !important;
-
-  /* Fix bouton hover : Pas de zoom, juste le décalage physique */
   transform: none !important;
 }
 
@@ -97,8 +98,6 @@ body {
   border-right: 1px solid #FFFFFF !important;
   border-bottom: 1px solid #FFFFFF !important;
   box-shadow: none !important;
-
-  /* Petit décalage unique quand on clique */
   transform: translate(1px, 1px) !important;
 }
 
@@ -129,6 +128,18 @@ select {
   border-radius: 0 !important;
 }
 
+[data-theme="macos"] .input-glass:focus,
+[data-theme="macos"] select:focus {
+  outline: 2px solid #000 !important;
+  box-shadow: none !important;
+}
+
+/* --- SELECTION (Retro Invert) --- */
+[data-theme="macos"] ::selection {
+  background-color: #000 !important;
+  color: #FFF !important;
+}
+
 /* --- TABLES --- */
 table {
   border: 2px outset #FFFFFF !important;
@@ -151,61 +162,86 @@ td {
 }
 
 .log-row:hover td {
-  background: #000080 !important;
+  background: #000000 !important;
   color: #FFFFFF !important;
   transform: none !important;
-  /* On annule le translateX du theme Flagship */
 }
 
-/* --- FIX LOADER MAC WATCH (La partie importante pour toi) --- */
-/* Cacher TOUS les autres loaders pour être sûr */
+/* ==========================================
+   MACINTOSH SYSTEM 7 HOURGLASS LOADER
+   GIF 16×16 — Sprite Original
+   ========================================== */
+/* ==========================================
+   AUTHENTIC MACINTOSH HOURGLASS
+   SVG Pixel Art 32×32 — Rotation 180°
+   ========================================== */
+
+/* Cacher les loaders des autres thèmes */
 [data-theme="macos"] .neon-ring,
-[data-theme="macos"] .win31-hourglass,
-[data-theme="macos"] .xp-pulse,
-[data-theme="macos"] .terminal-bar,
-[data-theme="macos"] .dos-spin {
+[data-theme="macos"] .win31-hourglass {
   display: none !important;
 }
 
-/* Forcer l'affichage de l'horloge */
+/* Conteneur style Mac */
+[data-theme="macos"] #global-loader .loader-box {
+  background: #E0E0E0 !important;
+  border: 1px solid #000 !important;
+  box-shadow:
+    1px 1px 0 #000,
+    inset 1px 1px 0 #FFF,
+    inset -1px -1px 0 #808080 !important;
+  padding: 8px 16px !important;
+  border-radius: 3px !important;
+  gap: 12px !important;
+}
+
+/* Montre MacOS System 7 — Pixel Art AUTHENTIQUE */
 [data-theme="macos"] .macos-watch {
   display: block !important;
-  width: 24px;
-  height: 24px;
-  border: 2px solid #000;
-  background: #FFF;
-  border-radius: 50%;
-  position: relative;
-  box-shadow: 1px 1px 0 #808080;
+  width: 32px !important;
+  height: 32px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M6 0h4v2H6zM4 2h8v1H4zM3 3h1v1H3zM12 3h1v1H12zM2 4h1v8H2zM13 4h1v3H13zM14 7h1v2h-1zM13 9h1v3H13zM3 12h1v1H3zM12 12h1v1H12zM4 13h8v1H4zM6 14h4v2H6z'/%3E%3Cpath fill='%23FFF' d='M5 3h6v1H5zM4 4h8v8H4zM5 12h6v1H5z'/%3E%3C/svg%3E") !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  image-rendering: pixelated !important;
+  position: relative !important;
 }
 
-/* S'assurer que le SVG à l'intérieur remplit bien le div */
-[data-theme="macos"] .macos-watch svg {
-  width: 100%;
-  height: 100%;
+[data-theme="macos"] .macos-watch-hands {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 2px !important;
+  height: 8px !important;
+  background: #000 !important;
+  transform-origin: bottom center !important;
+  transform: translate(-50%, -100%) rotate(0deg);
+  animation: macos-watch-spin 2s steps(12) infinite !important;
 }
 
-/* Animation des aiguilles */
-[data-theme="macos"] .macos-watch .hour-hand {
-  transform-origin: 16px 16px;
-  animation: mac-spin 4s linear infinite;
-}
-
-[data-theme="macos"] .macos-watch .minute-hand {
-  transform-origin: 16px 16px;
-  animation: mac-spin 0.5s linear infinite;
-}
-
-@keyframes mac-spin {
+@keyframes macos-watch-spin {
   from {
-    transform: rotate(0deg);
+    transform: translate(-50%, -100%) rotate(0deg);
   }
 
   to {
-    transform: rotate(360deg);
+    transform: translate(-50%, -100%) rotate(360deg);
   }
 }
 
+/* Texte en Chicago */
+[data-theme="macos"] .loader-text .loader-title {
+  display: none !important;
+}
+
+[data-theme="macos"] .loader-text .loader-sub {
+  font-family: 'Chicago', 'Geneva', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: normal !important;
+  color: #000 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+}
 
 /* --- SCROLLBAR --- */
 ::-webkit-scrollbar {

@@ -68,62 +68,21 @@ pub fn Layout(props: LayoutProps) -> Element {
                     div { class: "loader-progress-bar" }
                     div { class: "loader-box",
                         div { class: "loader-icon",
-                            // Flagship Loader
-                            div { class: "neon-ring", style: "display: none;" }
+                        // === MACINTOSH SYSTEM 7 HOURGLASS (NO CONTAINER) ===
+                        // === MACINTOSH SYSTEM 7 WATCH (PIXEL ART) ===
+                        div { class: "macos-watch",
+                            div { class: "macos-watch-hands" }
+                        }
+                        div { class: "prof-loader",
+                            span {}
+                            span {}
+                        }
                             
-                            // Windows 3.1 Loader
+                            // Windows 3.1 Loader (Hourglass)
                             div { class: "win31-hourglass", style: "display: none;", "⏳" }
                             
-                            // Mac OS Watch Loader (SVG)
-                            div { class: "macos-watch", style: "display: none;",
-                                svg { 
-                                    "view-box": "0 0 32 32",
-                                    "shape-rendering": "crispEdges",
-                                    width: "100%",
-                                    height: "100%",
-                                    
-                                    circle {
-                                        cx: "16",
-                                        cy: "16",
-                                        r: "14",
-                                        fill: "none",
-                                        stroke: "black",
-                                        "stroke-width": "2"
-                                    }
-                                    rect { x: "14", y: "0", width: "4", height: "2", fill: "black" }
-                                    rect { x: "15", y: "28", width: "2", height: "4", fill: "black" }
-                                    
-                                    line {
-                                        x1: "16", y1: "16",
-                                        x2: "16", y2: "8",
-                                        stroke: "black",
-                                        "stroke-width": "2",
-                                        "stroke-linecap": "square",
-                                        class: "hour-hand"
-                                    }
-                                    line {
-                                        x1: "16", y1: "16",
-                                        x2: "24", y2: "16",
-                                        stroke: "black",
-                                        "stroke-width": "2",
-                                        "stroke-linecap": "square",
-                                        class: "minute-hand"
-                                    }
-                                    circle { cx: "16", cy: "16", r: "1", fill: "black" }
-                                }
-                            }
-                            
-                            // XP Loader
-                            div { class: "xp-pulse", style: "display: none;",
-                                div {} div {} div {}
-                            }
-                            
-                            // Terminal Loader
-                            div { class: "terminal-bar", style: "display: none;" }
-                            
-                            // DOS Loader
-                            div { class: "dos-spin", style: "display: none;" }
                         }
+                        // Loader text (varies by theme)
                         div { class: "loader-text",
                             div { class: "loader-title", "PROCESSING" }
                             div { class: "loader-sub", "Fetching Data..." }

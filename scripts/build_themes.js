@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const THEMES_TO_SCOPE = ['macos9', 'win31'];
+const THEMES_TO_SCOPE = ['macos', 'win31'];
 
 function scopeCSS(css, theme) {
     const selector = `[data-theme="${theme}"]`;

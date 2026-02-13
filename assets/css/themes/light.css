@@ -59,6 +59,56 @@ body {
     filter: none !important;
 }
 
+/* Professional Loader adjustments for Light Theme */
+.prof-loader span {
+    border-width: 2.5px !important;
+}
+
+.prof-loader span:first-child {
+    border-top-color: #0066cc !important;
+    border-right-color: #0066cc !important;
+    filter: none !important;
+}
+
+.prof-loader span:last-child {
+    border-bottom-color: #28a745 !important;
+    border-left-color: #28a745 !important;
+    filter: none !important;
+}
+
+/* Professional selection & focus */
+[data-theme="light"] ::selection {
+    background-color: #0066cc !important;
+    color: #ffffff !important;
+}
+
+[data-theme="light"] .input-glass:focus,
+[data-theme="light"] select:focus {
+    border-color: #0066cc !important;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1) !important;
+}
+
+[data-theme="light"] .log-row:hover td {
+    background: #f0f7ff !important;
+    color: #1a1a1b !important;
+    transform: none !important;
+}
+
+/* Loader Contrast Fix for Light Theme */
+[data-theme="light"] .loader-box {
+    background: #ffffff !important;
+    border-color: #dddddd !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .loader-text .loader-title {
+    color: #1a1a1b !important;
+}
+
+[data-theme="light"] .loader-text .loader-sub {
+    color: #65676b !important;
+}
+
 /* Hide neon-ring, show something else? For now keep neon-ring but without glow */
 .neon-ring {
     border-color: #eee !important;

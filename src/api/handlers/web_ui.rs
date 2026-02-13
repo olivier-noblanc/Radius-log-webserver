@@ -34,7 +34,7 @@ fn get_theme_css_files(theme: &str) -> Vec<String> {
     match theme {
         "light" => files.push("/css/themes/light.css".to_string()),
         "win31" => files.push("/css/themes/win31.css".to_string()),
-        "macos" | "macos9" => files.push("/css/themes/macos.css".to_string()),
+        "macos" => files.push("/css/themes/macos.css".to_string()),
         
         // onyx-glass est le défaut dans style.css
         _ => {}
