@@ -40,8 +40,8 @@ jobs:
           # INSTALL OXLINT (Pinned version to avoid broken releases)
           gh release download apps_v1.38.0 --repo oxc-project/oxc --pattern "oxlint-linux-x64-musl.tar.gz"
           tar -xzf oxlint-linux-x64-musl.tar.gz
-          chmod +x oxlint
-          sudo mv oxlint /usr/local/bin/oxlint
+          chmod +x oxlint-linux-x64-musl
+          sudo mv oxlint-linux-x64-musl /usr/local/bin/oxlint
 
           # INSTALL LIGHTNINGCSS (via cargo install to avoid asset download issues)
           cargo install lightningcss-cli
