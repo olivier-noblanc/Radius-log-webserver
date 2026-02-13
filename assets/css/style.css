@@ -365,6 +365,35 @@ th {
     border-bottom: 2px solid var(--border-glass);
     position: relative;
     user-select: none;
+    transition: background 0.2s ease;
+}
+
+th.sortable:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+    cursor: pointer;
+}
+
+.sort-indicator {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.sort-indicator.asc,
+.sort-indicator.desc {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 8px rgba(0, 242, 255, 0.5);
+    opacity: 1;
+}
+
+.sort-indicator.hidden-opacity {
+    opacity: 0.2;
+}
+
+th.sortable:hover .sort-indicator.hidden-opacity {
+    opacity: 0.5;
 }
 
 td {

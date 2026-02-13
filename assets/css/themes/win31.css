@@ -143,6 +143,21 @@ td[data-status="success"] {
     border-bottom: 1px solid #000 !important;
 }
 
+/* Sorting Indicators Win3.1 */
+.sort-indicator {
+    text-shadow: none !important;
+    font-weight: bold !important;
+}
+
+.sort-indicator.asc,
+.sort-indicator.desc {
+    color: #000080 !important;
+}
+
+.sort-indicator.hidden-opacity {
+    opacity: 0.1 !important;
+}
+
 .status-fail,
 td[data-status="fail"] {
     background: #FFFFFF !important;

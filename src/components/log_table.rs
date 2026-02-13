@@ -22,6 +22,18 @@ pub fn LogTable(props: LogTableProps) -> Element {
         }
     };
 
+    let render_sort_indicator = |col: &str| {
+        if props.sort_by == col {
+            if props.sort_desc {
+                rsx! { span { class: "sort-indicator desc", " ↓" } }
+            } else {
+                rsx! { span { class: "sort-indicator asc", " ↑" } }
+            }
+        } else {
+            rsx! { span { class: "sort-indicator hidden-opacity", " ↕" } }
+        }
+    };
+
     rsx! {
         div {
             id: "log-table-container",
@@ -56,6 +68,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "TIMESTAMP"
+                            {render_sort_indicator("timestamp")}
                             div { class: "resizer" }
                         }
                         th {
@@ -64,6 +77,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "TYPE"
+                            {render_sort_indicator("req_type")}
                             div { class: "resizer" }
                         }
                         th {
@@ -72,6 +86,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "SERVER"
+                            {render_sort_indicator("server")}
                             div { class: "resizer" }
                         }
                         th {
@@ -80,6 +95,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "AP IP"
+                            {render_sort_indicator("ap_ip")}
                             div { class: "resizer" }
                         }
                         th {
@@ -88,6 +104,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "AP NAME"
+                            {render_sort_indicator("ap_name")}
                             div { class: "resizer" }
                         }
                         th {
@@ -96,6 +113,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "MAC"
+                            {render_sort_indicator("mac")}
                             div { class: "resizer" }
                         }
                         th {
@@ -104,6 +122,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "USER"
+                            {render_sort_indicator("user")}
                             div { class: "resizer" }
                         }
                         th {
@@ -112,6 +131,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "RESULT"
+                            {render_sort_indicator("resp_type")}
                             div { class: "resizer" }
                         }
                         th {
@@ -120,6 +140,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
                             "DIAGNOSTICS"
+                            {render_sort_indicator("reason")}
                             div { class: "resizer" }
                         }
                     }
