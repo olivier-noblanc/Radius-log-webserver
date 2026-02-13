@@ -73,7 +73,7 @@
         var menu = document.getElementById('context-menu');
         var targetCell = null;
 
-        document.addEventListener('contextmenu', function(e) {
+        document.addEventListener('contextmenu', function (e) {
             targetCell = e.target.closest('td');
             if (targetCell && menu) {
                 e.preventDefault();
@@ -85,26 +85,104 @@
             }
         });
 
-        document.addEventListener('click', function() { if (menu) menu.style.display = 'none'; });
+        document.addEventListener('click', function () { if (menu) menu.style.display = 'none'; });
 
         if (menu) {
-            document.getElementById('copy-cell').onclick = function() {
+            document.getElementById('copy-cell').onclick = function () {
                 if (targetCell) navigator.clipboard.writeText(targetCell.textContent.trim());
             };
-            document.getElementById('copy-row').onclick = function() {
+            document.getElementById('copy-row').onclick = function () {
                 if (targetCell) {
                     var row = targetCell.closest('tr');
                     var cells = Array.prototype.slice.call(row.querySelectorAll('td'));
-                    var text = cells.map(function(c) { return c.textContent.trim(); }).join('\t');
+                    var text = cells.map(function (c) { return c.textContent.trim(); }).join('\t');
                     navigator.clipboard.writeText(text);
                 }
             };
         }
+
+        // --- PERSISTENT COLUMN RESIZING ---
+        var table = document.getElementById('logTable');
+        if (table) {
+            var headers = table.querySelectorAll('th');
+
+            // Restore widths
+            headers.forEach(function (th, idx) {
+                var width = localStorage.getItem('col-width-' + idx);
+                if (width) th.style.width = width + 'px';
+
+                var resizer = th.querySelector('.resizer');
+                if (!resizer) return;
+
+                var startX, startWidth;
+
+                resizer.addEventListener('mousedown', function (e) {
+                    startX = e.pageX;
+                    startWidth = th.offsetWidth;
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                    resizer.classList.add('resizing');
+                });
+
+                function onMouseMove(e) {
+                    var width = startWidth + (e.pageX - startX);
+                    if (width > 50) {
+                        th.style.width = width + 'px';
+                    }
+                }
+
+                function onMouseUp() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    resizer.classList.remove('resizing');
+                    localStorage.setItem('col-width-' + idx, th.offsetWidth);
+                }
+            });
+        }
+    }
+
+    // --- COLUMN VISIBILITY ---
+    window.toggleColumn = function (idx) {
+        var show = event.target.checked;
+        applyColumnVisibility(idx, show);
+        localStorage.setItem('col-visible-' + idx, show);
+    };
+
+    function applyColumnVisibility(idx, show) {
+        var table = document.getElementById('logTable');
+        if (!table) return;
+
+        var th = table.querySelectorAll('th')[idx];
+        if (th) th.classList.toggle('col-hidden', !show);
+
+        var rows = table.querySelectorAll('tbody tr');
+        rows.forEach(function (row) {
+            var td = row.querySelectorAll('td')[idx];
+            if (td) td.classList.toggle('col-hidden', !show);
+        });
+
+        // Sync checkbox if it exists (for initialization)
+        var cb = document.querySelector('input[data-col-idx="' + idx + '"]');
+        if (cb) cb.checked = show;
+    }
+
+    function initColumnVisibility() {
+        for (var i = 0; i < 9; i++) {
+            var visible = localStorage.getItem('col-visible-' + i);
+            if (visible !== null) {
+                applyColumnVisibility(i, visible === 'true');
+            }
+        }
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function () {
+            init();
+            initColumnVisibility();
+        });
     } else {
         init();
+        initColumnVisibility();
     }
 })();

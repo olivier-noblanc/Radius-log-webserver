@@ -194,6 +194,34 @@ body {
     margin-bottom: 1rem;
 }
 
+.col-hidden {
+    display: none !important;
+}
+
+.column-checkbox {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--border-glass);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s;
+}
+
+.column-checkbox:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent-cyan);
+    color: var(--text-main);
+}
+
+.column-checkbox input {
+    cursor: pointer;
+}
+
 /* --- BRAND LOGO --- */
 .brand-logo {
     font-family: var(--font-code);
@@ -335,6 +363,8 @@ th {
     padding: 16px 1rem;
     color: var(--text-muted);
     border-bottom: 2px solid var(--border-glass);
+    position: relative;
+    user-select: none;
 }
 
 td {
@@ -342,6 +372,24 @@ td {
     border-bottom: 1px solid var(--border-glass);
     color: var(--text-main);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 5px;
+    background: transparent;
+    cursor: col-resize;
+    z-index: 10;
+}
+
+.resizer:hover {
+    background: var(--accent-cyan);
+    opacity: 0.5;
 }
 
 /* Specific column adjustments */

@@ -26,6 +26,27 @@ pub fn LogTable(props: LogTableProps) -> Element {
         div {
             id: "log-table-container",
             class: "glass-panel table-container",
+            div { class: "table-controls mb-4 flex justify-between items-center",
+                div { class: "flex gap-8",
+                    span { class: "text-muted", "COLUMNS VISIBILITY:" }
+                    div { class: "column-picker flex gap-8",
+                        for (idx , name) in [
+                            "TIMESTAMP", "TYPE", "SERVER", "AP IP", "AP NAME", "MAC", "USER", "RESULT", "DIAGNOSTICS"
+                        ].iter().enumerate()
+                        {
+                            label { class: "column-checkbox",
+                                input {
+                                    r#type: "checkbox",
+                                    checked: true,
+                                    "onchange": "toggleColumn({idx})",
+                                    "data-col-idx": "{idx}"
+                                }
+                                " {name}"
+                            }
+                        }
+                    }
+                }
+            }
             table { id: "logTable",
                 thead {
                     tr {

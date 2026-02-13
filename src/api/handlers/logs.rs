@@ -167,6 +167,29 @@ pub async fn log_rows_htmx(
         cache.get_latest(query.limit)
     };
 
+    let mut logs = logs;
+    if !query.sort_by.is_empty() {
+        logs.sort_by(|a, b| {
+            let res = match query.sort_by.as_str() {
+                "timestamp" => a.timestamp.cmp(&b.timestamp),
+                "req_type" => a.req_type.cmp(&b.req_type),
+                "server" => a.server.cmp(&b.server),
+                "ap_ip" => a.ap_ip.cmp(&b.ap_ip),
+                "ap_name" => a.ap_name.cmp(&b.ap_name),
+                "mac" => a.mac.cmp(&b.mac),
+                "user" => a.user.cmp(&b.user),
+                "resp_type" => a.resp_type.cmp(&b.resp_type),
+                "reason" => a.reason.cmp(&b.reason),
+                _ => a.timestamp.cmp(&b.timestamp),
+            };
+            if query.sort_desc {
+                res.reverse()
+            } else {
+                res
+            }
+        });
+    }
+
     let html = dioxus_ssr::render_element(rsx! {
         LogTable {
             logs: logs,

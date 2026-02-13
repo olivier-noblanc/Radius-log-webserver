@@ -14,13 +14,9 @@ pub fn map_reason(code: &str) -> String {
     let reason = get_reason_map()
         .get(code)
         .cloned()
-        .unwrap_or_else(|| format!("Code {}", code));
+        .unwrap_or_else(|| "Unknown reason".to_string());
 
-    if code != "0" {
-        format!("{} ({})", reason, code)
-    } else {
-        reason
-    }
+    format!("({}) {}", code, reason)
 }
 
 pub fn map_packet_type(code: &str) -> String {
@@ -32,5 +28,23 @@ pub fn map_packet_type(code: &str) -> String {
         "5" => "Accounting-Response".to_string(),
         "11" => "Access-Challenge".to_string(),
         _ => format!("Type {}", code),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_map_reason_format() {
+        let result = map_reason("16");
+        assert!(result.starts_with("(16)"));
+        assert!(result.contains("Authentication failed"));
+    }
+
+    #[test]
+    fn test_map_reason_zero() {
+        let result = map_reason("0");
+        assert!(result.starts_with("(0)"));
     }
 }
