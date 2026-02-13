@@ -33,16 +33,16 @@ pub struct CertInfo {
     pub is_valid: bool,
 }
 
+/// Récupère les détails des logs SChannel de manière sûre (anti-panic).
 pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
     let mut errors = Vec::new();
     
-    // Parse le timestamp demandé (format ISO 8601 ou epoch)
+    // 1. Parsing du timestamp cible
     let target_time = if let Ok(ts) = timestamp_str.parse::<i64>() {
         ts as u64
     } else if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(timestamp_str) {
         dt.timestamp() as u64
     } else {
-        // Fallback : il y a 24h
         (chrono::Utc::now() - chrono::Duration::hours(24)).timestamp() as u64
     };
 
@@ -53,11 +53,12 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
         if let Ok(h_log) = OpenEventLogW(server_name, source_name) {
             // BACKWARDS (8) | SEQUENTIAL (1)
             let flags = READ_EVENT_LOG_READ_FLAGS(8 | 1);
-            let mut buffer = vec![0u8; 0x10000]; // 64KB buffer
+            // Buffer initial 64KB
+            let mut buffer = vec![0u8; 0x10000]; 
             let mut bytes_read = 0u32;
             let mut bytes_needed = 0u32;
-            let mut events_checked = 0;
-            const MAX_EVENTS: u32 = 500; // Limite pour éviter boucle infinie
+            let mut events_checked = 0u32;
+            const MAX_EVENTS: u32 = 500; 
             
             'outer: loop {
                 let result = ReadEventLogW(
@@ -70,17 +71,19 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                     &mut bytes_needed,
                 );
 
-                // Si buffer trop petit, agrandir et réessayer
+                // Gestion redimensionnement buffer si nécessaire
                 if result.is_err() {
                     if bytes_needed > buffer.len() as u32 {
+                        // On double la taille ou on prend ce qu'il faut
                         buffer.resize(bytes_needed as usize, 0);
                         continue;
                     }
-                    break; // Autre erreur, on arrête
+                    // Erreur autre (ex: fin de lecture)
+                    break; 
                 }
 
                 if bytes_read == 0 {
-                    break; // Plus d'events
+                    break; // Plus d'événements
                 }
 
                 let mut offset = 0usize;
@@ -92,61 +95,70 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                         break 'outer;
                     }
                     
-                    // Vérifier timestamp (arrêter si trop vieux)
+                    // Vérification timestamp (arrêt si trop vieux)
                     if (record.TimeGenerated as u64) < target_time {
                         break 'outer;
                     }
                     
-                    // SChannel Event IDs critiques
-                    // 36888 = Handshake failure
-                    // 36874 = Certificate error
-                    // 36871 = Protocol error
-                    // 36887 = Cipher negotiation failure
+                    // Filtre sur les Event IDs SChannel critiques
                     if matches!(record.EventID, 36888 | 36874 | 36871 | 36887) {
-                        // Extraire les strings du message
-                        let strings_offset = offset + record.StringOffset as usize;
                         let mut message_parts = Vec::new();
                         
-                        for i in 0..record.NumStrings.min(10) {
-                            // Calculer offset de chaque string (UTF-16)
-                            let mut str_offset = strings_offset;
-                            for _ in 0..i {
-                                // Skip previous strings
-                                while str_offset < buffer.len() - 1 {
-                                    if buffer[str_offset] == 0 && buffer[str_offset + 1] == 0 {
-                                        str_offset += 2;
-                                        break;
-                                    }
-                                    str_offset += 2;
-                                }
-                            }
+                        // --- DÉBUT DE LA ZONE SÉCURISÉE ---
+                        
+                        // Calcul sécurisé de l'offset des chaînes
+                        let strings_offset = offset + record.StringOffset as usize;
+                        let buffer_len = buffer.len();
+
+                        // Vérif de base : l'offset est-il dans le buffer ?
+                        if strings_offset < buffer_len {
+                            let mut current_offset = strings_offset;
                             
-                            if str_offset >= buffer.len() {
-                                break;
-                            }
-                            
-                            // Lire la string UTF-16
-                            let mut str_len = 0;
-                            while str_offset + str_len * 2 + 1 < buffer.len() {
-                                if buffer[str_offset + str_len * 2] == 0 
-                                    && buffer[str_offset + str_len * 2 + 1] == 0 {
+                            // On lit jusqu'à NumStrings ou max 10 strings
+                            for _ in 0..record.NumStrings.min(10) {
+                                // Vérif : y a-t-il au moins 2 octets (1 char UTF-16) à lire ?
+                                if current_offset + 2 > buffer_len {
                                     break;
                                 }
-                                str_len += 1;
-                            }
-                            
-                            if str_len > 0 && str_len < 1024 { // Sanity check
-                                let slice = std::slice::from_raw_parts(
-                                    buffer.as_ptr().add(str_offset) as *const u16, 
-                                    str_len
-                                );
-                                let text = String::from_utf16_lossy(slice);
-                                if !text.trim().is_empty() {
-                                    message_parts.push(text.trim().to_string());
+
+                                // Calcul sécurisé de la longueur de la chaîne UTF-16
+                                // On cherche le terminateur \0\0
+                                let mut len_in_chars = 0usize;
+                                let max_possible_chars = (buffer_len - current_offset) / 2;
+                                
+                                let char_ptr = buffer.as_ptr().add(current_offset) as *const u16;
+
+                                while len_in_chars < max_possible_chars {
+                                    // Lire le caractère courant
+                                    let char_val = *char_ptr.add(len_in_chars);
+                                    
+                                    if char_val == 0 {
+                                        break;
+                                    }
+                                    len_in_chars += 1;
                                 }
+
+                                // Maintenant qu'on a la longueur, on crée le slice de manière sûre
+                                if len_in_chars > 0 {
+                                    // La sécurité est garantie car on a itéré jusqu'à len_in_chars < max_possible_chars
+                                    let slice = std::slice::from_raw_parts(
+                                        buffer.as_ptr().add(current_offset) as *const u16,
+                                        len_in_chars
+                                    );
+                                    let text = String::from_utf16_lossy(slice);
+                                    if !text.trim().is_empty() {
+                                        message_parts.push(text.trim().to_string());
+                                    }
+                                }
+
+                                // Avancer le pointeur : (Longueur en octets) + 2 octets pour le \0
+                                current_offset += (len_in_chars * 2) + 2;
                             }
                         }
                         
+                        // --- FIN DE LA ZONE SÉCURISÉE ---
+
+                        // Formatage du message
                         let timestamp = chrono::DateTime::from_timestamp(record.TimeGenerated as i64, 0)
                             .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
                             .unwrap_or_else(|| "Unknown time".to_string());
@@ -203,7 +215,6 @@ pub fn get_schannel_logging_level() -> u32 {
 pub fn read_schannel_config() -> crate::infrastructure::security_audit::TlsConfiguration {
     crate::infrastructure::security_audit::read_schannel_config()
 }
-
 
 pub fn get_protocols_config() -> Vec<ProtocolInfo> {
     let mut protocols = Vec::new();
