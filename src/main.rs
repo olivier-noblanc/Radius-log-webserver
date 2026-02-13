@@ -14,7 +14,7 @@ use windows_service::{
 
 use radius_log_webserver::api::handlers::{
     audit::{get_debug_info, get_security_config},
-    logs::{export_csv, list_logs, log_detail_htmx, log_rows_htmx},
+    logs::{export_xlsx, list_logs, log_detail_htmx, log_rows_htmx},
     stats::get_stats,
     web_ui::{
         dashboard_htmx, index, login, robots_txt, serve_favicon, serve_static_asset, set_theme,
@@ -201,7 +201,7 @@ async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
                     .route("/detail", web::get().to(log_detail_htmx)),
             )
             .route("/api/dashboard", web::get().to(dashboard_htmx))
-            .route("/api/export", web::get().to(export_csv))
+            .route("/api/export", web::get().to(export_xlsx))
             .route("/api/stats", web::get().to(get_stats))
             .route("/api/debug", web::get().to(get_debug_info))
             .route("/api/security-config", web::get().to(get_security_config))

@@ -8,6 +8,5 @@ allow = [
     "CC0-1.0",
     "ISC",
     "Zlib",
-    "MPL-2.0",
-    "LGPL-3.0-or-later",
+    "GPL-3.0-or-later",
 ]

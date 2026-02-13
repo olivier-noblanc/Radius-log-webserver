@@ -110,6 +110,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-get": "/api/logs/detail?id={log.id.unwrap_or_default()}",
                             "hx-target": "#modalBody",
                             "hx-trigger": "click",
+                            "hx-on:click": "window.location.hash='detailModal'",
 
                             td { "{log.timestamp}" }
                             td { "{log.req_type}" }

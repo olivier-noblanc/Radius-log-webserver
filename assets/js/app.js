@@ -68,6 +68,38 @@
                 }
             };
         }
+
+        // --- MINIMALIST CONTEXT MENU ---
+        var menu = document.getElementById('context-menu');
+        var targetCell = null;
+
+        document.addEventListener('contextmenu', function(e) {
+            targetCell = e.target.closest('td');
+            if (targetCell && menu) {
+                e.preventDefault();
+                menu.style.display = 'block';
+                menu.style.left = e.pageX + 'px';
+                menu.style.top = e.pageY + 'px';
+            } else if (menu) {
+                menu.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', function() { if (menu) menu.style.display = 'none'; });
+
+        if (menu) {
+            document.getElementById('copy-cell').onclick = function() {
+                if (targetCell) navigator.clipboard.writeText(targetCell.textContent.trim());
+            };
+            document.getElementById('copy-row').onclick = function() {
+                if (targetCell) {
+                    var row = targetCell.closest('tr');
+                    var cells = Array.prototype.slice.call(row.querySelectorAll('td'));
+                    var text = cells.map(function(c) { return c.textContent.trim(); }).join('\t');
+                    navigator.clipboard.writeText(text);
+                }
+            };
+        }
     }
 
     if (document.readyState === 'loading') {

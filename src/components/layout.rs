@@ -89,6 +89,12 @@ pub fn Layout(props: LayoutProps) -> Element {
                         }
                     }
                 }
+
+                // Global Context Menu
+                div { id: "context-menu",
+                    div { class: "context-menu-item", id: "copy-cell", "Copy Cell" }
+                    div { class: "context-menu-item", id: "copy-row", "Copy Row" }
+                }
             }
         }
     }

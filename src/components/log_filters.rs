@@ -68,7 +68,7 @@ pub fn LogFilters(props: LogFiltersProps) -> Element {
                     class: "btn-glass",
                     id: "exportBtn",
                     "hx-indicator": "#global-loader",
-                    "EXPORT CSV"
+                    "EXPORT EXCEL"
                 }
             }
         }

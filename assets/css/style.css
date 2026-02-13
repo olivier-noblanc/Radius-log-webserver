@@ -187,6 +187,13 @@ body {
     transform: translateY(-2px);
 }
 
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+}
+
 /* --- BRAND LOGO --- */
 .brand-logo {
     font-family: var(--font-code);
@@ -316,11 +323,12 @@ body {
 
 /* --- TABLE --- */
 table {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     font-family: var(--font-code);
     font-size: var(--font-size-table);
-    table-layout: fixed;
+    table-layout: auto;
 }
 
 th {
@@ -334,8 +342,12 @@ td {
     border-bottom: 1px solid var(--border-glass);
     color: var(--text-main);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+}
+
+/* Specific column adjustments */
+th:nth-child(7),
+td:nth-child(7) {
+    min-width: 150px;
 }
 
 .log-row {
@@ -658,6 +670,61 @@ body:not([data-theme]):not([data-theme="macos"]):not([data-theme="win31"]) .neon
     color: #a9b7c6;
     font-family: var(--font-code);
     font-size: 0.85rem;
+}
+
+/* --- CONTEXT MENU --- */
+#context-menu {
+    position: fixed;
+    display: none;
+    z-index: 3000;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glass);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    min-width: 150px;
+    padding: 4px 0;
+    backdrop-filter: blur(10px);
+}
+
+.context-menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.1s;
+}
+
+.context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="win31"] #context-menu {
+    background: #C0C0C0 !important;
+    border: 2px outset #FFF !important;
+    border-radius: 0 !important;
+    box-shadow: 2px 2px #000 !important;
+    backdrop-filter: none !important;
+}
+
+[data-theme="win31"] .context-menu-item:hover {
+    background: #000080 !important;
+    color: #FFF !important;
+}
+
+[data-theme="macos"] #context-menu {
+    background: #E0E0E0 !important;
+    border: 1px solid #404040 !important;
+    border-radius: 0 !important;
+    box-shadow: 2px 2px 0 #000 !important;
+    backdrop-filter: none !important;
+}
+
+[data-theme="macos"] .context-menu-item:hover {
+    background: #000 !important;
+    color: #FFF !important;
 }
 
 /* --- SCROLLBAR --- */
