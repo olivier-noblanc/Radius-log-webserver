@@ -110,6 +110,11 @@ body {
     color: #000 !important;
 }
 
+.input-glass option {
+    background-color: #FFFFFF !important;
+    color: #000 !important;
+}
+
 .input-glass:focus {
     box-shadow: none !important;
     transform: none !important;
@@ -134,14 +139,16 @@ th {
 td[data-status="success"] {
     background: #FFFFFF !important;
     color: #008000 !important;
-    border: 1px solid #008000 !important;
+    border: none !important;
+    border-bottom: 1px solid #000 !important;
 }
 
 .status-fail,
 td[data-status="fail"] {
     background: #FFFFFF !important;
     color: #FF0000 !important;
-    border: 1px solid #FF0000 !important;
+    border: none !important;
+    border-bottom: 1px solid #000 !important;
 }
 
 /* No spring physics for Win3.1 */

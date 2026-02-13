@@ -51,6 +51,11 @@ body {
     color: #1a1a1b !important;
 }
 
+.input-glass option {
+    background-color: #ffffff !important;
+    color: #1a1a1b !important;
+}
+
 .brand-logo {
     text-shadow: none !important;
 }

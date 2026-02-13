@@ -92,10 +92,8 @@ pub fn Header(props: HeaderProps) -> Element {
                     option { value: "onyx-glass", selected: props.theme == "onyx-glass", "[FLAGSHIP] Onyx Glass" }
                     option { value: "light", selected: props.theme == "light", "[LIGHT] Professional" }
 
-                    optgroup { label: "--- RETRO SYSTEMS ---",
-                        option { value: "win31", selected: props.theme == "win31", "Windows 3.1" }
-                        option { value: "macos", selected: props.theme == "macos", "Macintosh Classic" }
-                    }
+                    option { value: "win31", selected: props.theme == "win31", "Windows 3.1" }
+                    option { value: "macos", selected: props.theme == "macos", "Macintosh Classic" }
                 }
                     
                 a { 

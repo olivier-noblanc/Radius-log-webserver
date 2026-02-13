@@ -272,6 +272,11 @@ body {
     background: rgba(255, 255, 255, 0.05);
 }
 
+.input-glass option {
+    background-color: #1a1a1c;
+    color: var(--text-main);
+}
+
 /* --- HEADER --- */
 .main-header {
     display: grid !important;
