@@ -61,9 +61,9 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
     // 1. PARSING MANUEL DES PARAMÈTRES EXTRA (Logged & Theme)
     // Actix n'a pas de query_param() direct sur Request, on parse la query string
     let qs = req.query_string();
-    let params: HashMap<String, String> = serde_urlencoded::from_str(&qs).unwrap_or_default();
+    let params: HashMap<String, String> = serde_urlencoded::from_str(qs).unwrap_or_default();
     
-    let is_manual_login = params.get("logged").map_or(false, |s| s == "yes");
+    let is_manual_login = params.get("logged").is_some_and(|s| s == "yes");
     
     // 2. GESTION DU THÈME (URL prioritaire sur Cookie)
     let theme = match params.get("theme") {

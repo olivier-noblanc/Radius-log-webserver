@@ -139,12 +139,7 @@ pub async fn log_rows_htmx(req: HttpRequest, query: web::Query<ParseQuery>, cach
              }
              reqs
          } else {
-             // Fallback: si on ne peut pas ouvrir le fichier spécifié, et que c'est une requête vide, essayer le dernier fichier
-             if target_file.is_empty() {
-                 vec![]
-             } else {
-                 vec![]
-             }
+             vec![]
          }
     } else {
         cache.get_latest(query.limit)

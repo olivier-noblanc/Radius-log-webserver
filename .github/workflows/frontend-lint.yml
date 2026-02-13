@@ -37,17 +37,14 @@ jobs:
           # INSTALL DPRINT (via cargo install pour éviter les problèmes CI)
           cargo install dprint --version 0.51.1
 
-          # INSTALL OXLINT
-          gh release download --repo oxc-project/oxc --pattern "oxlint-linux-x64-musl.tar.gz"
+          # INSTALL OXLINT (Pinned version to avoid broken releases)
+          gh release download apps_v1.38.0 --repo oxc-project/oxc --pattern "oxlint-linux-x64-musl.tar.gz"
           tar -xzf oxlint-linux-x64-musl.tar.gz
           chmod +x oxlint
           sudo mv oxlint /usr/local/bin/oxlint
 
-          # INSTALL LIGHTNINGCSS
-          gh release download --repo parcel-bundler/lightningcss --pattern "lightningcss-linux-x64-musl"
-          mv lightningcss-linux-x64-musl lightningcss
-          chmod +x lightningcss
-          sudo mv lightningcss /usr/local/bin/lightningcss
+          # INSTALL LIGHTNINGCSS (via cargo install to avoid asset download issues)
+          cargo install lightningcss-cli
 
       - name: Run Frontend Audit
         run: cargo run --bin frontend_lint

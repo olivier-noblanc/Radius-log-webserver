@@ -28,7 +28,7 @@ impl FileWatcher {
             broadcaster,
             file_sizes: Arc::new(DashMap::new()),
             cache,
-            stats_cache: stats_cache,
+            stats_cache,
         }
     }
 

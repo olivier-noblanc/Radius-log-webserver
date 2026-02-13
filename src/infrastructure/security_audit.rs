@@ -49,6 +49,12 @@ pub struct SecurityVulnerability {
     pub cve: Option<String>,
 }
 
+impl Default for SecurityAuditReport {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SecurityAuditReport {
     pub fn new() -> Self {
         Self {
@@ -224,23 +230,20 @@ pub fn read_schannel_config() -> TlsConfiguration {
 fn is_protocol_enabled(hklm: &RegKey, base_path: &str, protocol: &str) -> bool {
     let server_path = format!("{}\\{}\\Server", base_path, protocol);
     
-    match hklm.open_subkey(&server_path) {
-        Ok(key) => {
-            // Check "Enabled" DWORD
-            match key.get_value::<u32, _>("Enabled") {
-                Ok(1) => return true,
-                Ok(0) => return false,
-                _ => {
-                    // If "Enabled" not set, check "DisabledByDefault"
-                    match key.get_value::<u32, _>("DisabledByDefault") {
-                        Ok(0) => return true,
-                        Ok(1) => return false,
-                        _ => {}
-                    }
+    if let Ok(key) = hklm.open_subkey(&server_path) {
+        // Check "Enabled" DWORD
+        match key.get_value::<u32, _>("Enabled") {
+            Ok(1) => return true,
+            Ok(0) => return false,
+            _ => {
+                // If "Enabled" not set, check "DisabledByDefault"
+                match key.get_value::<u32, _>("DisabledByDefault") {
+                    Ok(0) => return true,
+                    Ok(1) => return false,
+                    _ => {}
                 }
             }
         }
-        Err(_) => {}
     }
     
     // Default values for Windows 10/11
@@ -349,7 +352,7 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
                 None,
             );
             report.add_recommendation(&format!("Renew expired certificate: {} (Thumbprint: {})", subject, thumbprint));
-        } else if days_until_expiration < 30 && days_until_expiration >= 0 {
+        } else if (0..30).contains(&days_until_expiration) {
             report.add_vulnerability(
                 "MEDIUM",
                 &format!("Certificate Expiring Soon: {}", subject),
@@ -377,7 +380,7 @@ pub fn perform_security_audit() -> SecurityAuditReport {
     tracing::info!("Starting robust security audit...");
     
     // 1. Read certificates from Windows Certificate Store (Safe wrap)
-    match std::panic::catch_unwind(|| read_certificate_store()) {
+    match std::panic::catch_unwind(read_certificate_store) {
         Ok(certs) => {
             report.certificates = certs;
             tracing::info!("Analyzed {} certificates", report.certificates.len());
@@ -389,7 +392,7 @@ pub fn perform_security_audit() -> SecurityAuditReport {
     }
     
     // 2. Read Schannel TLS/SSL configuration (Safe wrap)
-    match std::panic::catch_unwind(|| read_schannel_config()) {
+    match std::panic::catch_unwind(read_schannel_config) {
         Ok(config) => {
             report.tls_config = config;
             tracing::info!("TLS config analyzed");
