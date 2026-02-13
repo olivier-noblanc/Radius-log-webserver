@@ -9,7 +9,7 @@
     "7": "The domain that is specified in the User-Name attribute of the RADIUS message does not exist.",
     "8": "The user account that is specified in the User-Name attribute of the RADIUS message does not exist.",
     "9": "An Internet Authentication Service (IAS) extension dynamic link library (DLL) that is installed on the NPS server discarded the connection request.",
-    "10": "An IAS extension dynamic link library (DLL) that is installed on le NPS server has failed and cannot perform its function.",
+    "10": "An IAS extension dynamic link library (DLL) that is installed on the NPS server has failed and cannot perform its function.",
     "16": "Authentication failed due to a user credentials mismatch. Either the user name provided does not match an existing user account or the password was incorrect.",
     "17": "The user's attempt to change their password has failed.",
     "18": "The authentication method used by the client computer is not supported by Network Policy Server for this connection.",
