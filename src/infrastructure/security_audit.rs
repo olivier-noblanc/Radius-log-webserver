@@ -253,7 +253,7 @@ fn is_protocol_enabled(hklm: &RegKey, base_path: &str, protocol: &str) -> bool {
 fn read_cipher_suites(hklm: &RegKey) -> Vec<String> {
     let cipher_path = r"SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002";
     
-    match hklm.open_subkey(cipher_path) {
+    let suites = match hklm.open_subkey(cipher_path) {
         Ok(key) => {
             match key.get_value::<String, _>("Functions") {
                 Ok(functions_str) => {
@@ -267,7 +267,13 @@ fn read_cipher_suites(hklm: &RegKey) -> Vec<String> {
             }
         }
         Err(_) => Vec::new(),
+    };
+
+    if suites.is_empty() {
+        tracing::info!("No custom cipher suite order found in registry (using OS defaults)");
     }
+    
+    suites
 }
 
 pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {

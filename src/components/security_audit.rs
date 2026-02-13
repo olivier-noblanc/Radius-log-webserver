@@ -52,13 +52,19 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
             }
 
             // Certificates Section
-            if !props.report.certificates.is_empty() {
-                div { class: "mb-8",
-                    h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
-                        "📜 Certificates"
-                        span { class: "text-sm font-normal opacity-50", "({props.report.certificates.len()} installed)" }
+            div { class: "mb-8",
+                h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
+                    "📜 Windows Certificate Store"
+                    span { class: "text-sm font-normal opacity-50", "(LOCAL_MACHINE\\MY)" }
+                }
+                
+                if props.report.certificates.is_empty() {
+                    div { class: "glass-panel p-6 text-center border-dashed border-2 border-muted/30",
+                        div { class: "text-2xl mb-2", "🔍" }
+                        div { class: "text-sm font-bold text-muted", "No certificates found in LOCAL_MACHINE\\MY" }
+                        div { class: "text-xxs text-muted mt-1", "This is normal if no machine-wide SSL/RADIUS certificates have been installed." }
                     }
-                    
+                } else {
                     div { class: "grid grid-cols-1 md:grid-cols-2 gap-4",
                         for cert in &props.report.certificates {
                             div { 
@@ -114,6 +120,29 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                             div { class: "text-xxs space-y-1",
                                 for cipher in &props.report.tls_config.weak_ciphers_detected {
                                     div { "• {cipher}" }
+                                }
+                            }
+                        }
+                    }
+
+                    // Cipher Suite Order (GPO/Priority)
+                    div { class: "mt-6",
+                        h3 { class: "text-sm font-bold mb-3 opacity-80 uppercase tracking-widest", "Cipher Suite Negotiation Order" }
+                        div { class: "glass-panel p-0 bg-black/20 overflow-hidden",
+                            if props.report.tls_config.cipher_suites.is_empty() {
+                                div { class: "p-4 text-xs text-muted italic", 
+                                    "Managed by Windows Defaults (No GPO override detected)" 
+                                }
+                            } else {
+                                div { class: "divide-y divide-white/5",
+                                    for (i, cipher) in props.report.tls_config.cipher_suites.iter().enumerate() {
+                                        div { class: "p-2 px-4 text-xxs font-mono flex items-center gap-3 hover:bg-white/5",
+                                            span { class: "opacity-30 w-4", "{i+1}" }
+                                            span { class: if props.report.tls_config.weak_ciphers_detected.contains(cipher) { "text-fail" } else { "text-primary/80" }, 
+                                                "{cipher}" 
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
