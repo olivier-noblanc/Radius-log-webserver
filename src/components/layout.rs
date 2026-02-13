@@ -46,6 +46,12 @@ pub fn Layout(props: LayoutProps) -> Element {
 
             // Main Application Root
             div { id: "app-root", class: if !props.is_authorized { "hidden" } else { "visible" },
+                // Global Modals
+                crate::components::modals::SecurityModal {
+                    is_authorized: props.is_authorized
+                }
+                crate::components::modals::DetailModal {}
+
                 // Header Navigation
                 crate::components::header::Header {
                     build_version: props.build_version.clone(),
@@ -56,14 +62,6 @@ pub fn Layout(props: LayoutProps) -> Element {
                 main { class: "container app-wrapper",
                     {props.children}
                 }
-
-                // Global Modals
-               crate::components::modals::SecurityModal {
-    is_authorized: props.is_authorized
-                }
-                crate::components::modals::DetailModal {}
-
-                // Global Loader
                 div { id: "global-loader",
                     div { class: "loader-progress-bar" }
                     div { class: "loader-box",

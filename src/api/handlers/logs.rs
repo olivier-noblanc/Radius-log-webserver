@@ -10,7 +10,7 @@ use crate::infrastructure::win32::get_log_path_from_registry;
 use crate::components::log_table::LogTable;
 use dioxus::prelude::*;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, PartialEq)]
 pub struct LogFile {
     pub name: String,
     pub path: String,

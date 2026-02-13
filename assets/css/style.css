@@ -653,7 +653,8 @@ td[data-status="fail"] {
     justify-content: center;
 }
 
-.modal-overlay.open {
+.modal-overlay.open,
+.modal-overlay:target {
     display: flex;
 }
 

@@ -44,10 +44,11 @@ pub fn Header(props: HeaderProps) -> Element {
                     "hx-trigger": "click",
                     "hx-indicator": "#global-loader",
                     "hx-on::after-request": r#"
-                        document.getElementById('view-logs').style.display='block';
-                        document.getElementById('view-dashboard').style.display='none';
+                        const l = document.getElementById('view-logs'); if(l) l.style.display='block';
+                        const d = document.getElementById('view-dashboard'); if(d) d.style.display='none';
+                        const a = document.getElementById('view-audit'); if(a) a.style.display='none';
                         this.classList.add('active');
-                        document.getElementById('btn-nav-dashboard').classList.remove('active');
+                        const bl = document.getElementById('btn-nav-dashboard'); if(bl) bl.classList.remove('active');
                     "#,
                     "LOG STREAM" 
                 }
@@ -62,10 +63,11 @@ pub fn Header(props: HeaderProps) -> Element {
                     "hx-trigger": "click",
                     "hx-indicator": "#global-loader",
                     "hx-on::after-request": r#"
-                        document.getElementById('view-logs').style.display='none';
-                        document.getElementById('view-dashboard').style.display='block';
+                        const l = document.getElementById('view-logs'); if(l) l.style.display='none';
+                        const d = document.getElementById('view-dashboard'); if(d) d.style.display='block';
+                        const a = document.getElementById('view-audit'); if(a) a.style.display='none';
                         this.classList.add('active');
-                        document.getElementById('btn-nav-logs').classList.remove('active');
+                        const bl = document.getElementById('btn-nav-logs'); if(bl) bl.classList.remove('active');
                     "#,
                     "ANALYTICS" 
                 }
@@ -85,7 +87,6 @@ pub fn Header(props: HeaderProps) -> Element {
                         "hx-on::after-request": "window.location.reload();",
                         
                         option { value: "onyx-glass", selected: props.theme == "onyx-glass", "[FLAGSHIP] Onyx Glass" }
-                        option { value: "neon", selected: props.theme == "neon", "[ULTRA] Neon Cyberpunk" }
                         option { value: "light", selected: props.theme == "light", "[LIGHT] Professional" }
 
                         optgroup { label: "--- RETRO SYSTEMS ---",

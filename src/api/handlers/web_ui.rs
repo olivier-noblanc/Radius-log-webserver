@@ -32,7 +32,6 @@ fn get_theme_css_files(theme: &str) -> Vec<String> {
     let mut files = Vec::new();
     
     match theme {
-        "neon" => files.push("/css/themes/neon.css".to_string()),
         "light" => files.push("/css/themes/light.css".to_string()),
         "win31" => files.push("/css/themes/win31.css".to_string()),
         "macos" | "macos9" => files.push("/css/themes/macos.css".to_string()),
@@ -124,66 +123,10 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
             css_files: css_files,
             
             div { id: "view-logs",
-                form { 
-                    id: "log-filters", 
-                    "hx-get": "/api/logs/rows", 
-                    "hx-target": "#log-table-container",
-                    "hx-swap": "innerHTML",
-                    "hx-trigger": "change from:select, change from:input[type=checkbox], input delay:500ms from:input[type=text]",
-                    "hx-indicator": "#global-loader",
-                    class: "flex items-center mb-4 glass-panel panel-main",
-                    
-                    div { class: "flex-grow",
-                        select { id: "fileSelect", name: "file", class: "input-glass",
-                            for file in files {
-                                option { 
-                                    value: "{file.path}", 
-                                    selected: file.path == current_file,
-                                    "{file.name} ({file.formatted_size})"
-                                }
-                            }
-                        }
-                    }
-                    div { class: "flex-grow",
-                        input { 
-                            r#type: "text", 
-                            id: "searchInput", 
-                            name: "search", 
-                            class: "input-glass",
-                            placeholder: "Search (User, IP, Reason)...", 
-                            value: "{search_val}"
-                        }
-                    }
-                    div { class: "flex items-center ml-4 gap-8 text-xs text-muted",
-                        input { 
-                            r#type: "checkbox", 
-                            id: "errorToggle", 
-                            name: "error_only", 
-                            value: "true",
-                            class: "cursor-pointer w-18 h-18" 
-                        }
-                        label { r#for: "errorToggle", class: "error-only-label", "ERRORS ONLY" }
-                    }
-
-                    input { r#type: "hidden", id: "sort_by", name: "sort_by", value: "timestamp" }
-                    input { r#type: "hidden", id: "sort_desc", name: "sort_desc", value: "true" }
-
-                    div {
-                        button { 
-                            r#type: "submit", 
-                            class: "btn-glass btn-primary", 
-                            id: "loadBtn", 
-                            "hx-indicator": "#global-loader",
-                            "REFRESH" 
-                        }
-                        a { 
-                            href: "/api/export?file={current_file}&search={search_val}",
-                            class: "btn-glass", 
-                            id: "exportBtn",
-                            "hx-indicator": "#global-loader",
-                            "EXPORT CSV"
-                        }
-                    }
+                crate::components::log_filters::LogFilters {
+                    files: files,
+                    current_file: current_file,
+                    search_val: search_val
                 }
 
                 crate::components::log_table::LogTable { 
@@ -192,6 +135,8 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
                     sort_desc: true
                 }
             }
+            div { id: "view-dashboard", style: "display: none;" }
+            div { id: "view-audit", style: "display: none;" }
         }
     });
 
@@ -351,6 +296,11 @@ pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
     let css_files = get_theme_css_files(&theme);
     let build_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
     
+    let files = get_all_log_files().unwrap_or_default();
+    let latest_file = get_latest_log_file()
+        .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+        .unwrap_or_default();
+
     let html = dioxus_ssr::render_element(rsx! {
         crate::components::layout::Layout {
             title: "Security Audit // RADIUS LOG".to_string(),
@@ -360,8 +310,19 @@ pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
             is_authorized: true,
             css_files: css_files,
             
-            crate::components::security_audit::SecurityAudit {
-                report: report
+            div { id: "view-logs", style: "display: none;",
+                crate::components::log_filters::LogFilters {
+                    files: files,
+                    current_file: latest_file,
+                    search_val: "".to_string()
+                }
+                div { id: "log-table-container" }
+            }
+            div { id: "view-dashboard", style: "display: none;" }
+            div { id: "view-audit",
+                crate::components::security_audit::SecurityAudit {
+                    report: report
+                }
             }
         }
     });
