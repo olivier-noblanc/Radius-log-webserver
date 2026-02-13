@@ -9,6 +9,7 @@ use crate::infrastructure::win32::get_log_path_from_registry;
 use crate::utils::security::{is_authorized, resolve_safe_path};
 use dioxus::prelude::*;
 use quick_xml::reader::Reader;
+use rust_xlsxwriter::*;
 
 #[derive(Serialize, Clone, PartialEq)]
 pub struct LogFile {
@@ -205,7 +206,7 @@ pub async fn log_detail_htmx(
     }
 }
 
-pub async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> impl Responder {
+pub async fn export_xlsx(req: HttpRequest, query: web::Query<ExportQuery>) -> impl Responder {
     if !is_authorized(&req) {
         return HttpResponse::Forbidden().body("Access Denied");
     }
@@ -231,19 +232,59 @@ pub async fn export_csv(req: HttpRequest, query: web::Query<ExportQuery>) -> imp
             };
             let reqs = parse_xml_bytes(&mut reader, search_val, 100_000);
 
-            let mut wtr = csv::Writer::from_writer(vec![]);
-            for r in reqs {
-                wtr.serialize(r).ok();
+            let mut workbook = Workbook::new();
+            let worksheet = workbook.add_worksheet();
+
+            // En-têtes
+            let header_format = Format::new().set_bold();
+            worksheet.write_with_format(0, 0, "ID", &header_format).ok();
+            worksheet
+                .write_with_format(0, 1, "Timestamp", &header_format)
+                .ok();
+            worksheet
+                .write_with_format(0, 2, "Type", &header_format)
+                .ok();
+            worksheet
+                .write_with_format(0, 3, "Status", &header_format)
+                .ok();
+            worksheet
+                .write_with_format(0, 4, "User", &header_format)
+                .ok();
+            worksheet
+                .write_with_format(0, 5, "MAC", &header_format)
+                .ok();
+            worksheet
+                .write_with_format(0, 6, "AP Name", &header_format)
+                .ok();
+            worksheet
+                .write_with_format(0, 7, "Reason", &header_format)
+                .ok();
+
+            for (i, r) in reqs.iter().enumerate() {
+                let row = (i + 1) as u32;
+                worksheet.write(row, 0, r.id.unwrap_or(0) as f64).ok();
+                worksheet.write(row, 1, &r.timestamp).ok();
+                worksheet.write(row, 2, &r.req_type).ok();
+                worksheet
+                    .write(row, 3, r.status.as_deref().unwrap_or(""))
+                    .ok();
+                worksheet.write(row, 4, &r.user).ok();
+                worksheet.write(row, 5, &r.mac).ok();
+                worksheet.write(row, 6, &r.ap_name).ok();
+                worksheet.write(row, 7, &r.reason).ok();
             }
-            match wtr.into_inner() {
+
+            match workbook.save_to_buffer() {
                 Ok(data) => HttpResponse::Ok()
-                    .content_type("text/csv")
+                    .content_type(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
                     .append_header((
                         "Content-Disposition",
-                        "attachment; filename=\"radius_export.csv\"",
+                        "attachment; filename=\"radius_export.xlsx\"",
                     ))
                     .body(data),
-                Err(_) => HttpResponse::InternalServerError().body("CSV Error"),
+                Err(_) => HttpResponse::InternalServerError().body("Excel Error"),
             }
         }
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
