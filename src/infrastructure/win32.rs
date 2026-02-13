@@ -33,11 +33,11 @@ pub struct CertInfo {
     pub is_valid: bool,
 }
 
-/// Récupère les détails des logs SChannel de manière sûre (anti-panic).
+/// Retrieves SChannel log details in a safe manner (anti-panic).
 pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
     let mut errors = Vec::new();
     
-    // 1. Parsing du timestamp cible
+    // 1. Parsing of target timestamp
     let target_time = if let Ok(ts) = timestamp_str.parse::<i64>() {
         ts as u64
     } else if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(timestamp_str) {
@@ -53,7 +53,7 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
         if let Ok(h_log) = OpenEventLogW(server_name, source_name) {
             // BACKWARDS (8) | SEQUENTIAL (1)
             let flags = READ_EVENT_LOG_READ_FLAGS(8 | 1);
-            // Buffer initial 64KB
+            // Initial 64KB buffer
             let mut buffer = vec![0u8; 0x10000]; 
             let mut bytes_read = 0u32;
             let mut bytes_needed = 0u32;
@@ -71,19 +71,19 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                     &mut bytes_needed,
                 );
 
-                // Gestion redimensionnement buffer si nécessaire
+                // Handle buffer resizing if necessary
                 if result.is_err() {
                     if bytes_needed > buffer.len() as u32 {
-                        // On double la taille ou on prend ce qu'il faut
+                        // Double the size or take what's needed
                         buffer.resize(bytes_needed as usize, 0);
                         continue;
                     }
-                    // Erreur autre (ex: fin de lecture)
+                    // Other error (e.g. end of read)
                     break; 
                 }
 
                 if bytes_read == 0 {
-                    break; // Plus d'événements
+                    break; // No more events
                 }
 
                 let mut offset = 0usize;
@@ -95,41 +95,41 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                         break 'outer;
                     }
                     
-                    // Vérification timestamp (arrêt si trop vieux)
+                    // Timestamp check (stop if too old)
                     if (record.TimeGenerated as u64) < target_time {
                         break 'outer;
                     }
                     
-                    // Filtre sur les Event IDs SChannel critiques
+                    // Filter on critical SChannel Event IDs
                     if matches!(record.EventID, 36888 | 36874 | 36871 | 36887) {
                         let mut message_parts = Vec::new();
                         
-                        // --- DÉBUT DE LA ZONE SÉCURISÉE ---
+                        // --- START OF SECURE ZONE ---
                         
-                        // Calcul sécurisé de l'offset des chaînes
+                        // Safe calculation of string offset
                         let strings_offset = offset + record.StringOffset as usize;
                         let buffer_len = buffer.len();
 
-                        // Vérif de base : l'offset est-il dans le buffer ?
+                        // Basic check: is the offset within the buffer?
                         if strings_offset < buffer_len {
                             let mut current_offset = strings_offset;
                             
-                            // On lit jusqu'à NumStrings ou max 10 strings
+                            // Read up to NumStrings or max 10 strings
                             for _ in 0..record.NumStrings.min(10) {
-                                // Vérif : y a-t-il au moins 2 octets (1 char UTF-16) à lire ?
+                                // Check: are there at least 2 bytes (1 UTF-16 char) to read?
                                 if current_offset + 2 > buffer_len {
                                     break;
                                 }
 
-                                // Calcul sécurisé de la longueur de la chaîne UTF-16
-                                // On cherche le terminateur \0\0
+                                // Safe calculation of UTF-16 string length
+                                // Look for \0\0 terminator
                                 let mut len_in_chars = 0usize;
                                 let max_possible_chars = (buffer_len - current_offset) / 2;
                                 
                                 let char_ptr = buffer.as_ptr().add(current_offset) as *const u16;
 
                                 while len_in_chars < max_possible_chars {
-                                    // Lire le caractère courant
+                                    // Read current character
                                     let char_val = *char_ptr.add(len_in_chars);
                                     
                                     if char_val == 0 {
@@ -140,7 +140,7 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
 
                                 // Maintenant qu'on a la longueur, on crée le slice de manière sûre
                                 if len_in_chars > 0 {
-                                    // La sécurité est garantie car on a itéré jusqu'à len_in_chars < max_possible_chars
+                                    // Safety is guaranteed because we iterated until len_in_chars < max_possible_chars
                                     let slice = std::slice::from_raw_parts(
                                         buffer.as_ptr().add(current_offset) as *const u16,
                                         len_in_chars
@@ -151,14 +151,14 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                                     }
                                 }
 
-                                // Avancer le pointeur : (Longueur en octets) + 2 octets pour le \0
+                                // Advance pointer: (Length in bytes) + 2 bytes for \0
                                 current_offset += (len_in_chars * 2) + 2;
                             }
                         }
                         
-                        // --- FIN DE LA ZONE SÉCURISÉE ---
+                        // --- END OF SECURE ZONE ---
 
-                        // Formatage du message
+                        // Message formatting
                         let timestamp = chrono::DateTime::from_timestamp(record.TimeGenerated as i64, 0)
                             .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
                             .unwrap_or_else(|| "Unknown time".to_string());

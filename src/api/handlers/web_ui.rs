@@ -10,7 +10,7 @@ use quick_xml::reader::Reader;
 use std::fs::File;
 use serde::Deserialize;
 use rust_embed::RustEmbed;
-use std::collections::HashMap; // Nécessaire pour parser les query params
+use std::collections::HashMap; // Required to parse query params
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
@@ -27,7 +27,7 @@ pub struct LoginQuery {
 
 // --- LOGIQUE THÈME ---
 
-// Fonction utilitaire pour mapper les thèmes vers des fichiers CSS
+// Utility function to map themes to CSS files
 fn get_theme_css_files(theme: &str) -> Vec<String> {
     let mut files = Vec::new();
     
@@ -58,20 +58,20 @@ fn is_local_dev(req: &HttpRequest) -> bool {
 
 pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web::Query<ParseQuery>) -> impl Responder {
     
-    // 1. PARSING MANUEL DES PARAMÈTRES EXTRA (Logged & Theme)
-    // Actix n'a pas de query_param() direct sur Request, on parse la query string
+    // 1. MANUAL PARSING OF EXTRA PARAMETERS (Logged & Theme)
+    // Actix doesn't have direct query_param() on Request, so we parse the query string
     let qs = req.query_string();
     let params: HashMap<String, String> = serde_urlencoded::from_str(qs).unwrap_or_default();
     
     let is_manual_login = params.get("logged").is_some_and(|s| s == "yes");
     
-    // 2. GESTION DU THÈME (URL prioritaire sur Cookie)
+    // 2. THEME MANAGEMENT (URL takes precedence over Cookie)
     let theme = match params.get("theme") {
-        Some(t) => t.clone(), // Priorité 1 : Paramètre URL (Login)
+        Some(t) => t.clone(), // Priority 1: URL Parameter (Login)
         None => {
             req.cookie("theme")
                 .map(|c| c.value().to_string())
-                .unwrap_or_else(|| "onyx-glass".into()) // Priorité 2 : Cookie
+                .unwrap_or_else(|| "onyx-glass".into()) // Priority 2: Cookie
         }
     };
     
@@ -146,13 +146,13 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
         "public, max-age=30"
     };
 
-    // Création de la réponse
+    // Response creation
     let mut response = HttpResponse::Ok()
         .content_type("text/html")
         .insert_header(("Cache-Control", cache_header))
-        .body(format!("<!DOCTYPE html><html lang=\"fr\">{}</html>", html));
+        .body(format!("<!DOCTYPE html><html lang=\"en\">{}</html>", html));
 
-    // GESTION DU COOKIE LOGIN (Si ?logged=yes)
+    // LOGIN COOKIE MANAGEMENT (If ?logged=yes)
     if is_manual_login {
         let auth_cookie = actix_web::cookie::Cookie::build("radius_auth", "authorized")
             .path("/")
@@ -162,11 +162,11 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
             .secure(false)
             .finish();
         
-        // FIX IMPORTANT : On passe la référence (&auth_cookie)
+        // IMPORTANT FIX: Passing the reference (&auth_cookie)
         let _ = response.add_cookie(&auth_cookie);
     }
 
-    // PERSISTANCE DU THÈME (Si ?theme=... dans l'URL)
+    // THEME PERSISTENCE (If ?theme=... in URL)
     if params.contains_key("theme") {
         let theme_cookie = actix_web::cookie::Cookie::build("theme", theme)
             .path("/")
@@ -176,7 +176,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
             .secure(false)
             .finish();
             
-        // FIX IMPORTANT : On passe la référence (&theme_cookie)
+        // IMPORTANT FIX: Passing the reference (&theme_cookie)
        let _ = response.add_cookie(&theme_cookie);
     }
 
@@ -242,7 +242,7 @@ pub async fn dashboard_htmx(req: HttpRequest, cache: web::Data<Arc<LogCache>>) -
     HttpResponse::Ok().content_type("text/html").body(html)
 }
 
-// --- HANDLERS STATIQUES ---
+// --- STATIC HANDLERS ---
 
 fn handle_static_asset(req: HttpRequest, content: &[u8], content_type: &str) -> HttpResponse {
     let etag = GIT_SHA;
@@ -329,7 +329,7 @@ pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
     
     HttpResponse::Ok()
         .content_type("text/html")
-        .body(format!("<!DOCTYPE html><html lang=\"fr\">{}</html>", html))
+        .body(format!("<!DOCTYPE html><html lang=\"en\">{}</html>", html))
 }
 
 pub async fn serve_favicon() -> impl Responder {

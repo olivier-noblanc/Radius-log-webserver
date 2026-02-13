@@ -40,14 +40,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let is_service = args.iter().any(|arg| arg == "--service");
 
     if is_service {
-        // En mode Service, on délègue à system_service_main qui va gérer son propre Runtime
+        // In Service mode, we delegate to system_service_main which manages its own Runtime
         service_dispatcher::start(SERVICE_NAME, ffi_service_main)?;
     } else {
-        // En mode Console (Développement)
-        // On crée un canal pour gérer le Ctrl+C
+        // In Console mode (Development)
+        // Create a channel to handle Ctrl+C
         let (shutdown_tx, shutdown_rx) = broadcast::channel::<()>(1);
         
-        // Tâche en arrière-plan pour écouter Ctrl+C
+        // Background task to listen for Ctrl+C
         let tx_clone = shutdown_tx.clone();
         tokio::spawn(async move {
             match tokio::signal::ctrl_c().await {
@@ -61,28 +61,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         });
 
-        // Lancement de l'app
+        // App launch
         run_app(shutdown_rx).await?;
     }
 
     Ok(())
 }
 
-/// Point d'entrée du Service Windows
+/// Windows Service Entry Point
 fn system_service_main(_args: Vec<std::ffi::OsString>) {
-    // On doit créer un runtime explicite car cette fonction est synchrone (appelée par l'OS)
+    // We must create an explicit runtime because this function is synchronous (called by the OS)
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
     
-    // Création du canal de communication pour l'arrêt
+    // Communication channel for shutdown
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
     let tx_clone = shutdown_tx.clone();
 
-    // Enregistrement du gestionnaire d'événements du service
+    // Service event handler registration
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
         match control_event {
             ServiceControl::Stop => {
                 tracing::info!("Service stop requested.");
-                // On envoie le signal d'arrêt au serveur HTTP via le broadcast
+                // Send the shutdown signal to the HTTP server via broadcast
                 let _ = tx_clone.send(());
                 ServiceControlHandlerResult::NoError
             }
@@ -94,7 +94,7 @@ fn system_service_main(_args: Vec<std::ffi::OsString>) {
     let status_handle = service_control_handler::register(SERVICE_NAME, event_handler)
         .expect("Failed to register service handler");
 
-    // On signale au gestionnaire de services que le service est en cours de démarrage
+    // Signal the service manager that the service is starting
     status_handle.set_service_status(ServiceStatus {
         service_type: SERVICE_TYPE,
         current_state: ServiceState::Running,
@@ -105,8 +105,8 @@ fn system_service_main(_args: Vec<std::ffi::OsString>) {
         process_id: None,
     }).expect("Failed to set service status to Running");
 
-    // On lance l'application web en bloquant sur le runtime
-    // On passe le receiver qui écoutera le signal envoyé par event_handler
+    // Start the web application by blocking on the runtime
+    // Pass the receiver which will listen for the signal sent by event_handler
     let result = rt.block_on(run_app(shutdown_tx.subscribe()));
 
     match result {
@@ -114,7 +114,7 @@ fn system_service_main(_args: Vec<std::ffi::OsString>) {
         Err(e) => tracing::error!("Service error: {}", e),
     }
 
-    // On signale au gestionnaire de services que le service est arrêté
+    // Signal the service manager that the service is stopped
     status_handle.set_service_status(ServiceStatus {
         service_type: SERVICE_TYPE,
         current_state: ServiceState::Stopped,
@@ -149,14 +149,14 @@ async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
     tracing::info!("Server running at http://0.0.0.0:{}", port);
     tracing::info!("Build: {} (v{})", env!("VERGEN_GIT_SHA"), BUILD_VERSION);
 
-    // Création du future du serveur (il ne démarre pas tout de suite, il est défini ici)
+    // Server future creation (doesn't start immediately, defined here)
     let server_future = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::default())
             .wrap(tracing_actix_web::TracingLogger::default())
             .wrap(
                 middleware::DefaultHeaders::new()
-                    // CSP CONFIGURÉE POUR ASSETS LOCAUX UNIQUEMENT (100% offline)
+                    // CSP CONFIGURED FOR LOCAL ASSETS ONLY (100% offline)
                     .add(("Content-Security-Policy", 
                         [
                             "default-src 'self'",
@@ -179,7 +179,7 @@ async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
             .wrap(middleware::Compress::default())
             .route("/", web::get().to(index))
             .route("/ws", web::get().to(ws_route))
-            // ROUTES ASSETS EMBEDDED (Build Time)
+            // EMBEDDED ASSETS ROUTES (Build Time)
             .route("/css/{filename:.*}", web::get().to(serve_static_asset))
             .route("/js/{filename:.*}", web::get().to(serve_static_asset))
             .route("/fonts/{filename:.*}", web::get().to(serve_static_asset))
@@ -205,18 +205,18 @@ async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
     .bind(format!("0.0.0.0:{}", port))?
     .run();
 
-    // Gestion du graceful shutdown via tokio::select! (Spécifique Actix-Web 4)
-    // On attend soit que le serveur plante/se termine, soit qu'on reçoive le signal d'arrêt
+    // Graceful shutdown management via tokio::select! (Specific to Actix-Web 4)
+    // Wait for either the server to crash/finish, or for a shutdown signal
     tokio::select! {
-        // Cas 1 : Le serveur s'arrête de lui-même (rare)
+        // Case 1: Server stops on its own (rare)
         res = server_future => {
             res
         }
-        // Cas 2 : On reçoit le signal d'arrêt (via shutdown.recv())
+        // Case 2: Shutdown signal received (via shutdown.recv())
         _ = shutdown.recv() => {
             tracing::info!("Graceful shutdown signal received, closing server...");
-            // En sortant de ce bloc, 'server_future' est droppé (abandonné),
-            // ce qui déclenche automatiquement le mécanisme d'arrêt gracieux d'Actix.
+            // By exiting this block, 'server_future' is dropped (abandoned),
+            // which automatically triggers Actix's graceful shutdown mechanism.
             Ok(())
         }
     }

@@ -3,16 +3,16 @@ use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 use tracing;
 
-/// Valide que le fichier demandé est bien dans le dossier autorisé (sandbox).
-/// Empêche le "Path Traversal" (ex: ../..).
+/// Validates that the requested file is within the authorized folder (sandbox).
+/// Prevents "Path Traversal" (e.g., ../..).
 pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
-    // 1. Construire le chemin complet
+    // 1. Build the full path
     let base = Path::new(base_dir);
     let requested = Path::new(user_input);
 
-    // Si le chemin est absolu (ex: "C:\Windows\..."), on le refuse immédiatement
+    // If the path is absolute (e.g., "C:\Windows\..."), refuse it immediately
     if requested.is_absolute() {
-        return Err(anyhow::anyhow!("Chemin absolu interdit."));
+        return Err(anyhow::anyhow!("Absolute path forbidden."));
     }
 
     let full_path = base.join(requested);
@@ -20,12 +20,12 @@ pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
     // 2. Canonicalize
     let canonical = full_path
         .canonicalize()
-        .with_context(|| format!("Fichier introuvable ou invalide: {:?}", user_input))?;
+        .with_context(|| format!("File not found or invalid: {:?}", user_input))?;
 
-    // 3. Vérifier que le canonicalisé commence bien par le dossier de base
+    // 3. Verify that the canonicalized path starts with the base folder
     let canonical_base = base
         .canonicalize()
-        .context("Impossible de résoudre le dossier de base des logs")?;
+        .context("Could not resolve logs base directory")?;
 
     if !canonical.starts_with(&canonical_base) {
         tracing::warn!(
@@ -33,7 +33,7 @@ pub fn resolve_safe_path(base_dir: &str, user_input: &str) -> Result<PathBuf> {
             user_input
         );
         return Err(anyhow::anyhow!(
-            "Tentative d'accès en dehors du dossier autorisé !"
+            "Access attempt outside authorized directory!"
         ));
     }
 

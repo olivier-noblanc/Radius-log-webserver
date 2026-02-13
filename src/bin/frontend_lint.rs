@@ -1,50 +1,50 @@
-//! ORCHESTRATEUR DE LINTING FRONTEND (100% RUST)
-//! Ce binaire permet de valider la qualité du code JS/CSS sans dépendance à Node.js.
-//! Exécution : `cargo run --bin frontend_lint`
+//! FRONTEND LINTING ORCHESTRATOR (100% RUST)
+//! This binary validates JS/CSS code quality without Node.js dependency.
+//! Execution: `cargo run --bin frontend_lint`
 
 use std::process::Command;
 use std::time::Instant;
 
 fn main() {
-    println!("🚀 [LINT] DÉMARRAGE DE L'AUDIT QUALITÉ FRONTEND...");
+    println!("🚀 [LINT] STARTING FRONTEND QUALITY AUDIT...");
     let start = Instant::now();
 
-    // 1. JS LINTING (oxlint - ultra rapide, écrit en Rust)
-    println!("🔍 [JS] Vérification via oxlint...");
+    // 1. JS LINTING (oxlint - ultra fast, written in Rust)
+    println!("🔍 [JS] Checking via oxlint...");
     let js_status = Command::new("oxlint")
         .args(["assets/js", "--deny=all"])
         .status();
 
     match js_status {
-        Ok(status) if status.success() => println!("✅ [JS] Aucun problème détecté."),
-        Ok(_) => println!("❌ [JS] Des erreurs/avertissements ont été trouvés. (Utilisez 'oxlint assets/js' pour corriger)"),
-        Err(_) => println!("⚠️ [JS] oxlint n'est pas installé. (Tapez 'cargo install oxlint' pour l'activer)"),
+        Ok(status) if status.success() => println!("✅ [JS] No issues detected."),
+        Ok(_) => println!("❌ [JS] Errors/warnings were found. (Use 'oxlint assets/js' to fix)"),
+        Err(_) => println!("⚠️ [JS] oxlint is not installed. (Type 'cargo install oxlint' to enable)"),
     }
 
-    // 2. CSS LINTING (lightningcss - moteur CSS haute performance en Rust)
-    println!("🔍 [CSS] Vérification via lightningcss...");
+    // 2. CSS LINTING (lightningcss - high-performance CSS engine in Rust)
+    println!("🔍 [CSS] Checking via lightningcss...");
     let css_status = Command::new("lightningcss")
         .args(["--error-on-unused-custom-properties", "assets/css/style.css"])
         .status();
 
     match css_status {
-        Ok(status) if status.success() => println!("✅ [CSS] Structure CSS valide."),
-        Ok(_) => println!("❌ [CSS] Erreurs détectées dans style.css."),
-        Err(_) => println!("⚠️ [CSS] lightningcss n'est pas installé. (Tapez 'cargo install lightningcss-cli' pour l'activer)"),
+        Ok(status) if status.success() => println!("✅ [CSS] Valid CSS structure."),
+        Ok(_) => println!("❌ [CSS] Errors detected in style.css."),
+        Err(_) => println!("⚠️ [CSS] lightningcss is not installed. (Type 'cargo install lightningcss-cli' to enable)"),
     }
 
-    // 3. RUST CODE STYLE (dprint - formateur/linter universel en Rust)
-    println!("🔍 [CODE] Vérification via dprint sur les composants...");
+    // 3. RUST CODE STYLE (dprint - universal formatter/linter in Rust)
+    println!("🔍 [CODE] Checking via dprint on components...");
     let html_status = Command::new("dprint")
         .args(["check", "src/components/**/*.rs"])
         .status();
 
     match html_status {
-        Ok(status) if status.success() => println!("✅ [CODE] Structure des composants conforme."),
-        Ok(_) => println!("❌ [CODE] Problèmes de formatage détectés dans les composants."),
-        Err(_) => println!("⚠️ [CODE] dprint n'est pas installé. (Tapez 'cargo install dprint' pour l'activer)"),
+        Ok(status) if status.success() => println!("✅ [CODE] Component structure matches standards."),
+        Ok(_) => println!("❌ [CODE] Formatting issues detected in components."),
+        Err(_) => println!("⚠️ [CODE] dprint is not installed. (Type 'cargo install dprint' to enable)"),
     }
 
     let duration = start.elapsed();
-    println!("\n✨ [AUDIT] Terminé en {:.2?}.", duration);
+    println!("\n✨ [AUDIT] Finished in {:.2?}.", duration);
 }
