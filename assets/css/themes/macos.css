@@ -1,162 +1,84 @@
-/* =========================================
-   MACOS CLASSIC (PLATINUM)
-   System 8 / 9 Aesthetic
-   ========================================= */
+/* ==========================================
+   THEME: MACOS 9 PLATINUM
+   APPLE RETRO OVERRIDES
+   ========================================== */
 
-[data-theme="macos"] {
-    --bg-desktop: #808080;
-    --bg-window: #dedede;
-    --text-main: #000000;
-    --text-muted: #666666;
-    --accent-purple: #660099;
-    --font-ui: "Charcoal", "Geneva", "Lucida Grande", sans-serif;
-    --border-dark: #666666;
+:root {
+  --bg-deep: #9999CC;
+  /* Desktop Teal */
+  --bg-panel: #DDDDDD;
+  /* Platinum Gray */
+  --text-main: #000000;
+  --text-muted: #444444;
+  --accent-cyan: #0066CC;
+  --accent-green: #34C759;
+  --accent-red: #FF3B30;
+  --border-glass: #999999;
+  --font-ui: 'Geneva', 'Charcoal', system-ui, sans-serif;
 }
 
-[data-theme="macos"] body {
-    background-color: var(--bg-desktop);
-    /* PLATINUM DESKTOP PATTERN - Subtle Checkerboard */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%23808080'/%3E%3Cpath d='M0 0h4v4H0zM4 4h4v4H4z' fill='%23777777' fill-opacity='0.4'/%3E%3C/svg%3E");
-    font-family: var(--font-ui) !important;
-    font-size: 12px;
+body {
+  background-color: var(--bg-deep) !important;
+  background-image: none !important;
+  font-family: var(--font-ui) !important;
 }
 
-/* Window Style - Platinum */
-[data-theme="macos"] .glass-panel {
-    background: var(--bg-window) !important;
-    border: 1px solid #000000 !important;
-    box-shadow: inset 1px 1px 0 #ffffff,
-        inset -1px -1px 0 #999999,
-        3px 3px 10px rgba(0, 0, 0, 0.3) !important;
-    border-radius: 4px !important;
-    backdrop-filter: none !important;
-    color: #000 !important;
-    overflow: hidden;
+/* Platinum Panels */
+.glass-panel {
+  background: #DDDDDD !important;
+  border: 1px solid #666666 !important;
+  border-radius: 4px !important;
+  box-shadow: 1px 1px 0 #FFFFFF inset, -1px -1px 0 #999999 inset, 2px 2px 5px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-/* Header - AUTHENTIC PINSTRIPES via SVG */
-[data-theme="macos"] .main-header {
-    background-color: #dedede !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23dedede'/%3E%3Crect width='4' height='1' fill='%23ffffff' fill-opacity='0.5'/%3E%3Crect y='2' width='4' height='1' fill='%23999999'/%3E%3C/svg%3E");
-    background-size: auto 4px;
-    border-bottom: 2px solid #666666 !important;
-    color: #000 !important;
-    padding: 6px 10px !important;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-    min-height: 24px;
+/* Platinum Buttons */
+.btn-glass {
+  background: #EEEEEE !important;
+  border: 1px solid #999999 !important;
+  border-radius: 4px !important;
+  color: #000 !important;
+  box-shadow: 1px 1px 0 #FFFFFF inset !important;
 }
 
-/* Clear text background over stripes */
-[data-theme="macos"] .brand-logo,
-[data-theme="macos"] .architect-info {
-    font-family: "Charcoal", "Chicago", sans-serif !important;
-    background: #dedede;
-    padding: 0 6px;
-    border-radius: 3px;
-    border: 1px solid #aaaaaa;
+.btn-glass:active {
+  background: #CCCCCC !important;
+  box-shadow: 1px 1px 0 #999999 inset !important;
 }
 
-[data-theme="macos"] .brand-logo svg {
-    filter: none !important;
+/* MacOS Loader */
+.neon-ring {
+  display: none !important;
 }
 
-/* Buttons - Platinum Rounded */
-[data-theme="macos"] .btn-glass {
-    background: #dddddd !important;
-    border: 1px solid #555555 !important;
-    border-radius: 6px !important;
-    /* Soft bevel */
-    box-shadow: inset 1px 1px 0 #ffffff,
-        1px 1px 2px rgba(0, 0, 0, 0.1) !important;
-    color: #000 !important;
-    padding: 3px 14px !important;
-    font-family: var(--font-ui) !important;
-    font-weight: normal !important;
-    transition: none !important;
-    margin: 2px;
+.macos-watch {
+  display: block !important;
 }
 
-/* Active Button (Pressed) - Darkens */
-[data-theme="macos"] .btn-glass:active,
-[data-theme="macos"] .btn-nav.active {
-    background: #999999 !important;
-    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4) !important;
-    color: #ffffff !important;
-    border-color: #333333 !important;
+/* Status Colors MacOS */
+.status-success,
+td[data-status="success"] {
+  background: #E8F5E9 !important;
+  color: #2E7D32 !important;
+  border-color: #2E7D32 !important;
 }
 
-/* Inputs - Recessed */
-[data-theme="macos"] .input-glass,
-[data-theme="macos"] select.input-glass {
-    background: #ffffff !important;
-    border: 1px solid #555555 !important;
-    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.15) !important;
-    border-radius: 2px !important;
+.status-fail,
+td[data-status="fail"] {
+  background: #FFEBEE !important;
+  color: #C62828 !important;
+  border-color: #C62828 !important;
 }
 
-/* Tables */
-[data-theme="macos"] .table-container {
-    border: 1px solid #999999 !important;
-    background: #ffffff !important;
+/* Header MacOS 9 style */
+.main-header {
+  background: linear-gradient(to bottom, #EEEEEE, #CCCCCC) !important;
+  border-bottom: 1px solid #666666 !important;
+  border-radius: 0 !important;
 }
 
-[data-theme="macos"] th {
-    background: #eeeeee !important;
-    border-bottom: 1px solid #999999 !important;
-    border-right: 1px solid #dddddd !important;
-    font-weight: bold;
-    color: #000 !important;
-}
-
-[data-theme="macos"] td {
-    border-bottom: 1px solid #eeeeee !important;
-    color: #000 !important;
-}
-
-[data-theme="macos"] tr:hover td {
-    background: #ccccff !important;
-    color: #000000 !important;
-}
-
-/* Scrollbars - Pinstripe thumb */
-[data-theme="macos"] ::-webkit-scrollbar {
-    width: 15px;
-    height: 15px;
-    background: #ffffff;
-}
-
-[data-theme="macos"] ::-webkit-scrollbar-track {
-    background: #ffffff;
-    border-left: 1px solid #999999;
-}
-
-[data-theme="macos"] ::-webkit-scrollbar-thumb {
-    background: #eeeeee;
-    /* Pinstripe pattern for scrollbar thumb */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 0h4v1H0z' fill='%23cccccc'/%3E%3C/svg%3E");
-    border: 1px solid #999999;
-    border-radius: 7px;
-    box-shadow: inset 1px 1px 0 #ffffff;
-    min-height: 20px;
-}
-
-/* Loader - Watch cursor simulation or progress */
-[data-theme="macos"] .loader-box {
-    background: #dedede !important;
-    border: 1px solid #000 !important;
-    border-radius: 4px !important;
-    box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2) !important;
-}
-
-[data-theme="macos"] .loader-progress-bar {
-    background: repeating-linear-gradient(-45deg,
-            #6666cc,
-            #6666cc 10px,
-            #9999ff 10px,
-            #9999ff 20px) !important;
-    border: 1px solid #666666 !important;
-    height: 14px !important;
-    border-radius: 6px !important;
+.brand-logo {
+  color: #000 !important;
+  text-shadow: none !important;
 }

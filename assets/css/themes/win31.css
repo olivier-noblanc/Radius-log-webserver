@@ -1,952 +1,151 @@
+/* ==========================================
+   THEME: WINDOWS 3.1 RETRO
+   COMPLETE VISUAL OVERRIDE
+   ========================================== */
+
 :root {
-    --preferred-font: "Microsoft Sans Serif";
-    --desktop-bg: #C0C0C0;
-    --workspace-bg: #FFFFFF;
-    --window-bg: #FFFFFF;
-    --window-fg: #000000;
-    --button-bg: #C0C0C0;
-    --button-fg: #000000;
-    --button-dark: #808080;
-    --button-light: #FFFFFF;
-    --input-bg: var(--window-bg);
-    --input-fg: var(--window-fg);
-    --border: #000000;
-    --disabled: #808080;
-    --window-frame: #C0C0C0;
-    --window-frame-active: var(--window-frame);
-    --menu-bg: #FFFFFF;
-    --menu-fg: #000000;
-    --title-bar-bg: #FFFFFF;
-    --title-bar-fg: #000000;
-    --title-bar-active-bg: #0000C0;
-    --title-bar-active-fg: #FFFFFF;
-    --selection-bg: #0000C0;
-    --selection-fg: #FFFFFF;
-    --selection-inverse: #FFFF3F;
-    --scrollbar-bg: #C0C0C0;
+    --bg-deep: #C0C0C0;
+    --bg-panel: #FFFFFF;
+    --text-main: #000000;
+    --text-muted: #808080;
+    --accent-cyan: #000080;
+    --accent-green: #008000;
+    --accent-red: #FF0000;
+    --border-glass: #000000;
+    --font-ui: 'Microsoft Sans Serif', system-ui, sans-serif;
 }
 
+/* Kill modern effects */
 body {
-    background-color: var(--window-bg);
-    color: var(--window-fg);
-    font-family: system-ui;
+    background: #C0C0C0 !important;
+    background-image: none !important;
+    font-family: 'Microsoft Sans Serif', system-ui, sans-serif !important;
 }
 
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
+/* Windows 3.1 panels */
+.glass-panel {
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    box-shadow: inset 1px 1px #FFFFFF, inset -1px -1px #808080 !important;
+    animation: none !important;
 }
 
-button::-moz-focus-inner {
-    border: none;
+.glass-panel:hover {
+    transform: none !important;
 }
 
-button,
-input,
-textarea,
-select {
-    font-family: inherit;
-    font-size: inherit;
+/* Windows 3.1 buttons */
+.btn-glass {
+    background: #C0C0C0 !important;
+    border: 2px outset #FFFFFF !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-family: 'Microsoft Sans Serif', system-ui, sans-serif !important;
 }
 
-a:focus {
-    outline: 1px dotted var(--border);
+.btn-glass:hover {
+    transform: none !important;
+    background: #C0C0C0 !important;
+    border-color: #FFFFFF !important;
 }
 
-code {
-    font-family: monospace;
+.btn-glass:active {
+    border-style: inset !important;
+    box-shadow: inset 1px 1px #808080 !important;
+    transform: none !important;
 }
 
-.desktop {
-    background: var(--desktop-bg);
+/* Windows 3.1 title bar */
+.main-header {
+    background: #000080 !important;
+    border-bottom: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
-.raised {
-    background: var(--window-bg);
-    border: 1px solid var(--border);
+/* Win3.1 logo override */
+.brand-logo {
+    text-shadow: none !important;
+    color: #FFFFFF !important;
+    font-family: 'Microsoft Sans Serif', system-ui, sans-serif !important;
 }
 
-.lowered {
-    background: var(--window-bg);
-    border: 1px solid var(--border);
+.brand-logo svg {
+    filter: none !important;
 }
 
-.raised>.lowered {
-    border: 0;
+.brand-logo:hover svg {
+    transform: none !important;
 }
 
-.raised.stack-row>.lowered+.lowered {
-    border-left: 1px solid var(--border);
+/* Win3.1 loader (use hourglass) */
+.loader-box {
+    background: #FFFFFF !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    box-shadow: inset 1px 1px #FFFFFF, inset -1px -1px #808080 !important;
+    animation: none !important;
 }
 
-.raised.stack-column>.lowered+.lowered {
-    border-top: 1px solid var(--border);
+/* Hide modern loader bits, show win31-hourglass */
+.neon-ring {
+    display: none !important;
 }
 
-.top-panel {
-    background: var(--window-bg);
-    border-bottom: 1px solid var(--border);
+.win31-hourglass {
+    display: block !important;
 }
 
-.right-panel {
-    background: var(--window-bg);
-    border-left: 1px solid var(--border);
+/* Input fields Win3.1 style */
+.input-glass {
+    background: #FFFFFF !important;
+    border: 2px inset #808080 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #000 !important;
 }
 
-.bottom-panel {
-    background: var(--window-bg);
-    border-top: 1px solid var(--border);
+.input-glass:focus {
+    box-shadow: none !important;
+    transform: none !important;
+    border-color: #000 !important;
 }
 
-.left-panel {
-    background: var(--window-bg);
-    border-right: 1px solid var(--border);
+/* Tables Win3.1 style */
+.log-row:hover td {
+    background: #000080 !important;
+    color: #FFFFFF !important;
+    transform: none !important;
 }
 
-fieldset {
-    border: 1px solid var(--border);
-    position: relative;
+th {
+    background: #C0C0C0 !important;
+    border: 1px outset #FFFFFF !important;
+    color: #000 !important;
 }
 
-legend {
-    text-align: left;
-    padding: 0 2px;
-    display: block;
+/* Status badges Win3.1 */
+.status-success,
+td[data-status="success"] {
+    background: #FFFFFF !important;
+    color: #008000 !important;
+    border: 1px solid #008000 !important;
 }
 
-hr {
-    border-top: 1px solid var(--border);
+.status-fail,
+td[data-status="fail"] {
+    background: #FFFFFF !important;
+    color: #FF0000 !important;
+    border: 1px solid #FF0000 !important;
 }
 
-.horizontal-scrollbar,
-.vertical-scrollbar {
-    display: flex;
-}
-
-.horizontal-scrollbar>button,
-.vertical-scrollbar>button {
-    display: flex;
-    flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-    min-width: 0;
-    padding: 0;
-    background-repeat: no-repeat;
-    background: #C0C0C0;
-    border: 1px solid var(--border);
-    box-shadow: inset 1px 1px var(--button-light), inset -2px -2px var(--button-dark);
-    border-radius: 0;
-}
-
-.horizontal-scrollbar>button::after,
-.horizontal-scrollbar>button:active::after,
-.vertical-scrollbar>button::after,
-.vertical-scrollbar>button:active::after {
-    content: "";
-    display: block;
-    width: 7px;
-    height: 7px;
-    margin: 3px 0 0 3px;
-    background-repeat: no-repeat;
-    position: initial;
-}
-
-.horizontal-scrollbar>button:focus,
-.vertical-scrollbar>button:focus {
-    outline: none;
-}
-
-.horizontal-scrollbar>button:focus::after,
-.vertical-scrollbar>button:focus::after {
-    position: initial;
-    border: unset;
-}
-
-.horizontal-scrollbar>button:not(:disabled):active,
-.vertical-scrollbar>button:not(:disabled):active {
-    padding: 1px 0 0 1px;
-    box-shadow: inset 1px 1px var(--button-dark);
-    outline: none;
-}
-
-.horizontal-scrollbar>.scrollbar-track,
-.vertical-scrollbar>.scrollbar-track {
-    flex-grow: 1;
-    background: var(--scrollbar-bg);
-    position: relative;
-}
-
-.horizontal-scrollbar>.scrollbar-track>.scrollbar-thumb,
-.vertical-scrollbar>.scrollbar-track>.scrollbar-thumb {
-    position: absolute;
-    background: var(--button-bg);
-    border: 1px solid var(--border);
-    box-shadow: inset 1px 1px var(--button-light), inset -2px -2px var(--button-dark);
-}
-
-.horizontal-scrollbar>button:first-child::after {
-    background-image: url(/css/themes/assets/win31/scroll-left.svg);
-}
-
-.horizontal-scrollbar>button:last-child::after {
-    background-image: url(/css/themes/assets/win31/scroll-right.svg);
-}
-
-.horizontal-scrollbar>.scrollbar-track {
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-}
-
-.horizontal-scrollbar>.scrollbar-track>.scrollbar-thumb {
-    top: 0;
-    bottom: 0;
-    border-top: 0;
-    border-bottom: 0;
-}
-
-.vertical-scrollbar {
-    flex-direction: column;
-    width: 16px;
-}
-
-.vertical-scrollbar>button:first-child::after {
-    background-image: url(/css/themes/assets/win31/scroll-up.svg);
-}
-
-.vertical-scrollbar>button:last-child::after {
-    background-image: url(/css/themes/assets/win31/scroll-down.svg);
-}
-
-.vertical-scrollbar>.scrollbar-track {
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-}
-
-.vertical-scrollbar>.scrollbar-track>.scrollbar-thumb {
-    left: 0;
-    right: 0;
-    border-left: 0;
-    border-right: 0;
-}
-
-::-webkit-scrollbar {
-    background-color: var(--scrollbar-bg);
-    width: 17px;
-    height: 17px;
-}
-
-::-webkit-scrollbar-corner {
-    background: var(--scrollbar-bg);
-}
-
-::-webkit-scrollbar-button,
-::-webkit-scrollbar-thumb {
-    background-color: var(--button-bg);
-    color: var(--button-fg);
-    border: 1px solid var(--border);
-    box-shadow: inset 1px 1px 0 var(--button-light), inset -2px -2px var(--button-dark);
-}
-
-::-webkit-scrollbar-track-piece {
-    border: 1px solid var(--border);
-}
-
-::-webkit-scrollbar-button {
-    width: 17px;
-    height: 17px;
-    display: none;
-}
-
-::-webkit-scrollbar-button:single-button {
-    display: block;
-    background-position: 4px 4px;
-}
-
-::-webkit-scrollbar-button:active {
-    box-shadow: inset 1px 1px var(--button-dark);
-    background-position: 5px 5px;
-}
-
-::-webkit-scrollbar-button:vertical:decrement {
-    background-image: url(/css/themes/assets/win31/scroll-up.svg);
-    background-repeat: no-repeat;
-    border-bottom: 0;
-}
-
-::-webkit-scrollbar-button:vertical:increment {
-    background-image: url(/css/themes/assets/win31/scroll-down.svg);
-    background-repeat: no-repeat;
-    border-top: 0;
-}
-
-::-webkit-scrollbar-button:horizontal:decrement {
-    background-image: url(/css/themes/assets/win31/scroll-left.svg);
-    background-repeat: no-repeat;
-    border-right: 0;
-}
-
-::-webkit-scrollbar-button:horizontal:increment {
-    background-image: url(/css/themes/assets/win31/scroll-right.svg);
-    background-repeat: no-repeat;
-    border-left: 0;
-}
-
-button,
-input[type=button],
-input[type=submit],
-input[type=reset],
-.button {
-    background-color: var(--button-bg);
-    color: var(--button-fg);
-    border: 1px solid var(--border);
-    border-radius: 2.5px;
-    min-width: 70px;
-    padding: 2px 8px;
-    position: relative;
-    box-shadow: inset -1px -1px 0 var(--button-dark), inset 1px 1px 0 var(--button-light), inset -2px -2px 0 var(--button-dark), inset 2px 2px 0 var(--button-light);
-    outline: none;
-    cursor: default;
-    user-select: none;
-    text-align: center;
-}
-
-button:focus,
-button.focus,
-input[type=button]:focus,
-input[type=button].focus,
-input[type=submit]:focus,
-input[type=submit].focus,
-input[type=reset]:focus,
-input[type=reset].focus,
-.button:focus,
-.button.focus {
-    box-shadow: inset 1px 1px 0 var(--border), inset -1px -1px 0 var(--border), inset -2px -2px 0 var(--button-dark), inset 2px 2px 0 var(--button-light), inset -3px -3px 0 var(--button-dark), inset 3px 3px 0 var(--button-light);
-}
-
-button:focus::after,
-button.focus::after,
-input[type=button]:focus::after,
-input[type=button].focus::after,
-input[type=submit]:focus::after,
-input[type=submit].focus::after,
-input[type=reset]:focus::after,
-input[type=reset].focus::after,
-.button:focus::after,
-.button.focus::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 3px;
-    bottom: 3px;
-    left: 6px;
-    right: 6px;
-    border: 1px dotted var(--button-dark);
-    border-radius: 1px;
-}
-
-button:disabled::after,
-button.disabled::after,
-input[type=button]:disabled::after,
-input[type=button].disabled::after,
-input[type=submit]:disabled::after,
-input[type=submit].disabled::after,
-input[type=reset]:disabled::after,
-input[type=reset].disabled::after,
-.button:disabled::after,
-.button.disabled::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    right: 3px;
-    bottom: 3px;
-    background-image: linear-gradient(45deg, var(--button-bg) 25%, transparent 25%), linear-gradient(-45deg, var(--button-bg) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--button-bg) 75%), linear-gradient(-45deg, transparent 75%, var(--button-bg) 75%);
-    background-size: 2px 2px;
-    background-position: 0 0, 0 1px, 1px -1px, -1px 0px;
-}
-
-button:not(:disabled, .disabled):active,
-button.active,
-input[type=button]:not(:disabled, .disabled):active,
-input[type=button].active,
-input[type=submit]:not(:disabled, .disabled):active,
-input[type=submit].active,
-input[type=reset]:not(:disabled, .disabled):active,
-input[type=reset].active,
-.button:not(:disabled, .disabled):active,
-.button.active {
-    box-shadow: inset 1px 1px 0 var(--border), inset -1px -1px 0 var(--border), inset 2px 2px 0 var(--button-dark);
-    padding: 3px 7px 1px 9px;
-}
-
-button:not(:disabled, .disabled):active::after,
-button.active::after,
-input[type=button]:not(:disabled, .disabled):active::after,
-input[type=button].active::after,
-input[type=submit]:not(:disabled, .disabled):active::after,
-input[type=submit].active::after,
-input[type=reset]:not(:disabled, .disabled):active::after,
-input[type=reset].active::after,
-.button:not(:disabled, .disabled):active::after,
-.button.active::after {
-    top: 4px;
-    bottom: 2px;
-    left: 31px;
-    right: 29px;
-}
-
-form:focus-within:not(:has(button:focus, input[type=button]:focus, input[type=submit]:focus, input[type=reset]:focus)) button:default,
-form:focus-within:not(:has(button:focus, input[type=button]:focus, input[type=submit]:focus, input[type=reset]:focus)) input[type=button]:default,
-form:focus-within:not(:has(button:focus, input[type=button]:focus, input[type=submit]:focus, input[type=reset]:focus)) input[type=submit]:default,
-form:focus-within:not(:has(button:focus, input[type=button]:focus, input[type=submit]:focus, input[type=reset]:focus)) input[type=reset]:default,
-form:focus-within:not(:has(button:focus, input[type=button]:focus, input[type=submit]:focus, input[type=reset]:focus)) .button:default {
-    box-shadow: inset 1px 1px 0 var(--border), inset -1px -1px 0 var(--border), inset -2px -2px 0 var(--button-dark), inset 2px 2px 0 var(--button-light), inset -3px -3px 0 var(--button-dark), inset 3px 3px 0 var(--button-light);
-}
-
-button.primary,
-input[type=button].primary,
-input[type=submit].primary,
-input[type=reset].primary,
-.button.primary {
-    box-shadow: inset 1px 1px 0 var(--border), inset -1px -1px 0 var(--border), inset -2px -2px 0 var(--button-dark), inset 2px 2px 0 var(--button-light), inset -3px -3px 0 var(--button-dark), inset 3px 3px 0 var(--button-light);
-}
-
-input:not([type=button], [type=submit], [type=reset], [type=checkbox], [type=radio], [type=range]),
-textarea,
-.input,
-select {
-    background-color: var(--input-bg);
-    color: var(--input-fg);
-    border: 1px solid var(--border);
-    padding: 2px 6px;
-    font-family: inherit;
-    font-size: inherit;
-    outline: none;
-}
-
-input:not([type=button], [type=submit], [type=reset], [type=checkbox], [type=radio], [type=range])::selection,
-textarea::selection,
-.input::selection,
-select::selection {
-    background-color: var(--selection-bg);
-    color: var(--selection-fg);
-}
-
-input:not([type=button], [type=submit], [type=reset], [type=checkbox], [type=radio], [type=range]):disabled,
-input:not([type=button], [type=submit], [type=reset], [type=checkbox], [type=radio], [type=range]).disabled,
-textarea:disabled,
-textarea.disabled,
-.input:disabled,
-.input.disabled,
-select:disabled,
-select.disabled {
-    color: var(--disabled);
-}
-
-select>option {
-    padding: 2px 6px;
-}
-
-select>option:checked {
-    background-color: var(--selection-bg);
-    color: var(--selection-fg);
-}
-
-select[multiple],
-select[size]:not([size="1"]) {
-    padding: 0;
-}
-
-select[multiple]>option:checked,
-select[size]:not([size="1"])>option:checked {
-    background-color: var(--selection-bg);
-    color: var(--selection-fg);
-}
-
-select[multiple]:focus>option:checked,
-select[size]:not([size="1"]):focus>option:checked {
-    outline: 1px dotted var(--selection-inverse);
-}
-
-select:not([size]):not(:active):focus,
-select[size="1"]:not(:active):focus {
-    background-color: var(--selection-bg);
-    color: var(--selection-fg);
-    box-shadow: inset 1px 1px 0 var(--input-bg), inset -1px -1px 0 var(--input-bg);
-}
-
-.dropdown {
-    display: inline-grid;
-    padding: 0;
-    grid-template-areas: "s";
-}
-
-.dropdown>select {
-    appearance: none;
-    grid-area: s;
-    padding-right: 21px;
-}
-
-.dropdown>select:not(:disabled):active {
-    background: var(--input-bg);
-    color: var(--input-fg);
-}
-
-.dropdown>select:not(:disabled):active+.dropdown-button {
-    box-shadow: inset 1px 1px var(--button-dark), -1px 0 var(--input-bg);
-}
-
-.dropdown>select:not(:disabled):active+.dropdown-button::after {
-    margin: 1px 0 0 2px;
-}
-
-.dropdown>select:disabled+.dropdown-button {
-    color: var(--disabled);
-}
-
-.dropdown>.dropdown-button {
-    justify-self: end;
-    grid-area: s;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 1px;
-    background-color: var(--button-bg);
-    color: var(--button-fg);
-    border-left: 1px solid var(--border);
-    box-shadow: inset 1px 1px var(--button-light), inset -2px -2px var(--button-dark), -1px 0 var(--input-bg);
-    width: 16px;
-    pointer-events: none;
-}
-
-.dropdown>.dropdown-button::after {
-    content: "";
-    display: block;
-    width: 7px;
-    height: 9px;
-    -webkit-mask-image: url(/css/themes/assets/win31/dropdown-arrow.svg);
-    -webkit-mask-repeat: no-repeat;
-    mask-image: url(/css/themes/assets/win31/dropdown-arrow.svg);
-    mask-repeat: no-repeat;
-    background: currentColor;
-}
-
-input[type=checkbox] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background: var(--input-bg);
-    border: 1px solid var(--input-fg);
-    width: 13px;
-    height: 13px;
-    border-radius: 0;
-}
-
-input[type=checkbox]:checked {
-    background-image: url(/css/themes/assets/win31/checkmark.svg);
-    background-repeat: no-repeat;
-    background-position: 0 0;
-}
-
-input[type=checkbox]:disabled+label,
-input[type=radio]:disabled+label {
-    position: relative;
-}
-
-input[type=checkbox]:disabled+label::after,
-input[type=radio]:disabled+label::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background-image: linear-gradient(45deg, var(--window-bg) 25%, transparent 25%), linear-gradient(-45deg, var(--window-bg) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--window-bg) 75%), linear-gradient(-45deg, transparent 75%, var(--window-bg) 75%);
-    background-size: 2px 2px;
-    background-position: 0 0, 0 1px, 1px -1px, -1px 0px;
-}
-
-input[type=radio] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background: var(--input-bg);
-    border: 1px solid var(--input-fg);
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-}
-
-input[type=radio]:checked::after {
-    content: "";
-    display: block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: var(--input-fg);
-    margin-top: 2px;
-    margin-left: 2px;
-}
-
-input[type=radio]:focus,
-input[type=checkbox]:focus {
-    outline: none;
-}
-
-input[type=radio]:focus+label,
-input[type=checkbox]:focus+label {
-    position: relative;
-}
-
-input[type=radio]:focus+label::after,
-input[type=checkbox]:focus+label::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 0;
-    left: calc(var(--spacing) - 1px);
-    right: 0;
-    bottom: 0;
-    border: 1px dotted var(--border);
-    border-radius: 1px;
-}
-
-label>input[type=radio]:focus,
-label>input[type=checkbox]:focus {
-    outline: 1px dotted var(--border);
-    outline-offset: 1px;
-}
-
-input[type=range] {
-    -webkit-appearance: none;
-    width: 100%;
-    background: transparent;
-    padding: 2px;
-}
-
-input[type=range]:focus {
-    outline: none;
-}
-
-input[type=range]:focus::-moz-range-thumb {
-    animation: 1s infinite linear range-focus;
-}
-
-input[type=range]:focus::-webkit-slider-thumb {
-    animation: 1s infinite linear range-focus;
-}
-
-input[type=range]::-moz-range-track {
-    height: 16px;
-    background: var(--scrollbar-bg);
-    border: 1px solid var(--border);
-}
-
-input[type=range]::-moz-range-thumb {
-    border-radius: 0;
-    height: 16px;
-    width: 32px;
-    background: var(--button-bg);
-    background-size: 2px 2px;
-    background-position: 0 0, 0 1px, 1px -1px, -1px 0px;
-    border: 1px solid var(--border);
-    box-shadow: inset 1px 1px var(--button-light), inset -2px -2px var(--button-dark);
-}
-
-input[type=range]::-webkit-slider-runnable-track {
-    height: 16px;
-    background: var(--scrollbar-bg);
-    border: 1px solid var(--border);
-    margin: 10px 0;
-}
-
-input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    margin-top: -1px;
-    border-radius: 0;
-    height: 16px;
-    width: 32px;
-    background: var(--button-bg);
-    background-size: 2px 2px;
-    background-position: 0 0, 0 1px, 1px -1px, -1px 0px;
-    border: 1px solid var(--border);
-    box-shadow: inset 1px 1px var(--button-light), inset -2px -2px var(--button-dark);
-}
-
-progress,
-.progress-bar {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    height: 16px;
-}
-
-.progress-bar {
-    position: relative;
-    overflow: hidden;
-}
-
-.progress-bar:not([aria-valuenow])::after,
-.progress-bar>.progress-bar-value {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    background: var(--selection-bg);
-}
-
-.progress-bar:not([aria-valuenow])::after {
-    width: 50%;
-    animation: 1s infinite linear indeterminate;
-}
-
-progress::-webkit-progress-bar {
-    background: var(--input-bg);
-}
-
-progress::-webkit-progress-value {
-    background: var(--selection-bg);
-}
-
-progress::-moz-progress-bar {
-    background: var(--selection-bg);
-}
-
-progress:indeterminate::-moz-progress-bar {
-    width: 50%;
-    animation: 1s infinite linear indeterminate;
-}
-
-progress:not([value])::-webkit-progress-value {
-    width: 50%;
-    animation: 1s infinite linear indeterminate;
-}
-
-.window,
-.dialog,
-.menu {
-    background: var(--window-frame);
-    border: 1px solid var(--border);
-    position: relative;
-    padding: 2px;
-}
-
-.window.maximized,
-.dialog.maximized {
-    border: none;
-    padding: 0;
-}
-
-.window.active,
-.window:focus-within {
-    background-color: var(--window-frame-active);
-}
-
-.dialog {
-    background: var(--title-bar-bg);
-}
-
-.dialog.active,
-.dialog:focus-within {
-    background-color: var(--title-bar-active-bg);
-}
-
-.title-bar {
-    background: var(--title-bar-bg);
-    color: var(--title-bar-fg);
-    display: flex;
-    flex-direction: row;
-    font-weight: bold;
-    border: 1px solid var(--border);
-}
-
-.dialog>.title-bar {
-    border: 1px solid var(--window-bg);
-    border-bottom-color: var(--border);
-}
-
-.title-bar-text {
-    text-align: center;
-    font-weight: bold;
-    padding: 2px 4px;
-    flex-grow: 1;
-    cursor: default;
-}
-
-.title-bar-buttons {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-}
-
-.title-bar-buttons button {
-    flex-shrink: 0;
-    width: 24px;
-    min-width: 0;
-    padding: 0;
-    border: 0;
-    border-left: 1px solid var(--border);
-    border-radius: 0;
-    background-color: var(--button-bg);
-    background-repeat: no-repeat;
-    background-position: 7px 8px;
-}
-
-.title-bar-buttons button::after {
-    display: none;
-}
-
-.title-bar-buttons:first-child button {
-    border: 0;
-    border-right: 1px solid var(--border);
-}
-
-.title-bar-buttons button:active {
-    outline: none;
-    box-shadow: inset 1px 1px 0 var(--button-dark);
-    background-position: 8px 10px;
-}
-
-.title-bar-buttons button[data-close] {
-    background-image: url(/css/themes/assets/win31/close.svg);
-}
-
-.title-bar-buttons button[data-minimize] {
-    background-image: url(/css/themes/assets/win31/minimize.svg);
-}
-
-.title-bar-buttons button[data-maximize] {
-    background-image: url(/css/themes/assets/win31/maximize.svg);
-}
-
-.maximized .title-bar-buttons button[data-maximize] {
-    background-image: url(/css/themes/assets/win31/restore.svg);
-}
-
-.window-body,
-.dialog-body {
-    background: var(--window-bg);
-    color: var(--window-fg);
-    border: 1px solid var(--border);
-    border-top: 0;
-}
-
-.dialog-body {
-    border-color: var(--window-bg);
-}
-
-.window.active>.title-bar,
-.window:focus-within>.title-bar,
-.dialog.active>.title-bar,
-.dialog:focus-within>.title-bar,
-.menu>.title-bar,
-.title-bar.active {
-    background: var(--title-bar-active-bg);
-    color: var(--title-bar-active-fg);
-}
-
-.window-body>*+*,
-.dialog-body>*+* {
-    border: 0;
-    border-top: 1px solid var(--border);
-}
-
-[role=menu] {
-    color: var(--menu-fg);
-    background-color: var(--menu-bg);
-    border: 1px solid var(--border);
-}
-
-[role=menu] li {
-    padding: 1px 3px 1px 16px;
-}
-
-[role=menu] li[data-shortcut]::after {
-    float: right;
-    content: attr(data-shortcut);
-    display: block;
-    margin-left: 4px;
-}
-
-[role=menu] li>ul,
-[role=menu] li>.menu {
-    left: 100%;
-    margin: 0;
-    top: -1px;
-    min-width: 200px;
-}
-
-[role=menu] li[role=separator] {
-    border-top: 1px solid var(--border);
-    height: 0;
-    padding: 0;
-    margin: 2px 0;
-}
-
-[role=menu] li[role=checkbox][aria-checked=true]::before,
-[role=menu] li[role=radio][aria-checked=true]::before {
-    content: "";
-    position: absolute;
-    left: 4px;
-    top: 50%;
-    margin-top: -5px;
-    display: block;
-    width: 8px;
-    height: 10px;
-    background: currentColor;
-    -webkit-mask-image: url(/css/themes/assets/win31/menu-checkmark.svg);
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 8px 10px;
-    mask-image: url(/css/themes/assets/win31/menu-checkmark.svg);
-    mask-repeat: no-repeat;
-    mask-size: 8px 10px;
-}
-
-[role=menu] li[aria-haspopup=true] {
-    background-position: right center;
-    background-repeat: no-repeat;
-}
-
-/* --- ADDITIONS FOR RADIUS LOG --- */
-
-/* --- WINDOWS 3.1 LOADER (Progress Bar) --- */
-#theme-loader {
-    /* Center screen */
-    background: #C0C0C0;
-    border: 2px solid #FFFFFF;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
-    padding: 2px;
-    box-shadow: 2px 2px 0 #000;
-    width: 300px;
-}
-
-#theme-loader::before {
-    content: "Working...";
-    display: block;
-    text-align: center;
-    margin-bottom: 4px;
-    font-family: "System", "Fixedsys", monospace;
-    font-weight: bold;
-    color: #000;
-}
-
-#theme-loader::after {
-    content: "";
-    display: block;
-    height: 20px;
-    background: #000080;
-    /* Win3.1 Blue */
-    width: 0%;
-    animation: win31-progress 2s infinite linear;
-    border: 1px solid #808080;
-    box-shadow: inset 1px 1px 0 #000;
+/* No spring physics for Win3.1 */
+* {
+    animation-duration: 0s !important;
+    transition: none !important;
 }

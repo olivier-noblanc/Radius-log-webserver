@@ -32,20 +32,19 @@ fn get_theme_css_files(theme: &str) -> Vec<String> {
     let mut files = Vec::new();
     
     match theme {
+        "neon" => files.push("/css/themes/neon.css".to_string()),
         "light" => files.push("/css/themes/light.css".to_string()),
-        "dark" => files.push("/css/themes/dark.css".to_string()),
-        "onyx-glass" => files.push("/css/themes/onyx-glass.css".to_string()),
         "win31" => files.push("/css/themes/win31.css".to_string()),
-        "xp" => files.push("/css/themes/xp.css".to_string()),
-        "macos" => files.push("/css/themes/macos9.css".to_string()),
-        "terminal" => files.push("/css/themes/terminal.css".to_string()),
-        "compact" => files.push("/css/themes/compact.css".to_string()),
-        "dsfr" => files.push("/css/themes/dsfr.css".to_string()),
-        _ => {} // Fallback to neon (base CSS)
+        "macos" | "macos9" => files.push("/css/themes/macos.css".to_string()),
+        
+        // onyx-glass est le défaut dans style.css
+        _ => {}
     }
     
     files
 }
+
+
 
 // --- HELPER LOCALHOST ---
 
@@ -73,7 +72,7 @@ pub async fn index(req: HttpRequest, cache: web::Data<Arc<LogCache>>, query: web
         None => {
             req.cookie("theme")
                 .map(|c| c.value().to_string())
-                .unwrap_or_else(|| "neon".into()) // Priorité 2 : Cookie
+                .unwrap_or_else(|| "onyx-glass".into()) // Priorité 2 : Cookie
         }
     };
     
@@ -268,7 +267,7 @@ pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
 }
 
 pub async fn set_theme(query: web::Query<LoginQuery>) -> impl Responder {
-    let theme = query.theme.clone().unwrap_or_else(|| "neon".into());
+    let theme = query.theme.clone().unwrap_or_else(|| "onyx-glass".into());
     
     tracing::info!("Theme change requested: {}", theme);
     
@@ -328,173 +327,48 @@ pub async fn serve_static_asset(req: HttpRequest) -> impl Responder {
     }
 }
 
-/// Scope CSS rules to a specific data-theme attribute
-fn scope_theme_css(css: &str, theme_name: &str) -> String {
-    let selector = format!("[data-theme=\"{}\"]", theme_name);
-    let mut result = String::with_capacity(css.len() + 1000);
-    let mut in_media_query = false;
-    let mut brace_depth = 0;
-    
-    for line in css.lines() {
-        let trimmed = line.trim();
-        
-        // Skip empty lines
-        if trimmed.is_empty() {
-            result.push_str(line);
-            result.push('\n');
-            continue;
-        }
-        
-        // Keep comments as-is
-        if trimmed.starts_with("/*") || trimmed.starts_with("*/") || trimmed.starts_with("*") {
-            result.push_str(line);
-            result.push('\n');
-            continue;
-        }
-        
-        // Track media queries
-        if trimmed.starts_with("@media") {
-            in_media_query = true;
-            brace_depth = 0;
-            result.push_str(line);
-            result.push('\n');
-            continue;
-        }
-        
-        // Count braces to exit media query
-        if in_media_query {
-            for c in trimmed.chars() {
-                if c == '{' { brace_depth += 1; }
-                if c == '}' { brace_depth -= 1; }
-            }
-            if brace_depth == 0 && trimmed.ends_with('}') {
-                in_media_query = false;
-            }
-        }
-        
-        // Handle :root replacement
-        if trimmed.starts_with(":root") {
-            result.push_str(&line.replace(":root", &selector));
-            result.push('\n');
-            continue;
-        }
-        
-        // Handle body replacement
-        if trimmed.starts_with("body") && trimmed.contains('{') {
-            let scoped = line.replace("body", &format!("{} body", selector));
-            result.push_str(&scoped);
-            result.push('\n');
-            continue;
-        }
-        
-        // Skip lines that are already scoped
-        if trimmed.starts_with(&format!("[data-theme=\"{}\"]", theme_name)) {
-            result.push_str(line);
-            result.push('\n');
-            continue;
-        }
-        
-        // Skip @-rules (keyframes, font-face, etc.)
-        if trimmed.starts_with('@') {
-            result.push_str(line);
-            result.push('\n');
-            continue;
-        }
-        
-        // Scope regular CSS rules
-        if trimmed.contains('{') && !trimmed.starts_with('}') {
-            // Split selector from properties
-            if let Some(brace_pos) = line.find('{') {
-                let (selectors_part, props_part) = line.split_at(brace_pos);
-                let selectors = selectors_part.trim();
-                
-                // Don't scope if it's a closing brace or property
-                if !selectors.is_empty() && !selectors.ends_with('}') {
-                    // Split multiple selectors
-                    let scoped_selectors: Vec<String> = selectors
-                        .split(',')
-                        .map(|s| {
-                            let s = s.trim();
-                            // If selector already contains the theme, don't add again
-                            if s.contains(&format!("[data-theme=\"{}\"]", theme_name)) {
-                                s.to_string()
-                            } else if in_media_query {
-                                // Inside media query, scope more carefully
-                                format!("{} {}", selector, s)
-                            } else {
-                                format!("{} {}", selector, s)
-                            }
-                        })
-                        .collect();
-                    
-                    let indentation = line.len() - line.trim_start().len();
-                    result.push_str(&" ".repeat(indentation));
-                    result.push_str(&scoped_selectors.join(", "));
-                    result.push_str(props_part);
-                    result.push('\n');
-                    continue;
-                }
-            }
-        }
-        
-        // Default: keep line as-is
-        result.push_str(line);
-        result.push('\n');
-    }
-    
-    result
-}
-
-pub async fn serve_megacss() -> impl Responder {
-    let mut bundle = String::with_capacity(100_000);
-    
-    bundle.push_str("/*!\n");
-    bundle.push_str(" * RADIUS LOG CORE - UNIFIED THEME BUNDLE\n");
-    bundle.push_str(" * All themes compiled with proper data-theme scoping\n");
-    bundle.push_str(" * Future-proof: Works without build tools\n");
-    bundle.push_str(" */\n\n");
-
-    // Collect and sort theme files for consistent output
-    let mut theme_files: Vec<String> = Assets::iter()
-        .filter(|p| p.starts_with("css/themes/") && p.ends_with(".css"))
-        .map(|s| s.to_string())
-        .collect();
-    
-    theme_files.sort();
-
-    for file_path in theme_files {
-        if let Some(asset) = Assets::get(&file_path) {
-            let theme_name = file_path
-                .strip_prefix("css/themes/")
-                .unwrap()
-                .strip_suffix(".css")
-                .unwrap();
-            
-            let content = std::str::from_utf8(&asset.data).unwrap_or_default();
-            
-            // Apply scoping
-            let scoped_content = scope_theme_css(content, theme_name);
-            
-            bundle.push_str(&format!(
-                "\n/* ========================================\n   THEME: {}\n   ======================================== */\n\n",
-                theme_name.to_uppercase()
-            ));
-            bundle.push_str(&scoped_content);
-        }
-    }
-
-    HttpResponse::Ok()
-        .content_type("text/css; charset=utf-8")
-        .insert_header(("Cache-Control", "public, max-age=31536000, immutable"))
-        .insert_header(("ETag", GIT_SHA))
-        .body(bundle)
-}
 
 pub async fn robots_txt() -> impl Responder {
     HttpResponse::Ok()
         .content_type("text/plain")
         .insert_header(("Cache-Control", "public, max-age=86400"))
         .body("User-agent: *\nDisallow: /")
+}
+
+pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
+    if !is_authorized(&req) {
+        return HttpResponse::Found()
+            .insert_header(("Location", "/"))
+            .finish();
+    }
+    
+    let report = crate::infrastructure::security_audit::perform_security_audit();
+    
+    let theme = req.cookie("theme")
+        .map(|c| c.value().to_string())
+        .unwrap_or_else(|| "onyx-glass".into());
+    
+    let css_files = get_theme_css_files(&theme);
+    let build_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
+    
+    let html = dioxus_ssr::render_element(rsx! {
+        crate::components::layout::Layout {
+            title: "Security Audit // RADIUS LOG".to_string(),
+            theme: theme.clone(),
+            build_version: build_version,
+            git_sha: GIT_SHA.to_string(),
+            is_authorized: true,
+            css_files: css_files,
+            
+            crate::components::security_audit::SecurityAudit {
+                report: report
+            }
+        }
+    });
+    
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(format!("<!DOCTYPE html><html lang=\"fr\">{}</html>", html))
 }
 
 pub async fn serve_favicon() -> impl Responder {

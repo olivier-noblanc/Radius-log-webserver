@@ -32,7 +32,7 @@ pub fn Layout(props: LayoutProps) -> Element {
             script { src: "/js/htmx.min.js" }
             script { src: "/js/app.js" }
         }
-        body {
+        body { "data-theme": "{props.theme}",
             // Login Gate (Human Check) if not authorized
             if !props.is_authorized {
                 div { id: "human-gate",
@@ -48,8 +48,8 @@ pub fn Layout(props: LayoutProps) -> Element {
             div { id: "app-root", class: if !props.is_authorized { "hidden" } else { "visible" },
                 // Header Navigation
                 crate::components::header::Header {
-                    build_version: props.build_version,
-                    theme: props.theme,
+                    build_version: props.build_version.clone(),
+                    theme: props.theme.clone(),
                 }
 
                 // Main Content Area
@@ -67,7 +67,16 @@ pub fn Layout(props: LayoutProps) -> Element {
                 div { id: "global-loader",
                     div { class: "loader-progress-bar" }
                     div { class: "loader-box",
-                        div { class: "loader-icon neon-ring" }
+                        div { class: "loader-icon",
+                            div { class: "neon-ring" }
+                            div { class: "win31-hourglass", style: "display: none;", "⏳" }
+                            div { class: "macos-watch", style: "display: none;" }
+                            div { class: "xp-pulse", style: "display: none;",
+                                div {} div {} div {}
+                            }
+                            div { class: "terminal-bar", style: "display: none;" }
+                            div { class: "dos-spin", style: "display: none;" }
+                        }
                         div { class: "loader-text",
                             div { class: "loader-title", "PROCESSING" }
                             div { class: "loader-sub", "Fetching Data..." }

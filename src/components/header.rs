@@ -85,20 +85,12 @@ pub fn Header(props: HeaderProps) -> Element {
                         "hx-on::after-request": "window.location.reload();",
                         
                         option { value: "onyx-glass", selected: props.theme == "onyx-glass", "[FLAGSHIP] Onyx Glass" }
+                        option { value: "neon", selected: props.theme == "neon", "[ULTRA] Neon Cyberpunk" }
                         option { value: "light", selected: props.theme == "light", "[LIGHT] Professional" }
-                        option { value: "dark", selected: props.theme == "dark", "[DARK] OLED Mode" }
-                        option { value: "neon", selected: props.theme == "neon", "[NEON] Cyberpunk" }
 
-                        optgroup { label: "--- LEGACY SYSTEMS ---",
+                        optgroup { label: "--- RETRO SYSTEMS ---",
                             option { value: "win31", selected: props.theme == "win31", "Windows 3.1" }
-                            option { value: "xp", selected: props.theme == "xp", "Windows XP" }
                             option { value: "macos", selected: props.theme == "macos", "Macintosh Classic" }
-                        }
-
-                        optgroup { label: "--- SPECIALIZED ---",
-                            option { value: "terminal", selected: props.theme == "terminal", "Terminal / SSH" }
-                            option { value: "compact", selected: props.theme == "compact", "Compact / Dense" }
-                            option { value: "dsfr", selected: props.theme == "dsfr", "Republique Francaise" }
                         }
                     }
                     

@@ -13,7 +13,7 @@ $hooksDir = ".git/hooks"
 $preCommitFile = Join-Path $hooksDir "pre-commit"
 
 # Contenu du hook (Git utilise son propre shell interne pour exécuter les hooks)
-$preCommitContent = @"
+$preCommitContent = @'
 #!/bin/bash
 # Hook de pré-commit pour Radius Log Webserver (Windows Safe)
 
@@ -22,13 +22,13 @@ echo "🔍 [COMMIT] Vérification de la qualité frontend..."
 # Exécution de l'orchestrateur Rust
 cargo run --bin frontend_lint
 
-if [ `$? -ne 0 ]; then
+if [ $? -ne 0 ]; then
     echo "❌ [ERROR] Le linting a échoué. Le commit est annulé."
     exit 1
 fi
 
 echo "✅ [SUCCESS] Qualité validée. Commit autorisé."
-"@
+'@
 
 # Écriture du fichier
 Set-Content -Path $preCommitFile -Value $preCommitContent -Encoding utf8NoBOM

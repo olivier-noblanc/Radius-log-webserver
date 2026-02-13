@@ -5,3 +5,4 @@ pub mod log_table;
 pub mod dashboard;
 pub mod modals;
 pub mod log_detail;
+pub mod security_audit;

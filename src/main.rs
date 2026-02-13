@@ -155,6 +155,7 @@ async fn run_app() -> std::io::Result<()> {
             .route("/api/security-config", web::get().to(get_security_config))
             .route("/api/login", web::get().to(login))
             .route("/api/theme", web::get().to(set_theme))
+            .route("/security-audit", web::get().to(radius_log_webserver::api::handlers::web_ui::security_audit_page))
             .route("/robots.txt", web::get().to(robots_txt))
     })
     .bind(format!("0.0.0.0:{}", port))?

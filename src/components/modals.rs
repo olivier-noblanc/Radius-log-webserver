@@ -16,11 +16,10 @@ pub fn SecurityModal(is_authorized: bool) -> Element {
                         div { class: "text-4xl mb-2", "🔓" }
                         p { class: "opacity-80", "Identity Verified. Access Granted." }
                     }
-                    // Bouton pour fermer ou voir les détails
                     a { 
-                        href: "/api/debug", // Ou une autre route d'audit
-                        class: "btn-glass w-full text-center",
-                        "VIEW DETAILED AUDIT REPORT"
+                        href: "/security-audit",
+                        class: "btn-glass btn-primary w-full text-center",
+                        "🔍 VIEW FULL SECURITY AUDIT"
                     }
                 } else {
                     // CAS 2 : Utilisateur non connecté -> Afficher le login

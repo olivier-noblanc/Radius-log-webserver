@@ -8,7 +8,7 @@ use winreg::RegKey;
 use winreg::enums::*;
 use sha1::{Sha1, Digest};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SecurityAuditReport {
     pub timestamp: String,
     pub certificates: Vec<CertificateInfo>,
@@ -18,7 +18,7 @@ pub struct SecurityAuditReport {
     pub recommendations: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CertificateInfo {
     pub subject: String,
     pub issuer: String,
@@ -30,7 +30,7 @@ pub struct CertificateInfo {
     pub days_until_expiration: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TlsConfiguration {
     pub tls_1_0_enabled: bool,
     pub tls_1_1_enabled: bool,
@@ -41,7 +41,7 @@ pub struct TlsConfiguration {
     pub weak_ciphers_detected: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SecurityVulnerability {
     pub severity: String,
     pub title: String,

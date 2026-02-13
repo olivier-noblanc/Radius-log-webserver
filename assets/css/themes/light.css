@@ -1,110 +1,66 @@
-/* =========================================
-   LIGHT - PROFESSIONAL WHITE
-   ========================================= */
+/* ==========================================
+   THEME: LIGHT PROFESSIONAL
+   FLAT DESIGN + NO GLASS
+   ========================================== */
 
-[data-theme="light"] {
-    --bg-deep: #ffffff;
-    --bg-panel: #f8f9fa;
-    --text-main: #212529;
-    --text-muted: #6c757d;
-    --accent-cyan: #0d6efd;
-    --accent-green: #198754;
+:root {
+    --bg-deep: #f5f7fa;
+    --bg-panel: #ffffff;
+    --accent-cyan: #0066cc;
+    --accent-green: #28a745;
     --accent-red: #dc3545;
-    --border-glass: #dee2e6;
-    --font-ui: 'Inter', system-ui, sans-serif;
-    --status-success-bg: #d1e7dd;
-    --status-success-text: #0f5132;
-    --status-danger-bg: #f8d7da;
-    --status-danger-text: #842029;
+    --text-main: #1a1a1b;
+    --text-muted: #65676b;
+    --border-glass: #dddddd;
+
+    --status-success-bg: rgba(40, 167, 69, 0.1);
+    --status-success-text: #28a745;
+    --status-danger-bg: rgba(220, 53, 69, 0.1);
+    --status-danger-text: #dc3545;
 }
 
-[data-theme="light"] body {
-    background-color: #ffffff;
-    color: #212529;
-    background-image: none;
+body {
+    background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
 }
 
-[data-theme="light"] .main-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: #ffffff !important;
-    border-bottom: 1px solid #dee2e6 !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-}
-
-[data-theme="light"] .glass-panel {
-    background: #ffffff !important;
-    border: 1px solid #dee2e6 !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
-    border-radius: 8px !important;
+/* Disable glass effects for Light Theme */
+.glass-panel,
+.main-header,
+.btn-glass,
+.input-glass {
     backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
 }
 
-[data-theme="light"] .btn-glass {
+.glass-panel {
     background: #ffffff !important;
-    border: 1px solid #dee2e6 !important;
-    color: #212529 !important;
 }
 
-[data-theme="light"] .btn-glass:hover {
-    background: #f8f9fa !important;
-    border-color: #adb5bd !important;
+.btn-glass {
+    background: #f0f2f5 !important;
 }
 
-[data-theme="light"] .btn-primary {
-    background: #0d6efd !important;
-    border-color: #0d6efd !important;
-    color: #ffffff !important;
+.btn-glass:hover {
+    background: #e4e6e9 !important;
 }
 
-[data-theme="light"] .input-glass {
+.input-glass {
     background: #ffffff !important;
-    border: 1px solid #ced4da !important;
-    color: #212529 !important;
+    border: 1px solid #ccd0d5 !important;
+    color: #1a1a1b !important;
 }
 
-[data-theme="light"] th {
-    border-bottom: 2px solid #dee2e6 !important;
-    color: #495057 !important;
-    background: #f8f9fa !important;
+.brand-logo {
+    text-shadow: none !important;
 }
 
-[data-theme="light"] td {
-    border-bottom: 1px solid #e9ecef !important;
+.brand-logo svg {
+    filter: none !important;
 }
 
-[data-theme="light"] tr:hover td {
-    background: #e7f1ff !important;
-}
-
-[data-theme="light"] .status-success {
-    color: #0f5132 !important;
-    background: #d1e7dd !important;
-    padding: 2px 8px !important;
-    border-left: 3px solid #198754 !important;
-}
-
-[data-theme="light"] .status-fail {
-    color: #842029 !important;
-    background: #f8d7da !important;
-    padding: 2px 8px !important;
-    border-left: 3px solid #dc3545 !important;
-}
-
-.theme-light.loader-box {
-    background: #ffffff !important;
-    border: 1px solid #dee2e6 !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-}
-
-.theme-light .loader-title {
-    color: #212529 !important;
-}
-
-.theme-light .neon-ring {
-    border-color: rgba(13, 110, 253, 0.2);
-    border-top-color: #0d6efd;
-}
-
-[data-theme="light"] .loader-progress-bar {
-    background: linear-gradient(90deg, #0d6efd, #198754) !important;
+/* Hide neon-ring, show something else? For now keep neon-ring but without glow */
+.neon-ring {
+    border-color: #eee !important;
+    border-top-color: var(--accent-cyan) !important;
 }
