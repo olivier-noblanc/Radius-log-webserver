@@ -68,7 +68,9 @@ pub fn Layout(props: LayoutProps) -> Element {
                         div { class: "loader-icon",
                             div { class: "neon-ring", style: "display: none;" }
                             div { class: "win31-hourglass", style: "display: none;", "⏳" }
-                            div { class: "macos-watch", style: "display: none;" }
+                             div { class: "macos-watch", style: "display: none;",
+                                div { class: "macos-watch-hands" }
+                            }
                             div { class: "xp-pulse", style: "display: none;",
                                 div {} div {} div {}
                             }

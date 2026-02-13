@@ -584,15 +584,36 @@ body:not([data-theme]) .neon-ring {
 }
 
 .macos-watch {
-    width: 24px;
-    height: 24px;
-    border: 3px solid transparent;
-    border-top: 3px solid #0066cc;
-    border-right: 3px solid #ff9500;
-    border-bottom: 3px solid #34c759;
-    border-left: 3px solid #ff3b30;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #000;
+    background: #fff;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    position: relative;
+    image-rendering: pixelated;
+}
+
+.macos-watch::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    width: 6px;
+    height: 4px;
+    background: #000;
+    transform: translateX(-50%);
+}
+
+.macos-watch-hands {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 8px;
+    background: #000;
+    transform-origin: bottom center;
+    transform: translate(-50%, -100%);
+    animation: spin 2s linear infinite;
 }
 
 .terminal-bar {
