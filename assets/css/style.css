@@ -494,6 +494,36 @@ td[data-status="fail"] {
     transform: translateY(0);
 }
 
+/* --- THEME-SPECIFIC LOADERS --- */
+[data-theme="win31"] .win31-hourglass,
+[data-theme="win95"] .win31-hourglass {
+    display: block !important;
+}
+
+[data-theme="macos"] .macos-watch,
+[data-theme="macos9"] .macos-watch {
+    display: block !important;
+}
+
+[data-theme="xp"] .xp-pulse {
+    display: block !important;
+}
+
+[data-theme="terminal"] .terminal-bar {
+    display: block !important;
+}
+
+[data-theme="dos"] .dos-spin {
+    display: block !important;
+}
+
+/* Default / Onyx / Light use Neon Ring */
+[data-theme="onyx-glass"] .neon-ring,
+[data-theme="light"] .neon-ring,
+body:not([data-theme]) .neon-ring {
+    display: block !important;
+}
+
 /* Icons rotate selectors for themes */
 .neon-ring {
     width: 24px;

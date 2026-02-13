@@ -66,7 +66,7 @@ pub fn Layout(props: LayoutProps) -> Element {
                     div { class: "loader-progress-bar" }
                     div { class: "loader-box",
                         div { class: "loader-icon",
-                            div { class: "neon-ring" }
+                            div { class: "neon-ring", style: "display: none;" }
                             div { class: "win31-hourglass", style: "display: none;", "⏳" }
                             div { class: "macos-watch", style: "display: none;" }
                             div { class: "xp-pulse", style: "display: none;",
