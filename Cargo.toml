@@ -22,7 +22,8 @@ winreg = "0.55.0"
 rayon = "1.11.0"
 actix = "0.13.5" 
 windows = { version = "0.62.0", features = ["Win32_System_EventLog", "Win32_Foundation", "Win32_Security_Cryptography", "Win32_System_Registry", "Win32_System_Services"] }
-human-panic = "2.0.6"
+human-panic = { git = "https://github.com/rust-cli/human-panic.git" }
+sysinfo = "0.38.1"
 log = "0.4.29"
 actix-governor = "0.6.0"
 regex = "1.12.3"
