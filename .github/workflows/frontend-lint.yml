@@ -12,7 +12,7 @@ permissions:
 jobs:
   frontend-lint:
     name: Frontend Audit (Rust-based)
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
 
@@ -28,22 +28,22 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install Linting Tools
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Ajouter ~/.cargo/bin au PATH via GITHUB_PATH pour persistance entre steps
+          # Add ~/.cargo/bin to PATH
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-          # INSTALL DPRINT (via cargo install pour éviter les problèmes CI)
+          # INSTALL DPRINT
           cargo install dprint --version 0.51.1
 
-          # INSTALL OXLINT (Pinned version to avoid broken releases)
-          gh release download apps_v1.38.0 --repo oxc-project/oxc --pattern "oxlint-linux-x64-musl.tar.gz"
-          tar -xzf oxlint-linux-x64-musl.tar.gz
-          chmod +x oxlint-linux-x64-musl
-          sudo mv oxlint-linux-x64-musl /usr/local/bin/oxlint
+          # INSTALL OXLINT (Windows version)
+          gh release download apps_v1.38.0 --repo oxc-project/oxc --pattern "oxlint-win32-x64.zip"
+          unzip oxlint-win32-x64.zip
+          mv oxlint.exe "$HOME/.cargo/bin/oxlint.exe"
 
-          # INSTALL LIGHTNINGCSS (Pinned alpha version with CLI feature)
+          # INSTALL LIGHTNINGCSS
           cargo install lightningcss --version 1.0.0-alpha.70 --features cli
 
       - name: Run Frontend Audit
