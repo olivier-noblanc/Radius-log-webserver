@@ -22,7 +22,13 @@ fn main() {
             println!("❌ [JS] Errors/warnings were found. (Use 'oxlint assets/js' to fix)");
             has_errors = true;
         }
-        Err(_) => println!("⚠️ [JS] oxlint is not installed. (Optional for local dev)"),
+        Err(e) => {
+            println!(
+                "❌ [JS] Failed to run oxlint: {}. Is it installed via scoop?",
+                e
+            );
+            has_errors = true;
+        }
     }
 
     // 2. CSS LINTING (lightningcss)
@@ -53,6 +59,25 @@ fn main() {
             has_errors = true;
         }
         Err(_) => println!("⚠️ [CODE] cargo fmt failed to run."),
+    }
+
+    // 4. TYPOS CHECK (typos)
+    println!("🔍 [TYPOS] Checking for typos...");
+    let typos_status = Command::new("typos").arg(".").status();
+
+    match typos_status {
+        Ok(status) if status.success() => println!("✅ [TYPOS] No typos detected."),
+        Ok(_) => {
+            println!("❌ [TYPOS] Typos found in the project. (Use 'typos' to see and fix them)");
+            has_errors = true;
+        }
+        Err(e) => {
+            println!(
+                "❌ [TYPOS] Failed to run typos: {}. Is it installed via scoop?",
+                e
+            );
+            has_errors = true;
+        }
     }
 
     let duration = start.elapsed();

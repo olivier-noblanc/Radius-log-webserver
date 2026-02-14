@@ -42,16 +42,28 @@ pub fn LogTable(props: LogTableProps) -> Element {
                 div { class: "flex gap-8",
                     span { class: "text-muted", "COLUMNS VISIBILITY:" }
                     div { class: "column-picker flex gap-8",
-                        for (idx , name) in [
-                            "TIMESTAMP", "TYPE", "SERVER", "AP IP", "AP NAME", "MAC", "USER", "RESULT", "DIAGNOSTICS"
-                        ].iter().enumerate()
+                        for (idx , (key , name)) in [
+                            ("timestamp", "TIMESTAMP"),
+                            ("req_type", "TYPE"),
+                            ("server", "SERVER"),
+                            ("ap_ip", "AP IP"),
+                            ("ap_name", "AP NAME"),
+                            ("mac", "MAC"),
+                            ("user", "USER"),
+                            ("resp_type", "RESULT"),
+                            ("reason", "DIAGNOSTICS")
+                        ].into_iter().enumerate()
                         {
-                            label { class: "column-checkbox",
+                            label {
+                                class: "column-checkbox",
+                                draggable: "true",
+                                "data-col-key": "{key}",
                                 input {
                                     r#type: "checkbox",
                                     checked: true,
                                     class: "column-visibility-check",
-                                    "data-col-idx": "{idx}"
+                                    "data-col-idx": "{idx}",
+                                    "data-col-key": "{key}"
                                 }
                                 " {name}"
                             }
@@ -64,6 +76,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                     tr {
                         th {
                             class: "sortable",
+                            "data-col-key": "timestamp",
                             "hx-get": "/api/logs/rows?sort_by=timestamp&sort_desc={get_sort_desc(\"timestamp\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -73,6 +86,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                         }
                         th {
                             class: "sortable",
+                            "data-col-key": "req_type",
                             "hx-get": "/api/logs/rows?sort_by=req_type&sort_desc={get_sort_desc(\"req_type\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -82,6 +96,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                         }
                         th {
                             class: "sortable",
+                            "data-col-key": "server",
                             "hx-get": "/api/logs/rows?sort_by=server&sort_desc={get_sort_desc(\"server\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -91,6 +106,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                         }
                         th {
                             class: "sortable",
+                            "data-col-key": "ap_ip",
                             "hx-get": "/api/logs/rows?sort_by=ap_ip&sort_desc={get_sort_desc(\"ap_ip\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -100,6 +116,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                         }
                         th {
                             class: "sortable",
+                            "data-col-key": "ap_name",
                             "hx-get": "/api/logs/rows?sort_by=ap_name&sort_desc={get_sort_desc(\"ap_name\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -109,6 +126,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                         }
                         th {
                             class: "sortable",
+                            "data-col-key": "mac",
                             "hx-get": "/api/logs/rows?sort_by=mac&sort_desc={get_sort_desc(\"mac\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -118,6 +136,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                         }
                         th {
                             class: "sortable",
+                            "data-col-key": "user",
                             "hx-get": "/api/logs/rows?sort_by=user&sort_desc={get_sort_desc(\"user\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -127,6 +146,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                         }
                         th {
                             class: "sortable",
+                            "data-col-key": "resp_type",
                             "hx-get": "/api/logs/rows?sort_by=resp_type&sort_desc={get_sort_desc(\"resp_type\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -136,6 +156,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                         }
                         th {
                             class: "sortable",
+                            "data-col-key": "reason",
                             "hx-get": "/api/logs/rows?sort_by=reason&sort_desc={get_sort_desc(\"reason\")}",
                             "hx-include": "#log-filters :not([name='sort_by']):not([name='sort_desc'])",
                             "hx-target": "#log-table-container",
@@ -154,14 +175,15 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-trigger": "click",
                             "hx-trigger": "click",
 
-                            td { "{log.timestamp}" }
-                            td { "{log.req_type}" }
-                            td { "{log.server}" }
-                            td { "{log.ap_ip}" }
-                            td { "{log.ap_name}" }
-                            td { "{log.mac}" }
-                            td { "{log.user}" }
+                            td { "data-col-key": "timestamp", "{log.timestamp}" }
+                            td { "data-col-key": "req_type", "{log.req_type}" }
+                            td { "data-col-key": "server", "{log.server}" }
+                            td { "data-col-key": "ap_ip", "{log.ap_ip}" }
+                            td { "data-col-key": "ap_name", "{log.ap_name}" }
+                            td { "data-col-key": "mac", "{log.mac}" }
+                            td { "data-col-key": "user", "{log.user}" }
                             td {
+                                "data-col-key": "resp_type",
                                 class: match log.status.as_deref() {
                                     Some("fail") => "status-fail",
                                     Some("challenge") => "status-challenge",
@@ -174,7 +196,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                                 },
                                 "{log.resp_type}"
                             }
-                            td { "{log.reason}" }
+                            td { "data-col-key": "reason", "{log.reason}" }
                         }
                     }
                 }

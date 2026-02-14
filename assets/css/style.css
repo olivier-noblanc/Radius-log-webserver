@@ -198,10 +198,15 @@ body {
     display: none !important;
 }
 
+.column-picker {
+    flex-wrap: wrap;
+    user-select: none;
+}
+
 .column-checkbox {
     font-size: 0.75rem;
     color: var(--text-muted);
-    cursor: pointer;
+    cursor: grab;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -212,14 +217,14 @@ body {
     transition: all 0.2s;
 }
 
-.column-checkbox:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--accent-cyan);
-    color: var(--text-main);
+.column-checkbox:active {
+    cursor: grabbing;
 }
 
-.column-checkbox input {
-    cursor: pointer;
+.column-checkbox.dragging {
+    opacity: 0.4;
+    border: 1px dashed var(--accent-cyan);
+    background: rgba(0, 242, 255, 0.05);
 }
 
 /* --- BRAND LOGO --- */
