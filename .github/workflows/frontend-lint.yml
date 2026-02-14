@@ -46,5 +46,8 @@ jobs:
           # INSTALL LIGHTNINGCSS
           cargo install lightningcss --version 1.0.0-alpha.70 --features cli
 
+          # INSTALL TYPOS
+          cargo install typos-cli
+
       - name: Run Frontend Audit
         run: cargo run --bin frontend_lint
