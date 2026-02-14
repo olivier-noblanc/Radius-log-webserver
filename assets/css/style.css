@@ -418,6 +418,10 @@ th {
     position: relative;
     user-select: none;
     transition: background 0.2s ease;
+    /* Allow columns to shrink despite content */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 th.sortable:hover {
@@ -473,10 +477,15 @@ td {
     opacity: 0.5;
 }
 
-/* Specific column adjustments */
-th:nth-child(7),
-td:nth-child(7) {
-    min-width: 150px;
+th[data-col-key="user"] {
+    min-width: 200px;
+    width: auto;
+}
+
+/* Base safety for all columns */
+th,
+td {
+    min-width: 50px;
 }
 
 .log-row {

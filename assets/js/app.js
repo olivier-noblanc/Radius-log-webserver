@@ -146,7 +146,6 @@ const setupResizerListener = (head, idx, resizer) => {
             const width = startW + (me.pageX - startX);
             if (width > MIN_WIDTH) {
                 head.style.width = `${width}px`;
-                head.style.minWidth = `${width}px`;
             }
         };
         const onUp = () => {
@@ -174,7 +173,6 @@ const initResizers = () => {
         const sw = localStorage.getItem(`col-width-${idx}`);
         if (sw) {
             head.style.width = `${sw}px`;
-            head.style.minWidth = `${sw}px`;
         }
         setupResizer(head, idx);
     }
