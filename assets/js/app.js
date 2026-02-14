@@ -12,8 +12,8 @@
     const TOTAL_COLUMNS = 9;
 
     // --- STATE ---
-    let webSocket;
-    let statusBadgeElement;
+    let webSocket = null;
+    let statusBadgeElement = null;
 
     const updateStatus = (connected) => {
         if (!statusBadgeElement) {
@@ -63,7 +63,7 @@
                                     body: `${req.reason}\n${req.server}`,
                                     icon: '/favicon.svg'
                                 });
-                                notif.onclick = () => globalThis.focus();
+                                notif.addEventListener('click', () => globalThis.focus());
                             }
                         }
                     }
@@ -72,7 +72,7 @@
                         globalThis.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
                     }
                 }
-            } catch (error) {
+            } catch {
                 if (globalThis.htmx) {
                     globalThis.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
                 }
@@ -259,11 +259,11 @@
         initColumnVisibility();
 
         // Delegation for Alerts (Minimalist)
-        globalThis.document.addEventListener('change', (e) => {
-            const target = e.target;
+        globalThis.document.addEventListener('change', (event) => {
+            const target = event.target;
             if (target.id === 'notifToggle' && target.checked && globalThis.Notification.permission !== 'granted') {
-                globalThis.Notification.requestPermission().then((p) => {
-                    if (p !== 'granted') {
+                globalThis.Notification.requestPermission().then((permission) => {
+                    if (permission !== 'granted') {
                         target.checked = false;
                     }
                 });
@@ -271,10 +271,10 @@
         });
 
         // Delegation for Column Visibility
-        globalThis.document.addEventListener('change', (e) => {
-            const target = e.target;
+        globalThis.document.addEventListener('change', (event) => {
+            const target = event.target;
             if (target.classList.contains('column-visibility-check')) {
-                const idx = parseInt(target.dataset.colIdx, 10);
+                const idx = Number.parseInt(target.dataset.colIdx, 10);
                 const show = target.checked;
                 applyColumnVisibility(idx, show);
                 globalThis.localStorage.setItem(`col-visible-${idx}`, show);
@@ -282,8 +282,8 @@
         });
 
         // Delegation for Modal Detail Hash
-        globalThis.document.addEventListener('click', (e) => {
-            const row = e.target.closest('.log-row');
+        globalThis.document.addEventListener('click', (event) => {
+            const row = event.target.closest('.log-row');
             if (row) {
                 globalThis.location.hash = 'detailModal';
             }
