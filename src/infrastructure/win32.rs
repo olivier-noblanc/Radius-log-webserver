@@ -62,126 +62,123 @@ pub fn fetch_schannel_details_safe(timestamp_str: &str) -> Result<Vec<String>> {
         let mut events_checked = 0u32;
         const MAX_EVENTS: u32 = 500;
 
-        let res = (|| -> Result<()> {
-            'outer: loop {
-                let result = ReadEventLogW(
-                    h_log,
-                    flags,
-                    0,
-                    buffer.as_mut_ptr() as *mut _,
-                    buffer.len() as u32,
-                    &mut bytes_read,
-                    &mut bytes_needed,
-                );
+        let res: Result<()> = 'outer: loop {
+            let result = ReadEventLogW(
+                h_log,
+                flags,
+                0,
+                buffer.as_mut_ptr() as *mut _,
+                buffer.len() as u32,
+                &mut bytes_read,
+                &mut bytes_needed,
+            );
 
-                // Handle buffer resizing if necessary
-                if result.is_err() {
-                    if bytes_needed > buffer.len() as u32 {
-                        // Double the size or take what's needed
-                        buffer.resize(bytes_needed as usize, 0);
-                        continue;
-                    }
-                    // Other error (e.g. end of read)
-                    break;
+            // Handle buffer resizing if necessary
+            if result.is_err() {
+                if bytes_needed > buffer.len() as u32 {
+                    // Double the size or take what's needed
+                    buffer.resize(bytes_needed as usize, 0);
+                    continue;
+                }
+                // Other error (e.g. end of read)
+                break Ok(());
+            }
+
+            if bytes_read == 0 {
+                break Ok(()); // No more events
+            }
+
+            let mut offset = 0usize;
+            while offset < bytes_read as usize {
+                let record = &*(buffer.as_ptr().add(offset) as *const EVENTLOGRECORD);
+
+                events_checked += 1;
+                if events_checked > MAX_EVENTS {
+                    break 'outer Ok(());
                 }
 
-                if bytes_read == 0 {
-                    break; // No more events
+                // Timestamp check (stop if too old)
+                if (record.TimeGenerated as u64) < target_time {
+                    break 'outer Ok(());
                 }
 
-                let mut offset = 0usize;
-                while offset < bytes_read as usize {
-                    let record = &*(buffer.as_ptr().add(offset) as *const EVENTLOGRECORD);
+                // Filter on critical SChannel Event IDs
+                if matches!(record.EventID, 36888 | 36874 | 36871 | 36887) {
+                    let mut message_parts = Vec::new();
 
-                    events_checked += 1;
-                    if events_checked > MAX_EVENTS {
-                        break 'outer;
-                    }
+                    // --- START OF SECURE ZONE ---
+                    let strings_offset = offset + record.StringOffset as usize;
+                    let buffer_len = buffer.len();
 
-                    // Timestamp check (stop if too old)
-                    if (record.TimeGenerated as u64) < target_time {
-                        break 'outer;
-                    }
+                    if strings_offset < buffer_len {
+                        let mut current_offset = strings_offset;
 
-                    // Filter on critical SChannel Event IDs
-                    if matches!(record.EventID, 36888 | 36874 | 36871 | 36887) {
-                        let mut message_parts = Vec::new();
+                        for _ in 0..record.NumStrings.min(10) {
+                            if current_offset + 2 > buffer_len {
+                                break;
+                            }
 
-                        // --- START OF SECURE ZONE ---
-                        let strings_offset = offset + record.StringOffset as usize;
-                        let buffer_len = buffer.len();
+                            let mut len_in_chars = 0usize;
+                            let max_possible_chars = (buffer_len - current_offset) / 2;
+                            let char_ptr = buffer.as_ptr().add(current_offset) as *const u16;
 
-                        if strings_offset < buffer_len {
-                            let mut current_offset = strings_offset;
-
-                            for _ in 0..record.NumStrings.min(10) {
-                                if current_offset + 2 > buffer_len {
+                            while len_in_chars < max_possible_chars {
+                                let char_val = *char_ptr.add(len_in_chars);
+                                if char_val == 0 {
                                     break;
                                 }
-
-                                let mut len_in_chars = 0usize;
-                                let max_possible_chars = (buffer_len - current_offset) / 2;
-                                let char_ptr = buffer.as_ptr().add(current_offset) as *const u16;
-
-                                while len_in_chars < max_possible_chars {
-                                    let char_val = *char_ptr.add(len_in_chars);
-                                    if char_val == 0 {
-                                        break;
-                                    }
-                                    len_in_chars += 1;
-                                }
-
-                                if len_in_chars > 0 {
-                                    let slice = std::slice::from_raw_parts(
-                                        buffer.as_ptr().add(current_offset) as *const u16,
-                                        len_in_chars,
-                                    );
-                                    let text = String::from_utf16_lossy(slice);
-                                    if !text.trim().is_empty() {
-                                        message_parts.push(text.trim().to_string());
-                                    }
-                                }
-                                current_offset += (len_in_chars * 2) + 2;
+                                len_in_chars += 1;
                             }
+
+                            if len_in_chars > 0 {
+                                let slice = std::slice::from_raw_parts(
+                                    buffer.as_ptr().add(current_offset) as *const u16,
+                                    len_in_chars,
+                                );
+                                let text = String::from_utf16_lossy(slice);
+                                if !text.trim().is_empty() {
+                                    message_parts.push(text.trim().to_string());
+                                }
+                            }
+                            current_offset += (len_in_chars * 2) + 2;
                         }
-                        // --- END OF SECURE ZONE ---
-
-                        let timestamp =
-                            chrono::DateTime::from_timestamp(record.TimeGenerated as i64, 0)
-                                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
-                                .unwrap_or_else(|| "Unknown time".to_string());
-
-                        let event_desc = match record.EventID {
-                            36888 => "TLS/SSL Handshake Failure",
-                            36874 => "Certificate Validation Error",
-                            36871 => "Protocol Negotiation Error",
-                            36887 => "Cipher Suite Mismatch",
-                            _ => "SChannel Error",
-                        };
-
-                        let message = if message_parts.is_empty() {
-                            format!(
-                                "[{}] Event ID {}: {}",
-                                timestamp, record.EventID, event_desc
-                            )
-                        } else {
-                            format!(
-                                "[{}] Event ID {}: {} - Details: {}",
-                                timestamp,
-                                record.EventID,
-                                event_desc,
-                                message_parts.join(" | ")
-                            )
-                        };
-
-                        errors.push(message);
                     }
+                    // --- END OF SECURE ZONE ---
 
-                    offset += record.Length as usize;
+                    let timestamp =
+                        chrono::DateTime::from_timestamp(record.TimeGenerated as i64, 0)
+                            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+                            .unwrap_or_else(|| "Unknown time".to_string());
+
+                    let event_desc = match record.EventID {
+                        36888 => "TLS/SSL Handshake Failure",
+                        36874 => "Certificate Validation Error",
+                        36871 => "Protocol Negotiation Error",
+                        36887 => "Cipher Suite Mismatch",
+                        _ => "SChannel Error",
+                    };
+
+                    let message = if message_parts.is_empty() {
+                        format!(
+                            "[{}] Event ID {}: {}",
+                            timestamp, record.EventID, event_desc
+                        )
+                    } else {
+                        format!(
+                            "[{}] Event ID {}: {} - Details: {}",
+                            timestamp,
+                            record.EventID,
+                            event_desc,
+                            message_parts.join(" | ")
+                        )
+                    };
+
+                    errors.push(message);
                 }
+
+                offset += record.Length as usize;
             }
-            Ok(())
-        })();
+        };
 
         let _ = CloseEventLog(h_log);
         res?;
