@@ -52,6 +52,17 @@ fn is_local_dev(req: &HttpRequest) -> bool {
     false
 }
 
+fn get_browser_lang(req: &HttpRequest) -> String {
+    if let Some(accept_lang) = req.headers().get("Accept-Language") {
+        if let Ok(lang_str) = accept_lang.to_str() {
+            if lang_str.to_lowercase().contains("fr") {
+                return "fr".to_string();
+            }
+        }
+    }
+    "en".to_string()
+}
+
 // --- HANDLERS ---
 
 pub async fn index(
@@ -323,6 +334,9 @@ pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
                 .to_string()
         })
         .unwrap_or_default();
+
+    let lang = get_browser_lang(&req);
+    rust_i18n::set_locale(&lang);
 
     let html = dioxus_ssr::render_element(rsx! {
         crate::components::layout::Layout {

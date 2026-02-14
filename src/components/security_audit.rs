@@ -32,20 +32,20 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
 
             // Header avec statut global
             div { class: "mb-8 text-center",
-                h1 { class: "text-3xl font-bold mb-2", "SECURITY AUDIT REPORT" }
-                div { class: "text-xs text-muted uppercase tracking-widest", "Generated: {props.report.timestamp}" }
+                h1 { class: "text-3xl font-bold mb-2", {rust_i18n::t!("security_audit.title").to_string()} }
+                div { class: "text-xs text-muted uppercase tracking-widest", "{rust_i18n::t!(\"security_audit.generated\").to_string()}: {props.report.timestamp}" }
 
                 if critical_count > 0 || high_count > 0 {
                     div { class: "mt-4 p-4 bg-red-500/10 border-l-4 border-red-500",
-                        div { class: "text-xl font-bold text-fail", "⚠️ CRITICAL ISSUES DETECTED" }
+                        div { class: "text-xl font-bold text-fail", "⚠️ {rust_i18n::t!(\"security_audit.critical_issues\").to_string()}" }
                         div { class: "text-sm mt-2",
-                            "{critical_count} Critical, {high_count} High, {medium_count} Medium severity issues"
+                            {rust_i18n::t!("security_audit.issues_count", critical = critical_count, high = high_count, medium = medium_count).to_string()}
                         }
                     }
                 } else {
                     div { class: "mt-4 p-4 bg-green-500/10 border-l-4 border-green-500",
-                        div { class: "text-xl font-bold text-success", "✅ NO CRITICAL ISSUES" }
-                        div { class: "text-sm mt-2", "System security baseline met" }
+                        div { class: "text-xl font-bold text-success", "✅ {rust_i18n::t!(\"security_audit.no_critical_issues\").to_string()}" }
+                        div { class: "text-sm mt-2", {rust_i18n::t!("security_audit.system_baseline_met").to_string()} }
                     }
                 }
             }
@@ -54,8 +54,10 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
             if !props.report.vulnerabilities.is_empty() {
                 div { class: "mb-8",
                     h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
-                        "🔴 Vulnerabilities"
-                        span { class: "text-sm font-normal opacity-50", "({props.report.vulnerabilities.len()} found)" }
+                        "🔴 {rust_i18n::t!(\"security_audit.vulnerabilities\").to_string()}"
+                        span { class: "text-sm font-normal opacity-50",
+                            "({rust_i18n::t!(\"security_audit.found\", count = props.report.vulnerabilities.len()).to_string()})"
+                        }
                     }
 
                     div { class: "space-y-3",
@@ -69,15 +71,15 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
             // Certificates Section
             div { class: "mb-8",
                 h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
-                    "📜 Windows Certificate Store"
+                    "📜 {rust_i18n::t!(\"security_audit.windows_cert_store\")}"
                 }
 
                 div { class: "space-y-8",
                     // 1. Personal Certificates
                     div {
-                        h3 { class: "text-lg font-bold mb-3 opacity-80", "👤 Personal (MY)" }
+                        h3 { class: "text-lg font-bold mb-3 opacity-80", "👤 {rust_i18n::t!(\"security_audit.personal_my\").to_string()}" }
                         if props.report.certificates.is_empty() {
-                            div { class: "glass-panel p-4 text-xs text-muted italic", "No personal certificates found." }
+                            div { class: "glass-panel p-4 text-xs text-muted italic", {rust_i18n::t!("security_audit.no_personal_certs").to_string()} }
                         } else {
                             {render_cert_grid(&props.report.certificates)}
                         }
@@ -85,9 +87,9 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
 
                     // 2. Intermediate Authorities
                     div {
-                        h3 { class: "text-lg font-bold mb-3 opacity-80", "🏢 Intermediate Authorities (CA)" }
+                        h3 { class: "text-lg font-bold mb-3 opacity-80", "🏢 {rust_i18n::t!(\"security_audit.intermediate_ca\").to_string()}" }
                         if props.report.intermediate_certificates.is_empty() {
-                            div { class: "glass-panel p-4 text-xs text-muted italic", "No intermediate certificates found." }
+                            div { class: "glass-panel p-4 text-xs text-muted italic", {rust_i18n::t!("security_audit.no_intermediate_certs").to_string()} }
                         } else {
                             {render_cert_grid(&props.report.intermediate_certificates)}
                         }
@@ -95,9 +97,9 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
 
                     // 3. Root Authorities
                     div {
-                        h3 { class: "text-lg font-bold mb-3 opacity-80", "🏛️ Root Authorities (Root)" }
+                        h3 { class: "text-lg font-bold mb-3 opacity-80", "🏛️ {rust_i18n::t!(\"security_audit.root_authorities\").to_string()}" }
                         if props.report.ca_certificates.is_empty() {
-                            div { class: "glass-panel p-4 text-xs text-muted italic", "No root certificates found." }
+                            div { class: "glass-panel p-4 text-xs text-muted italic", {rust_i18n::t!("security_audit.no_root_certs").to_string()} }
                         } else {
                             {render_cert_grid(&props.report.ca_certificates)}
                         }
@@ -105,9 +107,9 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
 
                     // 4. Trusted Publishers
                     div {
-                        h3 { class: "text-lg font-bold mb-3 opacity-80", "✍️ Trusted Publishers" }
+                        h3 { class: "text-lg font-bold mb-3 opacity-80", "✍️ {rust_i18n::t!(\"security_audit.trusted_publishers\").to_string()}" }
                         if props.report.trusted_publishers.is_empty() {
-                            div { class: "glass-panel p-4 text-xs text-muted italic", "No trusted publishers found." }
+                            div { class: "glass-panel p-4 text-xs text-muted italic", {rust_i18n::t!("security_audit.no_trusted_publishers").to_string()} }
                         } else {
                             {render_cert_grid(&props.report.trusted_publishers)}
                         }
@@ -116,7 +118,7 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                     // 5. Disallowed Certificates
                     if !props.report.disallowed_certificates.is_empty() {
                         div {
-                            h3 { class: "text-lg font-bold mb-3 text-fail", "🚫 Disallowed Certificates" }
+                            h3 { class: "text-lg font-bold mb-3 text-fail", "🚫 {rust_i18n::t!(\"security_audit.disallowed_certs\").to_string()}" }
                             {render_cert_grid(&props.report.disallowed_certificates)}
                         }
                     }
@@ -125,7 +127,7 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                     div { class: "mt-8 border-t border-border pt-6",
                         h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
                             span { "🧰" }
-                            "Admin Toolbox"
+                            {rust_i18n::t!("security_audit.admin_toolbox").to_string()}
                         }
 
                         div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
@@ -133,10 +135,10 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                             div { class: "glass-panel p-4 border-l-4 border-blue-500",
                                 h4 { class: "font-bold text-blue-400 mb-2 flex items-center gap-2",
                                     span { "🔄" }
-                                    "Certificate Renewal / Import"
+                                    {rust_i18n::t!("security_audit.cert_renewal").to_string()}
                                 }
                                 div { class: "text-xxs space-y-2 opacity-90",
-                                    p { "To renew or import a machine certificate into the Personal store:" }
+                                    p { {rust_i18n::t!("security_audit.cert_renewal_desc").to_string()} }
                                     div { class: "space-y-2",
                                         div {
                                             p { class: "mb-1 font-bold text-xxs opacity-70", "• CMD (certutil):" }
@@ -152,8 +154,8 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                                         }
                                     }
                                     ul { class: "list-disc ml-4 space-y-1 mt-2",
-                                        li { "Use " b { "KSP" } " (Key Storage Provider) for maximum security & WPA3 compatibility." }
-                                        li { "Use " b { "CSP" } " (Legacy) only if required by very old client devices." }
+                                        li { {rust_i18n::t!("security_audit.ksp_desc").to_string()} }
+                                        li { {rust_i18n::t!("security_audit.csp_desc").to_string()} }
                                     }
                                 }
                             }
@@ -162,13 +164,13 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                             div { class: "glass-panel p-4 border-l-4 border-yellow-500",
                                 h4 { class: "font-bold text-yellow-500 mb-2 flex items-center gap-2",
                                     span { "🏛️" }
-                                    "NTAuth Store Management"
+                                    {rust_i18n::t!("security_audit.ntauth_mgmt").to_string()}
                                 }
                                 div { class: "text-xxs space-y-2 opacity-90",
-                                    p { "If a CA is missing from NTAuth store (needed for RADIUS Trust):" }
+                                    p { {rust_i18n::t!("security_audit.ntauth_missing").to_string()} }
                                     div { class: "space-y-3",
                                         div {
-                                            p { class: "mb-1 font-bold", "• Enterprise-wide (via Active Directory):" }
+                                            p { class: "mb-1 font-bold", "• {rust_i18n::t!(\"security_audit.enterprise_wide\").to_string()}" }
                                             div { class: "space-y-1",
                                                 p { class: "text-[9px] opacity-60", "CMD:" }
                                                 div { class: "bg-black/40 p-1.5 rounded font-mono text-success break-all",
@@ -177,7 +179,7 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                                             }
                                         }
                                         div {
-                                            p { class: "mb-1 font-bold", "• Local Machine only (Standalone):" }
+                                            p { class: "mb-1 font-bold", "• {rust_i18n::t!(\"security_audit.local_machine_only\").to_string()}" }
                                             div { class: "space-y-2",
                                                 div {
                                                     p { class: "text-[9px] opacity-60", "CMD:" }
@@ -203,20 +205,20 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
 
             // TLS Configuration
             div { class: "mb-8",
-                h2 { class: "text-xl font-bold mb-4", "🔐 TLS/SSL Configuration" }
+                h2 { class: "text-xl font-bold mb-4", "🔐 {rust_i18n::t!(\"security_audit.tls_config\").to_string()}" }
 
                 div { class: "glass-panel p-4",
                     div { class: "grid grid-cols-2 md:grid-cols-5 gap-4 mb-4",
-                        ProtocolBadge { name: "SSL 3.0", enabled: props.report.tls_config.ssl_3_0_enabled, critical: true }
-                        ProtocolBadge { name: "TLS 1.0", enabled: props.report.tls_config.tls_1_0_enabled, critical: false }
-                        ProtocolBadge { name: "TLS 1.1", enabled: props.report.tls_config.tls_1_1_enabled, critical: false }
-                        ProtocolBadge { name: "TLS 1.2", enabled: props.report.tls_config.tls_1_2_enabled, critical: false }
-                        ProtocolBadge { name: "TLS 1.3", enabled: props.report.tls_config.tls_1_3_enabled, critical: false }
+                        ProtocolBadge { name: "SSL 3.0".to_string(), enabled: props.report.tls_config.ssl_3_0_enabled, critical: true }
+                        ProtocolBadge { name: "TLS 1.0".to_string(), enabled: props.report.tls_config.tls_1_0_enabled, critical: false }
+                        ProtocolBadge { name: "TLS 1.1".to_string(), enabled: props.report.tls_config.tls_1_1_enabled, critical: false }
+                        ProtocolBadge { name: "TLS 1.2".to_string(), enabled: props.report.tls_config.tls_1_2_enabled, critical: false }
+                        ProtocolBadge { name: "TLS 1.3".to_string(), enabled: props.report.tls_config.tls_1_3_enabled, critical: false }
                     }
 
                     if !props.report.tls_config.weak_ciphers_detected.is_empty() {
                         div { class: "mt-4 p-3 bg-red-500/10 border-l-4 border-red-500",
-                            div { class: "font-bold text-fail mb-2", "⚠️ Weak Ciphers Detected" }
+                            div { class: "font-bold text-fail mb-2", "⚠️ {rust_i18n::t!(\"security_audit.weak_ciphers\").to_string()}" }
                             div { class: "text-xxs space-y-1",
                                 for cipher in &props.report.tls_config.weak_ciphers_detected {
                                     div { "• {cipher}" }
@@ -227,11 +229,11 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
 
                     // Cipher Suite Order (GPO/Priority)
                     div { class: "mt-6",
-                        h3 { class: "text-sm font-bold mb-3 opacity-80 uppercase tracking-widest", "Cipher Suite Negotiation Order" }
+                        h3 { class: "text-sm font-bold mb-3 opacity-80 uppercase tracking-widest", {rust_i18n::t!("security_audit.cipher_order").to_string()} }
                         div { class: "glass-panel p-0 bg-black/20 overflow-hidden",
                             if props.report.tls_config.cipher_suites.is_empty() {
                                 div { class: "p-4 text-xs text-muted italic",
-                                    "Managed by Windows Defaults (No GPO override detected)"
+                                    {rust_i18n::t!("security_audit.managed_by_windows").to_string()}
                                 }
                             } else {
                                 div { class: "divide-y divide-white/5",
@@ -253,7 +255,7 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
             // Event Logs
             if !props.report.event_log_analysis.is_empty() {
                 div { class: "mb-8",
-                    h2 { class: "text-xl font-bold mb-4", "📋 Schannel Event Logs (24h)" }
+                    h2 { class: "text-xl font-bold mb-4", "📋 {rust_i18n::t!(\"security_audit.event_logs\").to_string()}" }
 
                     div { class: "glass-panel p-4 max-h-96 overflow-y-auto",
                         div { class: "text-xxs font-mono space-y-2",
@@ -271,7 +273,7 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
             // Recommendations
             if !props.report.recommendations.is_empty() {
                 div { class: "mb-8",
-                    h2 { class: "text-xl font-bold mb-4", "💡 Recommendations" }
+                    h2 { class: "text-xl font-bold mb-4", "💡 {rust_i18n::t!(\"security_audit.recommendations\").to_string()}" }
 
                     div { class: "glass-panel p-4",
                         ul { class: "text-sm space-y-2",
@@ -292,12 +294,12 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                     href: "/api/debug",
                     target: "_blank",
                     class: "btn-glass btn-primary",
-                    "📥 DOWNLOAD JSON REPORT"
+                    {rust_i18n::t!("security_audit.download_json").to_string()}
                 }
                 a {
                     href: "/",
                     class: "btn-glass",
-                    "← BACK TO DASHBOARD"
+                    {rust_i18n::t!("security_audit.back_dashboard").to_string()}
                 }
             }
         }
@@ -379,7 +381,7 @@ fn ProtocolBadge(name: String, enabled: bool, critical: bool) -> Element {
         div { class: "text-center p-3 border-2 rounded {status_class}",
             div { class: "text-2xl mb-1", "{icon}" }
             div { class: "text-xxs font-bold", "{name}" }
-            div { class: "text-xxs mt-1 opacity-70", if enabled { "ENABLED" } else { "DISABLED" } }
+            div { class: "text-xxs mt-1 opacity-70", {if enabled { rust_i18n::t!("security_audit.enabled").to_string() } else { rust_i18n::t!("security_audit.disabled").to_string() }} }
         }
     }
 }
@@ -420,37 +422,37 @@ fn render_cert_grid(certs: &[crate::infrastructure::security_audit::CertificateI
                     }
 
                     div { class: "text-xxs text-muted space-y-1",
-                        div { class: "truncate", title: "{cert.issuer}", "Issuer: {cert.issuer}" }
-                        div { "Expires: {cert.valid_to}" }
+                        div { class: "truncate", title: "{cert.issuer}", "{rust_i18n::t!(\"security_audit.issuer\").to_string()}: {cert.issuer}" }
+                        div { "{rust_i18n::t!(\"security_audit.expires\").to_string()}: {cert.valid_to}" }
                         div { class: "flex items-center gap-2",
                             span { "{cert.algo} {cert.bits} bits" }
                             if cert.is_modern_ksp {
-                                span { class: "text-success", "[KSP]" }
+                                span { class: "text-success", {rust_i18n::t!("security_audit.ksp").to_string()} }
                             } else {
-                                span { class: "text-yellow-500", "[Legacy CSP]" }
+                                span { class: "text-yellow-500", {rust_i18n::t!("security_audit.legacy_csp").to_string()} }
                             }
                         }
-                        div { class: "truncate opacity-60 italic", title: "{cert.provider}", "Provider: {cert.provider}" }
+                        div { class: "truncate opacity-60 italic", title: "{cert.provider}", "{rust_i18n::t!(\"security_audit.provider\").to_string()}: {cert.provider}" }
                         div {
                             class: if cert.is_expired { "text-fail font-bold" }
                                    else if cert.days_until_expiration < 30 { "text-yellow-500 font-bold" }
                                    else { "text-success" },
-                            if cert.is_expired {
-                                "❌ EXPIRED"
+                            {if cert.is_expired {
+                                rust_i18n::t!("security_audit.expired").to_string()
                             } else if cert.days_until_expiration < 30 {
-                                "⚠️ Expires in {cert.days_until_expiration} days"
+                                rust_i18n::t!("security_audit.expires_in_days", days = cert.days_until_expiration).to_string()
                             } else {
-                                "✅ Valid ({cert.days_until_expiration} days remaining)"
-                            }
+                                rust_i18n::t!("security_audit.valid_days", days = cert.days_until_expiration).to_string()
+                            }}
                         }
                         if cert.is_self_signed {
-                            div { class: "text-yellow-500", "⚠️ Self-Signed" }
+                            div { class: "text-yellow-500", "⚠️ {rust_i18n::t!(\"security_audit.self_signed\").to_string()}" }
                         }
 
                         if !cert.in_ntauth && !cert.is_self_signed && !cert.subject.contains("Found Local Cert") {
                             div { class: "mt-2 p-1.5 bg-yellow-500/5 border border-yellow-500/20 rounded",
-                                div { class: "text-yellow-500 font-bold mb-1", "💡 Resolution Hint:" }
-                                div { class: "italic opacity-80", "Run: certutil -dspublish -f 'cert.cer' NTAuthCA (AD) or certutil -addstore -f NTAuth 'cert.cer' (Local)" }
+                                div { class: "text-yellow-500 font-bold mb-1", "💡 {rust_i18n::t!(\"security_audit.resolution_hint\").to_string()}" }
+                                div { class: "italic opacity-80", {rust_i18n::t!("security_audit.resolution_hint_text").to_string()} }
                             }
                         }
                     }
