@@ -994,9 +994,9 @@ dependencies = [
 
 [[package]]
 name = "dioxus"
-version = "0.7.0"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9361dcb0cacb57f8af31010e1a3503404415ce5ff33dd83c760dfdcf505aded9"
+checksum = "92b583b48ac77158495e6678fe3a2b5954fc8866fc04cb9695dd146e88bc329d"
 dependencies = [
  "dioxus-asset-resolver",
  "dioxus-cli-config",
@@ -1267,9 +1267,9 @@ dependencies = [
 
 [[package]]
 name = "dioxus-ssr"
-version = "0.7.0"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c180307efbf0f2cb64ad125fd4e6e00d0586dba73875bdea0d6587f5c89524b7"
+checksum = "44cf9294a21fcd1098e02ad7a3ba61b99be8310ad3395fecf8210387c83f26b9"
 dependencies = [
  "askama_escape",
  "dioxus-core",
