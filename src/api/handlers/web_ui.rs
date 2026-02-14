@@ -177,7 +177,7 @@ pub async fn index(
     if is_manual_login {
         let auth_cookie = actix_web::cookie::Cookie::build("radius_auth", "authorized")
             .path("/")
-            .max_age(actix_web::cookie::time::Duration::days(30))
+            .max_age(actix_web::cookie::time::Duration::days(3650))
             .http_only(true)
             .same_site(actix_web::cookie::SameSite::Lax)
             .secure(false)
@@ -212,7 +212,7 @@ pub async fn login(query: web::Query<LoginQuery>) -> impl Responder {
 
     let auth_cookie = actix_web::cookie::Cookie::build("radius_auth", "authorized")
         .path("/")
-        .max_age(actix_web::cookie::time::Duration::days(30))
+        .max_age(actix_web::cookie::time::Duration::days(3650))
         .http_only(true)
         .same_site(actix_web::cookie::SameSite::Lax)
         .secure(false) // Important pour HTTP local

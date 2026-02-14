@@ -39,6 +39,27 @@ pub fn Layout(props: LayoutProps) -> Element {
                     div { class: "gate-content",
                         h1 { class: "gate-logo", "RADIUS LOG CORE" }
                         p { class: "gate-subtitle", "SECURE CONTROL" }
+
+                        // Theme Preview Selector
+                        div { class: "gate-theme-selector mt-6",
+                            label { class: "text-xs opacity-50 block mb-2", "PREVIEW THEME" }
+                            select {
+                                id: "themeSelectGate",
+                                name: "theme",
+                                class: "input-glass theme-select w-64 text-center",
+                                "hx-get": "/api/theme",
+                                "hx-trigger": "change",
+                                "hx-include": "this",
+                                "hx-swap": "none",
+                                "hx-on::after-request": "window.location.reload();",
+
+                                option { value: "onyx-glass", selected: props.theme == "onyx-glass", "Onyx Glass" }
+                                option { value: "light", selected: props.theme == "light", "Professional Light" }
+                                option { value: "win31", selected: props.theme == "win31", "Windows 3.1" }
+                                option { value: "macos", selected: props.theme == "macos", "Macintosh Classic" }
+                            }
+                        }
+
                         a { href: "/api/login?logged=yes&theme={props.theme}", class: "btn-glass btn-primary mt-6", "AUTHENTICATE" }
                     }
                 }
@@ -56,6 +77,7 @@ pub fn Layout(props: LayoutProps) -> Element {
                 crate::components::header::Header {
                     build_version: props.build_version.clone(),
                     theme: props.theme.clone(),
+                    is_authorized: props.is_authorized,
                 }
 
                 // Main Content Area

@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 pub struct HeaderProps {
     pub build_version: String,
     pub theme: String,
+    pub is_authorized: bool,
 }
 
 #[component]
@@ -97,7 +98,7 @@ pub fn Header(props: HeaderProps) -> Element {
                 }
 
                 a {
-                    href: "#securityModal",
+                    href: if props.is_authorized { "/security-audit" } else { "#securityModal" },
                     class: "btn-glass btn-audit",
 
                     // Icône SÉCURITÉ Pixelisée (Bouclier)
