@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use windows::core::PCWSTR;
 use windows::Win32::Security::Cryptography::{
@@ -32,8 +33,8 @@ pub struct CertInfo {
     pub is_valid: bool,
 }
 
-/// Retrieves SChannel log details in a safe manner (anti-panic).
-pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
+/// Retrieves SChannel log details with explicit error handling.
+pub fn fetch_schannel_details_safe(timestamp_str: &str) -> Result<Vec<String>> {
     let mut errors = Vec::new();
 
     // 1. Parsing of target timestamp
@@ -49,16 +50,19 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
         let server_name = PCWSTR::null();
         let source_name = windows::core::w!("System");
 
-        if let Ok(h_log) = OpenEventLogW(server_name, source_name) {
-            // BACKWARDS (8) | SEQUENTIAL (1)
-            let flags = READ_EVENT_LOG_READ_FLAGS(8 | 1);
-            // Initial 64KB buffer
-            let mut buffer = vec![0u8; 0x10000];
-            let mut bytes_read = 0u32;
-            let mut bytes_needed = 0u32;
-            let mut events_checked = 0u32;
-            const MAX_EVENTS: u32 = 500;
+        let h_log =
+            OpenEventLogW(server_name, source_name).context("Failed to open System Event Log")?;
 
+        // BACKWARDS (8) | SEQUENTIAL (1)
+        let flags = READ_EVENT_LOG_READ_FLAGS(8 | 1);
+        // Initial 64KB buffer
+        let mut buffer = vec![0u8; 0x10000];
+        let mut bytes_read = 0u32;
+        let mut bytes_needed = 0u32;
+        let mut events_checked = 0u32;
+        const MAX_EVENTS: u32 = 500;
+
+        let res = (|| -> Result<()> {
             'outer: loop {
                 let result = ReadEventLogW(
                     h_log,
@@ -104,42 +108,30 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                         let mut message_parts = Vec::new();
 
                         // --- START OF SECURE ZONE ---
-
-                        // Safe calculation of string offset
                         let strings_offset = offset + record.StringOffset as usize;
                         let buffer_len = buffer.len();
 
-                        // Basic check: is the offset within the buffer?
                         if strings_offset < buffer_len {
                             let mut current_offset = strings_offset;
 
-                            // Read up to NumStrings or max 10 strings
                             for _ in 0..record.NumStrings.min(10) {
-                                // Check: are there at least 2 bytes (1 UTF-16 char) to read?
                                 if current_offset + 2 > buffer_len {
                                     break;
                                 }
 
-                                // Safe calculation of UTF-16 string length
-                                // Look for \0\0 terminator
                                 let mut len_in_chars = 0usize;
                                 let max_possible_chars = (buffer_len - current_offset) / 2;
-
                                 let char_ptr = buffer.as_ptr().add(current_offset) as *const u16;
 
                                 while len_in_chars < max_possible_chars {
-                                    // Read current character
                                     let char_val = *char_ptr.add(len_in_chars);
-
                                     if char_val == 0 {
                                         break;
                                     }
                                     len_in_chars += 1;
                                 }
 
-                                // Maintenant qu'on a la longueur, on crée le slice de manière sûre
                                 if len_in_chars > 0 {
-                                    // Safety is guaranteed because we iterated until len_in_chars < max_possible_chars
                                     let slice = std::slice::from_raw_parts(
                                         buffer.as_ptr().add(current_offset) as *const u16,
                                         len_in_chars,
@@ -149,15 +141,11 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                                         message_parts.push(text.trim().to_string());
                                     }
                                 }
-
-                                // Advance pointer: (Length in bytes) + 2 bytes for \0
                                 current_offset += (len_in_chars * 2) + 2;
                             }
                         }
-
                         // --- END OF SECURE ZONE ---
 
-                        // Message formatting
                         let timestamp =
                             chrono::DateTime::from_timestamp(record.TimeGenerated as i64, 0)
                                 .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
@@ -192,11 +180,11 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
                     offset += record.Length as usize;
                 }
             }
+            Ok(())
+        })();
 
-            let _ = CloseEventLog(h_log);
-        } else {
-            errors.push("ERROR: Cannot open System event log. Check permissions.".to_string());
-        }
+        let _ = CloseEventLog(h_log);
+        res?;
     }
 
     if errors.is_empty() {
@@ -204,7 +192,13 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
         errors.push("Note: Ensure 'Event Logging' is enabled in SChannel registry.".to_string());
     }
 
-    errors
+    Ok(errors)
+}
+
+/// Retrieves SChannel log details in a safe manner (anti-panic).
+pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
+    fetch_schannel_details_safe(timestamp_str)
+        .unwrap_or_else(|e| vec![format!("ERROR: Failed to fetch Schannel details: {}", e)])
 }
 
 pub fn get_schannel_logging_level() -> u32 {
@@ -216,7 +210,7 @@ pub fn get_schannel_logging_level() -> u32 {
 }
 
 pub fn read_schannel_config() -> crate::infrastructure::security_audit::TlsConfiguration {
-    crate::infrastructure::security_audit::read_schannel_config()
+    crate::infrastructure::security_audit::read_schannel_config().unwrap_or_default()
 }
 
 pub fn get_protocols_config() -> Vec<ProtocolInfo> {

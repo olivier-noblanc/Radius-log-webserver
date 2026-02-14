@@ -21,20 +21,20 @@ impl LogCache {
             .iter()
             .map(|entry| entry.value().clone())
             .collect();
-        v.sort_by(|a, b| b.timestamp.cmp(&a.timestamp)); // Tri décroissant pour l'affichage
+        v.sort_by(|a, b| b.timestamp.cmp(&a.timestamp)); // Descending sort for display
         v
     }
 
     pub fn extend(&self, new_items: Vec<RadiusRequest>) {
         for mut item in new_items {
             let id = self.next_id.fetch_add(1, Ordering::SeqCst);
-            // FIX: On assigne l'ID ici
+            // FIX: Assign ID here
             item.id = Some(id);
             self.items.insert(id, item);
         }
     }
 
-    // FIX: Méthode pour récupérer un log par son ID unique
+    // FIX: Method to retrieve a log by its unique ID
     pub fn get_by_id(&self, id: usize) -> Option<RadiusRequest> {
         self.items.get(&id).map(|r| r.value().clone())
     }
@@ -113,6 +113,6 @@ impl StatsCache {
 
 impl Default for StatsCache {
     fn default() -> Self {
-        Self::new(30) // 30 secondes par défaut
+        Self::new(30) // 30 seconds default
     }
 }

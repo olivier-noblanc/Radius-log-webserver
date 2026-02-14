@@ -1,4 +1,6 @@
+use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
+use rust_i18n::t;
 use schannel::cert_context::CertContext;
 use schannel::cert_store::CertStore;
 use schannel::RawPointer;
@@ -58,6 +60,7 @@ pub struct SecurityVulnerability {
     pub title: String,
     pub description: String,
     pub cve: Option<String>,
+    pub is_maintenance_alarm: bool,
 }
 
 impl Default for SecurityAuditReport {
@@ -94,6 +97,17 @@ impl SecurityAuditReport {
             title: title.to_string(),
             description: desc.to_string(),
             cve: cve.map(|s| s.to_string()),
+            is_maintenance_alarm: false,
+        });
+    }
+
+    pub fn add_maintenance_alarm(&mut self, severity: &str, title: &str, desc: &str) {
+        self.vulnerabilities.push(SecurityVulnerability {
+            severity: severity.to_string(),
+            title: title.to_string(),
+            description: desc.to_string(),
+            cve: None,
+            is_maintenance_alarm: true,
         });
     }
 
@@ -116,27 +130,36 @@ impl Default for TlsConfiguration {
     }
 }
 
+/// Trait for abstracting access to certificate stores
+pub trait CertificateStore {
+    fn list_certificates(&self, store_name: &str) -> Result<Vec<CertificateInfo>>;
+}
+
+/// Real implementation for Windows
+pub struct WindowsCertificateStore;
+
+impl CertificateStore for WindowsCertificateStore {
+    fn list_certificates(&self, store_name: &str) -> Result<Vec<CertificateInfo>> {
+        read_system_store(store_name)
+    }
+}
+
 /// Read certificates from Windows Certificate Store using schannel crate
 pub fn read_certificate_store() -> Vec<CertificateInfo> {
-    read_system_store("MY")
+    read_system_store("MY").unwrap_or_default()
 }
 
 /// Read certificates from a specific Windows System Store
-pub fn read_system_store(store_name: &str) -> Vec<CertificateInfo> {
+pub fn read_system_store(store_name: &str) -> Result<Vec<CertificateInfo>> {
     let mut certificates = Vec::new();
 
     // Open LOCAL_MACHINE store
-    let store = match CertStore::open_local_machine(store_name) {
-        Ok(s) => s,
-        Err(e) => {
-            tracing::error!("Failed to open certificate store {}: {}", store_name, e);
-            return certificates;
-        }
-    };
+    let store = CertStore::open_local_machine(store_name)
+        .with_context(|| format!("Failed to open certificate store {}", store_name))?;
 
     // Load NTAuth store for comparison if needed
     let ntauth_thumbprints = if store_name != "NTAuth" {
-        read_ntauth_thumbprints()
+        read_ntauth_thumbprints().unwrap_or_default()
     } else {
         Vec::new()
     };
@@ -162,28 +185,30 @@ pub fn read_system_store(store_name: &str) -> Vec<CertificateInfo> {
         certificates.len(),
         store_name
     );
-    certificates
+    Ok(certificates)
 }
 
 /// Helper to read thumbprints from the NTAuth store
-fn read_ntauth_thumbprints() -> Vec<String> {
+fn read_ntauth_thumbprints() -> Result<Vec<String>> {
     let mut thumbprints = Vec::new();
-    if let Ok(store) = CertStore::open_local_machine("NTAuth") {
-        for cert in store.certs() {
-            if let Ok(der_bytes) = get_cert_der(&cert) {
-                thumbprints.push(compute_sha1_thumbprint(der_bytes));
-            }
+    let store = CertStore::open_local_machine("NTAuth")
+        .context("Failed to open NTAuth certificate store")?;
+
+    for cert in store.certs() {
+        if let Ok(der_bytes) = get_cert_der(&cert) {
+            thumbprints.push(compute_sha1_thumbprint(der_bytes));
         }
     }
-    thumbprints
+
+    Ok(thumbprints)
 }
 
 /// Helper to get DER bytes from a CertContext
-fn get_cert_der(cert: &CertContext) -> Result<&[u8], Box<dyn std::error::Error>> {
+fn get_cert_der(cert: &CertContext) -> Result<&[u8]> {
     unsafe {
         let p_cert = cert.as_ptr() as *const windows::Win32::Security::Cryptography::CERT_CONTEXT;
         if p_cert.is_null() {
-            return Err("Null certificate context pointer".into());
+            anyhow::bail!("Null certificate context pointer");
         }
         Ok(std::slice::from_raw_parts(
             (*p_cert).pbCertEncoded,
@@ -193,7 +218,7 @@ fn get_cert_der(cert: &CertContext) -> Result<&[u8], Box<dyn std::error::Error>>
 }
 
 /// Helper to get Key Provider info from Windows Certificate Context
-fn get_cert_provider(cert: &CertContext) -> String {
+fn get_cert_provider(cert: &CertContext) -> Result<String> {
     use windows::Win32::Security::Cryptography::{
         CertGetCertificateContextProperty, CERT_KEY_PROV_INFO_PROP_ID, CRYPT_KEY_PROV_INFO,
     };
@@ -203,28 +228,22 @@ fn get_cert_provider(cert: &CertContext) -> String {
         let mut cb_data = 0;
 
         // 1. Get size first
-        if CertGetCertificateContextProperty(p_cert, CERT_KEY_PROV_INFO_PROP_ID, None, &mut cb_data)
-            .is_err()
-        {
-            return "No Provider Info".to_string();
-        }
+        CertGetCertificateContextProperty(p_cert, CERT_KEY_PROV_INFO_PROP_ID, None, &mut cb_data)
+            .context("Failed to get certificate key provider property size")?;
 
         // 2. Read data
         let mut buffer = vec![0u8; cb_data as usize];
-        if CertGetCertificateContextProperty(
+        CertGetCertificateContextProperty(
             p_cert,
             CERT_KEY_PROV_INFO_PROP_ID,
             Some(buffer.as_mut_ptr() as *mut _),
             &mut cb_data,
         )
-        .is_err()
-        {
-            return "No Provider Info".to_string();
-        }
+        .context("Failed to read certificate key provider property")?;
 
         let prov_info = &*(buffer.as_ptr() as *const CRYPT_KEY_PROV_INFO);
         if prov_info.pwszProvName.is_null() {
-            return "Unknown Provider".to_string();
+            anyhow::bail!("Certificate provider name is null");
         }
 
         // Convert PWSTR to String
@@ -234,17 +253,17 @@ fn get_cert_provider(cert: &CertContext) -> String {
             len += 1;
         }
         let slice = std::slice::from_raw_parts(ptr, len);
-        String::from_utf16_lossy(slice)
+        Ok(String::from_utf16_lossy(slice))
     }
 }
 
 /// Parse a certificate using x509-parser
-fn parse_certificate(cert: &CertContext) -> Result<CertificateInfo, Box<dyn std::error::Error>> {
+fn parse_certificate(cert: &CertContext) -> Result<CertificateInfo> {
     // Get DER-encoded certificate
     let der_bytes = get_cert_der(cert)?;
 
     // Parse with x509-parser
-    let (_, x509) = X509Certificate::from_der(der_bytes)?;
+    let (_, x509) = X509Certificate::from_der(der_bytes).context("Failed to parse X509 DER")?;
 
     // Extract subject
     let subject = x509
@@ -286,7 +305,7 @@ fn parse_certificate(cert: &CertContext) -> Result<CertificateInfo, Box<dyn std:
     let thumbprint = compute_sha1_thumbprint(der_bytes);
 
     // Key properties
-    let provider = get_cert_provider(cert);
+    let provider = get_cert_provider(cert).unwrap_or_else(|_| "Unknown Provider".to_string());
     let is_modern_ksp = provider.contains("Software Key Storage Provider")
         || provider.contains("Smart Card Key Storage Provider")
         || provider.contains("Platform Key Storage Provider");
@@ -351,7 +370,7 @@ fn compute_sha1_thumbprint(der_bytes: &[u8]) -> String {
 }
 
 /// Read Schannel TLS/SSL configuration from Windows Registry
-pub fn read_schannel_config() -> TlsConfiguration {
+pub fn read_schannel_config() -> Result<TlsConfiguration> {
     let mut config = TlsConfiguration::default();
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -378,7 +397,7 @@ pub fn read_schannel_config() -> TlsConfiguration {
         }
     }
 
-    config
+    Ok(config)
 }
 
 fn is_protocol_enabled(hklm: &RegKey, base_path: &str, protocol: &str) -> bool {
@@ -431,47 +450,41 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
     if report.tls_config.ssl_3_0_enabled {
         report.add_vulnerability(
             "CRITICAL",
-            "SSL 3.0 Enabled (POODLE)",
-            "SSL 3.0 is vulnerable to POODLE attack. Disable immediately.",
+            &t!("security_audit.vulns.ssl3_title"),
+            &t!("security_audit.vulns.ssl3_desc"),
             Some("CVE-2014-3566"),
         );
-        report.add_recommendation(
-            "Disable SSL 3.0 via registry: HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\SSL 3.0\\Server\\Enabled = 0"
-        );
+        report.add_recommendation(&t!("security_audit.vulns.ssl3_rec"));
     }
 
     if report.tls_config.tls_1_0_enabled {
         report.add_vulnerability(
             "HIGH",
-            "TLS 1.0 Enabled (Deprecated)",
-            "TLS 1.0 is deprecated and vulnerable to BEAST, CRIME attacks. PCI DSS requires TLS 1.2+.",
+            &t!("security_audit.vulns.tls10_title"),
+            &t!("security_audit.vulns.tls10_desc"),
             None,
         );
-        report.add_recommendation(
-            "Disable TLS 1.0 via registry: HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.0\\Server\\Enabled = 0"
-        );
+        report.add_recommendation(&t!("security_audit.vulns.tls10_rec"));
     }
 
     if report.tls_config.tls_1_1_enabled {
         report.add_vulnerability(
             "MEDIUM",
-            "TLS 1.1 Enabled (Deprecated)",
-            "TLS 1.1 is deprecated since 2020. Modern browsers no longer support it.",
+            &t!("security_audit.vulns.tls11_title"),
+            &t!("security_audit.vulns.tls11_desc"),
             None,
         );
-        report.add_recommendation("Disable TLS 1.1 via registry");
+        report.add_recommendation(&t!("security_audit.vulns.tls11_rec"));
     }
 
     if !report.tls_config.tls_1_2_enabled && !report.tls_config.tls_1_3_enabled {
         report.add_vulnerability(
             "CRITICAL",
-            "No Modern TLS Enabled",
-            "Neither TLS 1.2 nor TLS 1.3 is enabled. Server cannot establish secure connections.",
+            &t!("security_audit.vulns.no_modern_tls_title"),
+            &t!("security_audit.vulns.no_modern_tls_desc"),
             None,
         );
-        report.add_recommendation(
-            "Enable TLS 1.2 via registry: HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.2\\Server\\Enabled = 1"
-        );
+        report.add_recommendation(&t!("security_audit.vulns.no_modern_tls_rec"));
     }
 
     // Weak ciphers
@@ -479,16 +492,14 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
         let weak_list = report.tls_config.weak_ciphers_detected.join(", ");
         report.add_vulnerability(
             "HIGH",
-            "Weak Cipher Suites Detected",
-            &format!(
-                "Weak/insecure ciphers enabled: {}. Remove from configuration.",
-                weak_list
+            &t!("security_audit.vulns.weak_ciphers_title"),
+            &t!(
+                "security_audit.vulns.weak_ciphers_desc",
+                ciphers = weak_list
             ),
             None,
         );
-        report.add_recommendation(
-            "Review cipher suite configuration in: HKLM\\SOFTWARE\\Policies\\Microsoft\\Cryptography\\Configuration\\SSL\\00010002"
-        );
+        report.add_recommendation(&t!("security_audit.vulns.weak_ciphers_rec"));
     }
 
     // Certificate checks - Use indices to avoid borrow checker issues
@@ -504,28 +515,33 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
         if is_expired {
             report.add_vulnerability(
                 "CRITICAL",
-                &format!("Expired Certificate: {}", subject),
-                &format!(
-                    "Certificate expired on {}. Clients will reject connections.",
-                    valid_to
-                ),
+                &t!("security_audit.vulns.expired_cert_title", subject = subject),
+                &t!("security_audit.vulns.expired_cert_desc", date = valid_to),
                 None,
             );
-            report.add_recommendation(&format!(
-                "Renew expired certificate: {} (Thumbprint: {})",
-                subject, thumbprint
+            report.add_recommendation(&t!(
+                "security_audit.vulns.expired_cert_rec",
+                subject = subject,
+                thumb = thumbprint
             ));
         } else if (0..30).contains(&days_until_expiration) {
             report.add_vulnerability(
                 "MEDIUM",
-                &format!("Certificate Expiring Soon: {}", subject),
-                &format!(
-                    "Certificate expires in {} days on {}",
-                    days_until_expiration, valid_to
+                &t!(
+                    "security_audit.vulns.expiring_soon_title",
+                    subject = subject
+                ),
+                &t!(
+                    "security_audit.vulns.expiring_soon_desc",
+                    days = days_until_expiration.to_string(),
+                    date = valid_to
                 ),
                 None,
             );
-            report.add_recommendation(&format!("Renew certificate soon: {}", subject));
+            report.add_recommendation(&t!(
+                "security_audit.vulns.expiring_soon_rec",
+                subject = subject
+            ));
         }
 
         if is_self_signed {
@@ -553,21 +569,15 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
     }
 
     if !ntauth_missing.is_empty() {
+        let cas = ntauth_missing.join(", ");
         report.add_vulnerability(
             "MEDIUM",
-            "CAs Missing from NTAuth Store",
-            &format!(
-                "The following CAs are not in NTAuthStore: {}. This may cause RADIUS authentication failures.",
-                ntauth_missing.join(", ")
-            ),
+            &t!("security_audit.vulns.ntauth_missing_title"),
+            &t!("security_audit.vulns.ntauth_missing_desc", cas = cas),
             None,
         );
-        report.add_recommendation(
-            "Add missing CAs to NTAuth store via AD: certutil -dspublish -f 'cert_file.cer' NTAuthCA"
-        );
-        report.add_recommendation(
-            "Add missing CAs to local NTAuth store: certutil -addstore -f NTAuth 'cert_file.cer'",
-        );
+        report.add_recommendation(&t!("security_audit.vulns.ntauth_missing_rec_ad"));
+        report.add_recommendation(&t!("security_audit.vulns.ntauth_missing_rec_local"));
     }
 }
 
@@ -577,69 +587,85 @@ pub fn perform_security_audit() -> SecurityAuditReport {
 
     tracing::info!("Starting robust security audit...");
 
-    // 1. Read certificates from Windows Certificate Store (Safe wrap)
-    match std::panic::catch_unwind(|| {
-        (
-            read_system_store("MY"),
-            read_system_store("Root"),
-            read_system_store("CA"),
-            read_system_store("TrustedPublisher"),
-            read_system_store("Disallowed"),
-        )
-    }) {
-        Ok((my_certs, root_certs, ca_certs, pub_certs, bad_certs)) => {
-            report.certificates = my_certs;
-            report.ca_certificates = root_certs;
-            report.intermediate_certificates = ca_certs;
-            report.trusted_publishers = pub_certs;
-            report.disallowed_certificates = bad_certs;
-            tracing::info!(
-                "Analyzed {} personal, {} root, {} intermediate, {} publishers, {} disallowed certificates",
-                report.certificates.len(),
-                report.ca_certificates.len(),
-                report.intermediate_certificates.len(),
-                report.trusted_publishers.len(),
-                report.disallowed_certificates.len()
-            );
-        }
-        Err(_) => {
-            tracing::error!("CRITICAL: Certificate store reading panicked!");
-            report.add_vulnerability(
-                "CRITICAL",
-                "Audit Failure: Certificate Store",
-                "The certificate audit crashed. This might be due to a major Windows API change.",
-                None,
-            );
+    // 1. Read certificates from Windows Certificate Store
+    let mut scan_errors = Vec::new();
+    {
+        let stores = [
+            ("MY", &mut report.certificates),
+            ("Root", &mut report.ca_certificates),
+            ("CA", &mut report.intermediate_certificates),
+            ("TrustedPublisher", &mut report.trusted_publishers),
+            ("Disallowed", &mut report.disallowed_certificates),
+        ];
+
+        for (name, target) in stores {
+            match read_system_store(name) {
+                Ok(certs) => {
+                    *target = certs;
+                }
+                Err(e) => {
+                    tracing::error!("Failed to read certificate store {}: {}", name, e);
+                    scan_errors.push((name, e.to_string()));
+                }
+            }
         }
     }
 
-    // 2. Read Schannel TLS/SSL configuration (Safe wrap)
-    match std::panic::catch_unwind(read_schannel_config) {
+    // Add maintenance alarms for any scan errors
+    for (name, err) in scan_errors {
+        report.add_maintenance_alarm(
+            "CRITICAL",
+            &t!("security_audit.vulns.maintenance_cert_title", name = name),
+            &t!("security_audit.vulns.maintenance_cert_desc", error = err),
+        );
+    }
+
+    tracing::info!(
+        "Analyzed {} personal, {} root, {} intermediate, {} publishers, {} disallowed certificates",
+        report.certificates.len(),
+        report.ca_certificates.len(),
+        report.intermediate_certificates.len(),
+        report.trusted_publishers.len(),
+        report.disallowed_certificates.len()
+    );
+
+    // 2. Read Schannel TLS/SSL configuration
+    match read_schannel_config() {
         Ok(config) => {
             report.tls_config = config;
             tracing::info!("TLS config analyzed");
         }
-        Err(_) => {
-            tracing::error!("CRITICAL: Schannel registry reading panicked!");
-            report.add_vulnerability(
+        Err(e) => {
+            tracing::error!("Failed to read Schannel registry config: {}", e);
+            report.add_maintenance_alarm(
                 "HIGH",
-                "Audit Failure: Registry",
-                "The registry audit failed. Using defaults.",
-                None,
+                &t!("security_audit.vulns.maintenance_reg_title"),
+                &t!(
+                    "security_audit.vulns.maintenance_reg_desc",
+                    error = e.to_string()
+                ),
             );
         }
     }
 
-    // 3. Read Schannel Event Logs (Safe wrap)
-    match std::panic::catch_unwind(|| crate::infrastructure::win32::fetch_schannel_details("24h")) {
+    // 3. Read Schannel Event Logs
+    match crate::infrastructure::win32::fetch_schannel_details_safe("24h") {
         Ok(logs) => {
             report.event_log_analysis = logs;
             tracing::info!("Schannel event logs integrated");
         }
-        Err(_) => {
-            tracing::error!("CRITICAL: Event log reading panicked!");
+        Err(e) => {
+            tracing::error!("Failed to read Event Logs: {}", e);
+            report.add_maintenance_alarm(
+                "HIGH",
+                &t!("security_audit.vulns.maintenance_log_title"),
+                &t!(
+                    "security_audit.vulns.maintenance_log_desc",
+                    error = e.to_string()
+                ),
+            );
             report.event_log_analysis =
-                vec!["ERROR: Could not read System Event Logs (Audit module failure)".to_string()];
+                vec![t!("security_audit.vulns.log_error_msg", error = e.to_string()).to_string()];
         }
     }
 
@@ -648,13 +674,16 @@ pub fn perform_security_audit() -> SecurityAuditReport {
     tracing::info!("Found {} vulnerabilities", report.vulnerabilities.len());
 
     // 5. General recommendations
-    if report.vulnerabilities.is_empty()
-        && report
+    if report.vulnerabilities.is_empty() {
+        if report
             .event_log_analysis
             .iter()
             .all(|l| !l.contains("Event ID"))
-    {
-        report.add_recommendation("✅ No security issues or Schannel errors detected.");
+        {
+            report.add_recommendation(&t!("security_audit.vulns.no_issues_rec"));
+        } else {
+            report.add_recommendation(&t!("security_audit.vulns.events_detected_rec"));
+        }
     } else {
         let critical_count = report
             .vulnerabilities
@@ -662,12 +691,74 @@ pub fn perform_security_audit() -> SecurityAuditReport {
             .filter(|v| v.severity == "CRITICAL")
             .count();
         if critical_count > 0 {
-            report.add_recommendation(&format!(
-                "⚠️ {} CRITICAL issues require immediate attention.",
-                critical_count
+            report.add_recommendation(&t!(
+                "security_audit.vulns.critical_attention_rec",
+                count = critical_count.to_string()
             ));
+        } else {
+            report.add_recommendation(&t!("security_audit.vulns.review_rec"));
         }
     }
 
     report
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_security_audit_report_new() {
+        let report = SecurityAuditReport::new();
+        assert!(!report.timestamp.is_empty());
+        assert!(report.vulnerabilities.is_empty());
+        assert!(report.recommendations.is_empty());
+    }
+
+    #[test]
+    fn test_add_vulnerability() {
+        let mut report = SecurityAuditReport::new();
+        report.add_vulnerability("HIGH", "Test Vuln", "Desc", None);
+        assert_eq!(report.vulnerabilities.len(), 1);
+        assert_eq!(report.vulnerabilities[0].severity, "HIGH");
+    }
+
+    #[test]
+    fn test_detect_vulnerabilities_expired_cert() {
+        let mut report = SecurityAuditReport::new();
+        let cert = CertificateInfo {
+            subject: "Expired".to_string(),
+            issuer: "Root".to_string(),
+            valid_from: "2020-01-01".to_string(),
+            valid_to: "2021-01-01".to_string(),
+            thumbprint: "ABC".to_string(),
+            is_expired: true,
+            is_self_signed: false,
+            days_until_expiration: -100,
+            in_ntauth: false,
+            provider: "KSP".to_string(),
+            algo: "RSA".to_string(),
+            bits: 2048,
+            is_modern_ksp: true,
+            wpa3_ready: false,
+        };
+        report.certificates.push(cert);
+        detect_vulnerabilities(&mut report);
+
+        assert!(report
+            .vulnerabilities
+            .iter()
+            .any(|v| v.severity == "CRITICAL" && v.title.contains("Expired")));
+    }
+
+    #[test]
+    fn test_perform_security_audit_not_empty() {
+        // This test verifies that the audit runs without panicking and returns a coherent report.
+        // On a build machine, there might not be any certificates, but the report
+        // should still be generated.
+        let report = perform_security_audit();
+        assert!(!report.timestamp.is_empty());
+        // The audit must contain either success recommendations or vulnerabilities/error recommendations
+        assert!(!report.recommendations.is_empty() || !report.vulnerabilities.is_empty());
+    }
 }

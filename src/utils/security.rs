@@ -125,3 +125,51 @@ pub fn is_authorized(req: &HttpRequest) -> bool {
 
     authorized
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_resolve_safe_path_valid() {
+        let temp_dir = std::env::temp_dir().join("radius_test_valid");
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let test_file = temp_dir.join("test.log");
+        fs::write(&test_file, "content").unwrap();
+
+        let base_dir = temp_dir.to_str().unwrap();
+        let result = resolve_safe_path(base_dir, "test.log");
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().ends_with("test.log"));
+
+        fs::remove_dir_all(&temp_dir).unwrap();
+    }
+
+    #[test]
+    fn test_resolve_safe_path_traversal() {
+        let temp_dir = std::env::temp_dir().join("radius_test_traversal");
+        let sandbox = temp_dir.join("sandbox");
+        fs::create_dir_all(&sandbox).unwrap();
+
+        let base_dir = sandbox.to_str().unwrap();
+
+        // Attempt to access a file outside the sandbox via ..
+        let result = resolve_safe_path(base_dir, "../unauthorized.txt");
+
+        // Should fail (either because file doesn't exist for canonicalize,
+        // or because it's out of bounds if it pointed to a real existent file)
+        assert!(result.is_err());
+
+        fs::remove_dir_all(&temp_dir).unwrap();
+    }
+
+    #[test]
+    fn test_resolve_safe_path_absolute_forbidden() {
+        let result = resolve_safe_path("C:\\Logs", "C:\\Windows\\System32\\cmd.exe");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "Absolute path forbidden.");
+    }
+}

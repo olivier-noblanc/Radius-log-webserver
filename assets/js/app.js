@@ -3,10 +3,30 @@
 const WS_INTERVAL = 5000;
 const MIN_WIDTH = 50;
 const HALF = 0.5;
+const NOT_SET = 0;
 const KEYS = ['timestamp', 'req_type', 'server', 'ap_ip', 'ap_name', 'mac', 'user', 'resp_type', 'reason'];
 
 let webSocket = { closed: true };
 let badge = { textContent: '' };
+let fallbackInterval = NOT_SET;
+
+const stopFallback = () => {
+    if (fallbackInterval) {
+        clearInterval(fallbackInterval);
+        fallbackInterval = NOT_SET;
+    }
+};
+
+const startFallback = () => {
+    if (fallbackInterval) {
+        return;
+    }
+    fallbackInterval = setInterval(() => {
+        if (globalThis.htmx) {
+            globalThis.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
+        }
+    }, WS_INTERVAL);
+};
 
 const updateStatus = (connected) => {
     if (!badge.id) {
@@ -63,9 +83,13 @@ const connectWS = () => {
         proto = 'wss:';
     }
     webSocket = new WebSocket(`${proto}//${location.host}/ws`);
-    webSocket.addEventListener('open', () => { updateStatus(true); });
+    webSocket.addEventListener('open', () => {
+        updateStatus(true);
+        stopFallback();
+    });
     webSocket.addEventListener('close', () => {
         updateStatus(false);
+        startFallback();
         setTimeout(connectWS, WS_INTERVAL);
     });
     webSocket.addEventListener('message', handleWSMessage);
@@ -97,24 +121,21 @@ const applyVisibility = (key, show) => {
     if (cb) { cb.checked = show; }
 };
 
-const moveColumns = (key, thead, tbody) => {
-    const head = thead.querySelector(`th[data-col-key="${key}"]`);
-    if (head) { thead.append(head); }
-    for (const row of tbody) {
-        const cell = row.querySelector(`td[data-col-key="${key}"]`);
-        if (cell) { row.append(cell); }
-    }
-};
-
 const applyOrder = (order) => {
-    const tbl = document.querySelector('#logTable');
-    if (!tbl || !order) { return; }
-    const thead = tbl.querySelector('thead tr');
-    const tbody = tbl.querySelectorAll('tbody tr');
-    for (const key of order) {
-        moveColumns(key, thead, tbody);
+    if (globalThis.htmx) {
+        // Save order via server
+        globalThis.htmx.ajax('GET', `/api/logs/columns?order=${encodeURIComponent(JSON.stringify(order))}`, {
+            swap: 'none'
+        }).then(() => {
+            // Trigger HTMX reload to apply server-side order on the table
+            const filters = document.querySelector('#log-filters');
+            if (filters) {
+                globalThis.htmx.trigger(filters, 'change');
+            } else {
+                globalThis.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
+            }
+        });
     }
-    initResizers();
 };
 
 const setupResizerListener = (head, idx, resizer) => {
@@ -181,7 +202,6 @@ const setupReorder = (pick) => {
     pick.addEventListener('dragend', () => {
         const boxes = pick.querySelectorAll('.column-checkbox');
         const order = [...boxes].map((item) => item.dataset.colKey);
-        localStorage.setItem('col-order', JSON.stringify(order));
         applyOrder(order);
     });
 };
@@ -212,12 +232,10 @@ const initDelegations = () => {
     });
     document.addEventListener('htmx:afterOnLoad', (event) => {
         if (['log-table-container', 'logTable'].includes(event.detail.target.id)) {
-            const saved = JSON.parse(localStorage.getItem('col-order') || 'null');
-            if (saved) { applyOrder(saved); }
             initResizers();
             for (const key of KEYS) {
                 const vis = localStorage.getItem(`col-visible-${key}`);
-                if (vis !== null) { applyVisibility(key, vis === 'true'); }
+                if (vis) { applyVisibility(key, vis === 'true'); }
             }
         }
     });
@@ -248,11 +266,9 @@ const initMenu = () => {
 };
 
 const applyStored = () => {
-    const savedOrder = JSON.parse(localStorage.getItem('col-order') || 'null');
-    if (savedOrder) { applyOrder(savedOrder); }
     for (const key of KEYS) {
         const visibility = localStorage.getItem(`col-visible-${key}`);
-        if (visibility !== null) { applyVisibility(key, visibility === 'true'); }
+        if (visibility) { applyVisibility(key, visibility === 'true'); }
     }
 };
 

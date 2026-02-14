@@ -64,7 +64,7 @@ pub async fn list_logs(req: HttpRequest) -> impl Responder {
     }
 }
 
-// Fonction manquante nécessaire pour web_ui.rs
+// Missing function necessary for web_ui.rs
 pub fn get_latest_log_file() -> Option<PathBuf> {
     let base_path = get_log_path_from_registry();
     let path = PathBuf::from(&base_path);
@@ -190,11 +190,33 @@ pub async fn log_rows_htmx(
         });
     }
 
+    let col_order = req
+        .cookie("col-order")
+        .map(|c| {
+            serde_json::from_str::<Vec<String>>(c.value())
+                .ok()
+                .unwrap_or_default()
+        })
+        .unwrap_or_else(|| {
+            vec![
+                "timestamp".to_string(),
+                "req_type".to_string(),
+                "server".to_string(),
+                "ap_ip".to_string(),
+                "ap_name".to_string(),
+                "mac".to_string(),
+                "user".to_string(),
+                "resp_type".to_string(),
+                "reason".to_string(),
+            ]
+        });
+
     let html = dioxus_ssr::render_element(rsx! {
         LogTable {
             logs: logs,
             sort_by: query.sort_by.clone(),
-            sort_desc: query.sort_desc
+            sort_desc: query.sort_desc,
+            column_order: col_order
         }
     });
 
@@ -314,4 +336,26 @@ pub async fn export_xlsx(req: HttpRequest, query: web::Query<ExportQuery>) -> im
     }
 }
 
-// FIN DU MODULE
+#[derive(Deserialize)]
+pub struct ColumnsQuery {
+    pub order: String,
+}
+
+pub async fn set_columns_htmx(req: HttpRequest, query: web::Query<ColumnsQuery>) -> impl Responder {
+    if !is_authorized(&req) {
+        return HttpResponse::Forbidden().body("Access Denied");
+    }
+
+    let cookie = actix_web::cookie::Cookie::build("col-order", query.order.clone())
+        .path("/")
+        .max_age(actix_web::cookie::time::Duration::days(365))
+        .http_only(false)
+        .same_site(actix_web::cookie::SameSite::Lax)
+        .secure(false)
+        .finish();
+
+    HttpResponse::Ok()
+        .cookie(cookie)
+        .insert_header(("HX-Trigger", "columnsChanged"))
+        .finish()
+}

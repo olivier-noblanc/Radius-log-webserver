@@ -1,37 +1,37 @@
 # scripts/setup-hooks.ps1
-# Installation des hooks Git pour les environnements Windows.
+# Set up Git hooks for Windows environments.
 
-Write-Host "🚀 Configuration des hooks Git native Windows..." -ForegroundColor Cyan
+Write-Host "🚀 Configuring native Windows Git hooks..." -ForegroundColor Cyan
 
-# Vérifier si on est à la racine du dépôt
+# Check if we are at the repository root
 if (-not (Test-Path ".git")) {
-    Write-Error "❌ Dossier .git introuvable. Veuillez exécuter ce script à la racine du projet."
+    Write-Error "❌ .git folder not found. Please run this script at the project root."
     exit 1
 }
 
 $hooksDir = ".git/hooks"
 $preCommitFile = Join-Path $hooksDir "pre-commit"
 
-# Contenu du hook (Git utilise son propre shell interne pour exécuter les hooks)
+# Hook content (Git uses its own internal shell to execute hooks)
 $preCommitContent = @'
 #!/bin/bash
-# Hook de pré-commit pour Radius Log Webserver (Windows Safe)
+# Pre-commit hook for Radius Log Webserver (Windows Safe)
 
-echo "🔍 [COMMIT] Vérification de la qualité frontend..."
+echo "🔍 [COMMIT] Checking frontend quality..."
 
-# Exécution de l'orchestrateur Rust
+# Execute Rust orchestrator
 cargo run --bin frontend_lint
 
 if [ $? -ne 0 ]; then
-    echo "❌ [ERROR] Le linting a échoué. Le commit est annulé."
+    echo "❌ [ERROR] Linting failed. Commit aborted."
     exit 1
 fi
 
-echo "✅ [SUCCESS] Qualité validée. Commit autorisé."
+echo "✅ [SUCCESS] Quality validated. Commit allowed."
 '@
 
-# Écriture du fichier
+# Write the file
 Set-Content -Path $preCommitFile -Value $preCommitContent -Encoding utf8NoBOM
 
-Write-Host "✅ Hook de pré-commit 'Radius' installé avec succès !" -ForegroundColor Green
-Write-Host "💡 Désormais, chaque 'git commit' validera automatiquement votre JS/CSS via Rust."
+Write-Host "✅ Pre-commit hook 'Radius' installed successfully!" -ForegroundColor Green
+Write-Host "💡 From now on, every 'git commit' will automatically validate your JS/CSS via Rust."

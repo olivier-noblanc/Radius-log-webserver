@@ -134,6 +134,27 @@ pub async fn index(
     let files = get_all_log_files().unwrap_or_default();
     let search_val = query.search.clone();
 
+    let col_order = req
+        .cookie("col-order")
+        .map(|c| {
+            serde_json::from_str::<Vec<String>>(c.value())
+                .ok()
+                .unwrap_or_default()
+        })
+        .unwrap_or_else(|| {
+            vec![
+                "timestamp".to_string(),
+                "req_type".to_string(),
+                "server".to_string(),
+                "ap_ip".to_string(),
+                "ap_name".to_string(),
+                "mac".to_string(),
+                "user".to_string(),
+                "resp_type".to_string(),
+                "reason".to_string(),
+            ]
+        });
+
     let html = dioxus_ssr::render_element(rsx! {
         crate::components::layout::Layout {
             title: "RADIUS // LOG CORE".to_string(),
@@ -153,7 +174,8 @@ pub async fn index(
                 crate::components::log_table::LogTable {
                     logs: logs,
                     sort_by: "timestamp".to_string(),
-                    sort_desc: true
+                    sort_desc: true,
+                    column_order: col_order
                 }
             }
             div { id: "view-dashboard", style: "display: none;" }

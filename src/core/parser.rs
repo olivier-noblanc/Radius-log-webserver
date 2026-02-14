@@ -242,3 +242,64 @@ pub fn fast_search(reqs: &mut Vec<RadiusRequest>, query: &str) {
             || ac.is_match(&r.reason)
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quick_xml::reader::Reader;
+    use std::io::Cursor;
+
+    #[test]
+    fn test_parse_xml_real_sample() {
+        let xml = r#"<Event><Timestamp data_type="4">01/01/2026 00:00:00.000</Timestamp><User-Name data_type="1">anon-user</User-Name><Acct-Session-Id data_type="1">ANON-SESS-01</Acct-Session-Id><Client-Friendly-Name data_type="1">ANON-AP</Client-Friendly-Name><Packet-Type data_type="0">1</Packet-Type></Event>"#;
+        let mut reader = Reader::from_reader(Cursor::new(xml.as_bytes()));
+        let results = parse_xml_bytes(&mut reader, None, 10);
+
+        assert_eq!(results.len(), 1);
+        let req = &results[0];
+        assert_eq!(req.user, "anon-user");
+        assert_eq!(req.ap_name, "ANON-AP");
+    }
+
+    #[test]
+    fn test_parse_xml_bytes_valid() {
+        let xml = r#"
+            <Event>
+                <Acct-Session-Id>SESSION-ANON</Acct-Session-Id>
+                <Packet-Type>1</Packet-Type>
+                <Timestamp>01/01/2026 00:00:00.000</Timestamp>
+                <User-Name>user@anon.local</User-Name>
+                <Client-IP-Address>10.0.0.1</Client-IP-Address>
+                <Client-Friendly-Name>SERVER-ANON</Client-Friendly-Name>
+            </Event>
+            <Event>
+                <Acct-Session-Id>SESSION-ANON</Acct-Session-Id>
+                <Packet-Type>3</Packet-Type>
+                <Reason-Code>16</Reason-Code>
+                <User-Name>user@anon.local</User-Name>
+            </Event>
+        "#;
+        let mut reader = Reader::from_reader(Cursor::new(xml.as_bytes()));
+        let results = parse_xml_bytes(&mut reader, None, 10);
+
+        assert_eq!(results.len(), 1);
+        let req = &results[0];
+        assert_eq!(req.user, "user@anon.local");
+        assert_eq!(req.ap_ip, "10.0.0.1");
+        assert_eq!(req.status, Some("fail".to_string()));
+        assert!(req.reason.contains("credentials mismatch")); // Code 16
+    }
+
+    #[test]
+    fn test_parse_xml_bytes_search_filter() {
+        let xml = r#"
+            <Event><User-Name>alice</User-Name><Packet-Type>1</Packet-Type></Event>
+            <Event><User-Name>bob</User-Name><Packet-Type>1</Packet-Type></Event>
+        "#;
+        let mut reader = Reader::from_reader(Cursor::new(xml.as_bytes()));
+        let results = parse_xml_bytes(&mut reader, Some("alice"), 10);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].user, "alice");
+    }
+}

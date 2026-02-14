@@ -8,21 +8,21 @@ pub struct SecurityAuditProps {
 
 #[component]
 pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
-    let critical_count = props
+    let (vulnerabilities, maintenance_alarms): (Vec<_>, Vec<_>) = props
         .report
         .vulnerabilities
+        .iter()
+        .partition(|v| !v.is_maintenance_alarm);
+
+    let critical_count = vulnerabilities
         .iter()
         .filter(|v| v.severity == "CRITICAL")
         .count();
-    let high_count = props
-        .report
-        .vulnerabilities
+    let high_count = vulnerabilities
         .iter()
         .filter(|v| v.severity == "HIGH")
         .count();
-    let medium_count = props
-        .report
-        .vulnerabilities
+    let medium_count = vulnerabilities
         .iter()
         .filter(|v| v.severity == "MEDIUM")
         .count();
@@ -51,18 +51,36 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
             }
 
             // Vulnerabilities Section
-            if !props.report.vulnerabilities.is_empty() {
+            if !vulnerabilities.is_empty() {
                 div { class: "mb-8",
                     h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
                         "🔴 {rust_i18n::t!(\"security_audit.vulnerabilities\").to_string()}"
                         span { class: "text-sm font-normal opacity-50",
-                            "({rust_i18n::t!(\"security_audit.found\", count = props.report.vulnerabilities.len()).to_string()})"
+                            "({rust_i18n::t!(\"security_audit.found\", count = vulnerabilities.len()).to_string()})"
                         }
                     }
 
                     div { class: "space-y-3",
-                        for vuln in &props.report.vulnerabilities {
+                        for vuln in vulnerabilities {
                             VulnerabilityCard { vulnerability: vuln.clone() }
+                        }
+                    }
+                }
+            }
+
+            // Maintenance Alarms Section (API/System errors that need dev attention)
+            if !maintenance_alarms.is_empty() {
+                div { class: "mb-8",
+                    h2 { class: "text-xl font-bold mb-4 flex items-center gap-2 text-blue-400",
+                        "🛠️ {rust_i18n::t!(\"security_audit.maintenance_alarms\").to_string()}"
+                        span { class: "text-sm font-normal opacity-50 text-muted",
+                            "({rust_i18n::t!(\"security_audit.required_action\").to_string()})"
+                        }
+                    }
+
+                    div { class: "space-y-3",
+                        for alarm in maintenance_alarms {
+                            VulnerabilityCard { vulnerability: alarm.clone() }
                         }
                     }
                 }
@@ -308,18 +326,26 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
 
 #[component]
 fn VulnerabilityCard(vulnerability: SecurityVulnerability) -> Element {
-    let severity_color = match vulnerability.severity.as_str() {
-        "CRITICAL" => "border-red-500 bg-red-500/5",
-        "HIGH" => "border-orange-500 bg-orange-500/5",
-        "MEDIUM" => "border-yellow-500 bg-yellow-500/5",
-        _ => "border-blue-500 bg-blue-500/5",
+    let severity_color = if vulnerability.is_maintenance_alarm {
+        "border-blue-500/50 bg-blue-500/5 shadow-inner shadow-blue-500/10"
+    } else {
+        match vulnerability.severity.as_str() {
+            "CRITICAL" => "border-red-500 bg-red-500/5",
+            "HIGH" => "border-orange-500 bg-orange-500/5",
+            "MEDIUM" => "border-yellow-500 bg-yellow-500/5",
+            _ => "border-blue-500 bg-blue-500/5",
+        }
     };
 
-    let severity_emoji = match vulnerability.severity.as_str() {
-        "CRITICAL" => "🔴",
-        "HIGH" => "🟠",
-        "MEDIUM" => "🟡",
-        _ => "🔵",
+    let severity_emoji = if vulnerability.is_maintenance_alarm {
+        "🛠️"
+    } else {
+        match vulnerability.severity.as_str() {
+            "CRITICAL" => "🔴",
+            "HIGH" => "🟠",
+            "MEDIUM" => "🟡",
+            _ => "🔵",
+        }
     };
 
     rsx! {
