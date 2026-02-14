@@ -6,202 +6,244 @@
 (function () {
     'use strict';
 
-    console.log('[RADIUS] app.js loaded - HTMX Pure Mode');
+    // --- CONSTANTS ---
+    const WS_RECONNECT_INTERVAL = 5000;
+    const MIN_COLUMN_WIDTH = 50;
+    const TOTAL_COLUMNS = 9;
 
-    // --- WEBSOCKET ---
-    var ws = null;
-    var statusBadge = null;
+    // --- STATE ---
+    let webSocket = null;
+    let statusBadgeElement = null;
 
-    function updateStatus(connected) {
-        if (!statusBadge) statusBadge = document.getElementById('statusBadge');
-        if (statusBadge) {
-            statusBadge.textContent = connected ? 'CONNECTED' : 'DISCONNECTED';
+    const updateStatus = (connected) => {
+        if (!statusBadgeElement) {
+            statusBadgeElement = document.getElementById('statusBadge');
+        }
+
+        if (statusBadgeElement) {
+            statusBadgeElement.textContent = connected ? 'CONNECTED' : 'DISCONNECTED';
             if (connected) {
-                statusBadge.classList.add('connected');
-                statusBadge.classList.remove('disconnected');
+                statusBadgeElement.classList.add('connected');
+                statusBadgeElement.classList.remove('disconnected');
             } else {
-                statusBadge.classList.add('disconnected');
-                statusBadge.classList.remove('connected');
+                statusBadgeElement.classList.add('disconnected');
+                statusBadgeElement.classList.remove('connected');
             }
         }
-    }
+    };
 
-    function connectWebSocket() {
-        var protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        ws = new WebSocket(protocol + '//' + location.host + '/ws');
+    const connectWebSocket = () => {
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        webSocket = new WebSocket(`${protocol}//${location.host}/ws`);
 
-        ws.addEventListener('open', function () { updateStatus(true); });
-        ws.addEventListener('close', function () {
+        webSocket.addEventListener('open', () => {
+            updateStatus(true);
+        });
+
+        webSocket.addEventListener('close', () => {
             updateStatus(false);
-            setTimeout(connectWebSocket, 5000);
+            setTimeout(connectWebSocket, WS_RECONNECT_INTERVAL);
         });
-        ws.addEventListener('message', function () {
-            htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
+
+        webSocket.addEventListener('message', () => {
+            if (window.htmx) {
+                window.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
+            }
         });
-    }
+    };
 
-    // --- HTMX GLOBAL EVENTS (Loader Management) ---
-    document.addEventListener('htmx:beforeRequest', function () {
-        var loader = document.getElementById('global-loader');
-        if (loader) loader.classList.add('active');
-    });
+    const initLoaderManagement = () => {
+        document.addEventListener('htmx:beforeRequest', () => {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.classList.add('active');
+            }
+        });
 
-    document.addEventListener('htmx:afterRequest', function () {
-        var loader = document.getElementById('global-loader');
-        if (loader) loader.classList.remove('active');
-    });
+        document.addEventListener('htmx:afterRequest', () => {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.classList.remove('active');
+            }
+        });
+    };
 
-    // --- INIT ---
-    function init() {
-        connectWebSocket();
-
-        // Error filter toggle (client-side only)
-        var errorToggle = document.getElementById('errorToggle');
+    const initErrorToggle = () => {
+        const errorToggle = document.getElementById('errorToggle');
         if (errorToggle) {
             errorToggle.addEventListener('change', function () {
-                var rows = document.querySelectorAll('#logTableBody tr');
-                for (var i = 0; i < rows.length; i++) {
-                    var status = rows[i].querySelector('[data-status]');
-                    if (status && status.getAttribute('data-status') === 'success') {
+                const rows = document.querySelectorAll('#logTableBody tr');
+                for (let i = 0; i < rows.length; i += 1) {
+                    const statusCell = rows[i].querySelector('[data-status]');
+                    if (statusCell && statusCell.getAttribute('data-status') === 'success') {
                         rows[i].style.display = this.checked ? 'none' : '';
                     }
                 }
             });
         }
+    };
 
-        // --- MINIMALIST CONTEXT MENU ---
-        var menu = document.getElementById('context-menu');
-        var targetCell = null;
+    const initContextMenu = () => {
+        const menu = document.getElementById('context-menu');
+        let targetCell = null;
 
-        document.addEventListener('contextmenu', function (e) {
-            targetCell = e.target.closest('td');
+        document.addEventListener('contextmenu', (event) => {
+            targetCell = event.target.closest('td');
             if (targetCell && menu) {
-                e.preventDefault();
+                event.preventDefault();
                 menu.style.display = 'block';
-                menu.style.left = e.pageX + 'px';
-                menu.style.top = e.pageY + 'px';
+                menu.style.left = `${event.pageX}px`;
+                menu.style.top = `${event.pageY}px`;
             } else if (menu) {
                 menu.style.display = 'none';
             }
         });
 
-        document.addEventListener('click', function () { if (menu) menu.style.display = 'none'; });
-
-        if (menu) {
-            document.getElementById('copy-cell').addEventListener('click', function () {
-                if (targetCell) navigator.clipboard.writeText(targetCell.textContent.trim());
-            });
-            document.getElementById('copy-row').addEventListener('click', function () {
-                if (targetCell) {
-                    var row = targetCell.closest('tr');
-                    var cells = Array.prototype.slice.call(row.querySelectorAll('td'));
-                    var text = cells.map(function (c) { return c.textContent.trim(); }).join('\t');
-                    navigator.clipboard.writeText(text);
-                }
-            });
-        }
-
-        // --- PERSISTENT COLUMN RESIZING ---
-        function initResizers() {
-            var table = document.getElementById('logTable');
-            if (!table) return;
-            var headers = table.querySelectorAll('th');
-
-            headers.forEach(function (th, idx) {
-                // Restore widths from localStorage
-                var savedWidth = localStorage.getItem('col-width-' + idx);
-                if (savedWidth) {
-                    th.style.width = savedWidth + 'px';
-                    th.style.minWidth = savedWidth + 'px';
-                }
-
-                var resizer = th.querySelector('.resizer');
-                if (!resizer || resizer.dataset.initialized) return;
-
-                resizer.dataset.initialized = "true";
-                var startX, startWidth;
-
-                resizer.addEventListener('mousedown', function (e) {
-                    // STOP PROPAGATION to prevent triggering hx-get (sorting) on th
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    startX = e.pageX;
-                    startWidth = th.offsetWidth;
-
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                    resizer.classList.add('resizing');
-                });
-
-                function onMouseMove(e) {
-                    var width = startWidth + (e.pageX - startX);
-                    if (width > 50) {
-                        th.style.width = width + 'px';
-                        th.style.minWidth = width + 'px';
-                    }
-                }
-
-                function onMouseUp() {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    resizer.classList.remove('resizing');
-                    localStorage.setItem('col-width-' + idx, th.offsetWidth);
-                }
-            });
-        }
-
-        initResizers();
-
-        // Re-initialize resizers after HTMX swaps the table
-        document.addEventListener('htmx:afterOnLoad', function (e) {
-            if (e.detail.target.id === 'log-table-container' || e.detail.target.id === 'logTable') {
-                initResizers();
+        document.addEventListener('click', () => {
+            if (menu) {
+                menu.style.display = 'none';
             }
         });
-    }
 
-    // --- COLUMN VISIBILITY ---
-    window.toggleColumn = function (idx) {
-        var show = event.target.checked;
-        applyColumnVisibility(idx, show);
-        localStorage.setItem('col-visible-' + idx, show);
+        if (menu) {
+            const copyCellBtn = document.getElementById('copy-cell');
+            if (copyCellBtn) {
+                copyCellBtn.addEventListener('click', () => {
+                    if (targetCell) {
+                        navigator.clipboard.writeText(targetCell.textContent.trim());
+                    }
+                });
+            }
+
+            const copyRowBtn = document.getElementById('copy-row');
+            if (copyRowBtn) {
+                copyRowBtn.addEventListener('click', () => {
+                    if (targetCell) {
+                        const row = targetCell.closest('tr');
+                        const cells = Array.prototype.slice.call(row.querySelectorAll('td'));
+                        const text = cells.map((cell) => cell.textContent.trim()).join('\t');
+                        navigator.clipboard.writeText(text);
+                    }
+                });
+            }
+        }
     };
 
-    function applyColumnVisibility(idx, show) {
-        var table = document.getElementById('logTable');
-        if (!table) return;
+    const initResizers = () => {
+        const table = document.getElementById('logTable');
+        if (!table) {
+            return;
+        }
 
-        var th = table.querySelectorAll('th')[idx];
-        if (th) th.classList.toggle('col-hidden', !show);
+        const headers = table.querySelectorAll('th');
 
-        var rows = table.querySelectorAll('tbody tr');
-        rows.forEach(function (row) {
-            var td = row.querySelectorAll('td')[idx];
-            if (td) td.classList.toggle('col-hidden', !show);
+        headers.forEach((header, index) => {
+            const savedWidth = localStorage.getItem(`col-width-${index}`);
+            if (savedWidth) {
+                header.style.width = `${savedWidth}px`;
+                header.style.minWidth = `${savedWidth}px`;
+            }
+
+            const resizer = header.querySelector('.resizer');
+            if (!resizer || resizer.dataset.initialized) {
+                return;
+            }
+
+            resizer.dataset.initialized = 'true';
+            let startX = 0;
+            let startWidth = 0;
+
+            const onMouseMove = (event) => {
+                const width = startWidth + (event.pageX - startX);
+                if (width > MIN_COLUMN_WIDTH) {
+                    header.style.width = `${width}px`;
+                    header.style.minWidth = `${width}px`;
+                }
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                resizer.classList.remove('resizing');
+                localStorage.setItem(`col-width-${index}`, header.offsetWidth);
+            };
+
+            resizer.addEventListener('mousedown', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+
+                startX = event.pageX;
+                startWidth = header.offsetWidth;
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                resizer.classList.add('resizing');
+            });
+        });
+    };
+
+    const applyColumnVisibility = (columnIndex, show) => {
+        const table = document.getElementById('logTable');
+        if (!table) {
+            return;
+        }
+
+        const header = table.querySelectorAll('th')[columnIndex];
+        if (header) {
+            header.classList.toggle('col-hidden', !show);
+        }
+
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach((row) => {
+            const cell = row.querySelectorAll('td')[columnIndex];
+            if (cell) {
+                cell.classList.toggle('col-hidden', !show);
+            }
         });
 
-        // Sync checkbox if it exists (for initialization)
-        var cb = document.querySelector('input[data-col-idx="' + idx + '"]');
-        if (cb) cb.checked = show;
-    }
+        const checkbox = document.querySelector(`input[data-col-idx="${columnIndex}"]`);
+        if (checkbox) {
+            checkbox.checked = show;
+        }
+    };
 
-    function initColumnVisibility() {
-        for (var i = 0; i < 9; i++) {
-            var visible = localStorage.getItem('col-visible-' + i);
+    const initColumnVisibility = () => {
+        for (let i = 0; i < TOTAL_COLUMNS; i += 1) {
+            const visible = localStorage.getItem(`col-visible-${i}`);
             if (visible !== null) {
                 applyColumnVisibility(i, visible === 'true');
             }
         }
-    }
+    };
+
+    const init = () => {
+        connectWebSocket();
+        initLoaderManagement();
+        initErrorToggle();
+        initContextMenu();
+        initResizers();
+        initColumnVisibility();
+
+        document.addEventListener('htmx:afterOnLoad', (event) => {
+            if (event.detail.target.id === 'log-table-container' || event.detail.target.id === 'logTable') {
+                initResizers();
+            }
+        });
+    };
+
+    // --- EXPOSED API ---
+    window.toggleColumn = (columnIndex) => {
+        const event = window.event;
+        if (event && event.target) {
+            const show = event.target.checked;
+            applyColumnVisibility(columnIndex, show);
+            localStorage.setItem(`col-visible-${columnIndex}`, show);
+        }
+    };
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            init();
-            initColumnVisibility();
-        });
+        document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
-        initColumnVisibility();
     }
-})();
+}());

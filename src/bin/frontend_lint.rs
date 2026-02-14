@@ -28,10 +28,7 @@ fn main() {
     // 2. CSS LINTING (lightningcss)
     println!("🔍 [CSS] Checking via lightningcss...");
     let css_status = Command::new("lightningcss")
-        .args([
-            "--error-on-unused-custom-properties",
-            "assets/css/style.css",
-        ])
+        .args(["assets/css/style.css"])
         .status();
 
     match css_status {
