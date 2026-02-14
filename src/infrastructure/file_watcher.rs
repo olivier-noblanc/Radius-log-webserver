@@ -107,10 +107,15 @@ fn process_file_change(
                         // Invalidate stats cache
                         stats_cache.invalidate();
 
-                        // Broadcast fragment
+                        // Broadcast JSON for notifications and HTMX fragment for table
                         let html_fragment: String = new_reqs.iter().map(render_row).collect();
+                        let json_msg = serde_json::json!({
+                            "type": "new_logs",
+                            "requests": new_reqs,
+                            "html": html_fragment
+                        });
 
-                        broadcaster.broadcast(html_fragment);
+                        broadcaster.broadcast(json_msg.to_string());
                         file_sizes.insert(path_str, new_size);
                     }
                 }
@@ -127,8 +132,17 @@ fn process_file_change(
 fn render_row(r: &RadiusRequest) -> String {
     let status_val = r.status.as_deref().unwrap_or("");
     format!(
-        "<tr class='row-flash' style='cursor: pointer;' onclick='showDetails({})'><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td data-status='{}'>{}</td><td>{}</td></tr>",
-        serde_json::to_string(r).unwrap_or_default().replace('\'', "\\'"),
-        r.timestamp, r.req_type, r.server, r.ap_ip, r.ap_name, r.mac, r.user, status_val, r.resp_type, r.reason
+        r#"<tr class='log-row cursor-pointer row-flash' data-id='{}'><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td data-status='{}'>{}</td><td>{}</td></tr>"#,
+        r.id.unwrap_or_default(),
+        r.timestamp,
+        r.req_type,
+        r.server,
+        r.ap_ip,
+        r.ap_name,
+        r.mac,
+        r.user,
+        status_val,
+        r.resp_type,
+        r.reason
     )
 }

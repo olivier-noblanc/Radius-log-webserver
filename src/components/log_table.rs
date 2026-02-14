@@ -50,7 +50,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                                 input {
                                     r#type: "checkbox",
                                     checked: true,
-                                    "onchange": "toggleColumn({idx})",
+                                    class: "column-visibility-check",
                                     "data-col-idx": "{idx}"
                                 }
                                 " {name}"
@@ -152,7 +152,7 @@ pub fn LogTable(props: LogTableProps) -> Element {
                             "hx-get": "/api/logs/detail?id={log.id.unwrap_or_default()}",
                             "hx-target": "#modalBody",
                             "hx-trigger": "click",
-                            "hx-on:click": "window.location.hash='detailModal'",
+                            "hx-trigger": "click",
 
                             td { "{log.timestamp}" }
                             td { "{log.req_type}" }

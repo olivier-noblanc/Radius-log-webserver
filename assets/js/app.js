@@ -3,7 +3,7 @@
  * Compatible: IE11+, Chrome 20+, Firefox 20+, Safari 6+
  */
 
-(function () {
+(function iife() {
     'use strict';
 
     // --- CONSTANTS ---
@@ -12,20 +12,21 @@
     const TOTAL_COLUMNS = 9;
 
     // --- STATE ---
-    let webSocket = null;
-    let statusBadgeElement = null;
+    let webSocket;
+    let statusBadgeElement;
 
     const updateStatus = (connected) => {
         if (!statusBadgeElement) {
-            statusBadgeElement = document.getElementById('statusBadge');
+            statusBadgeElement = globalThis.document.querySelector('#statusBadge');
         }
 
         if (statusBadgeElement) {
-            statusBadgeElement.textContent = connected ? 'CONNECTED' : 'DISCONNECTED';
             if (connected) {
+                statusBadgeElement.textContent = 'CONNECTED';
                 statusBadgeElement.classList.add('connected');
                 statusBadgeElement.classList.remove('disconnected');
             } else {
+                statusBadgeElement.textContent = 'DISCONNECTED';
                 statusBadgeElement.classList.add('disconnected');
                 statusBadgeElement.classList.remove('connected');
             }
@@ -33,8 +34,11 @@
     };
 
     const connectWebSocket = () => {
-        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        webSocket = new WebSocket(`${protocol}//${location.host}/ws`);
+        let protocol = 'ws:';
+        if (globalThis.location.protocol === 'https:') {
+            protocol = 'wss:';
+        }
+        webSocket = new globalThis.WebSocket(`${protocol}//${globalThis.location.host}/ws`);
 
         webSocket.addEventListener('open', () => {
             updateStatus(true);
@@ -42,26 +46,52 @@
 
         webSocket.addEventListener('close', () => {
             updateStatus(false);
-            setTimeout(connectWebSocket, WS_RECONNECT_INTERVAL);
+            globalThis.setTimeout(connectWebSocket, WS_RECONNECT_INTERVAL);
         });
 
-        webSocket.addEventListener('message', () => {
-            if (window.htmx) {
-                window.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
+        const handleWebSocketMessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'new_logs') {
+                    // Minimalist Alerts
+                    const alertsToggle = globalThis.document.querySelector('#notifToggle');
+                    const alertsEnabled = alertsToggle ? alertsToggle.checked : false;
+                    if (alertsEnabled && globalThis.Notification.permission === 'granted') {
+                        for (const req of data.requests) {
+                            if (req.status === 'fail') {
+                                const notif = new globalThis.Notification(`AUTH FAIL: ${req.user}`, {
+                                    body: `${req.reason}\n${req.server}`,
+                                    icon: '/favicon.svg'
+                                });
+                                notif.onclick = () => globalThis.focus();
+                            }
+                        }
+                    }
+
+                    if (globalThis.htmx) {
+                        globalThis.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
+                    }
+                }
+            } catch (error) {
+                if (globalThis.htmx) {
+                    globalThis.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
+                }
             }
-        });
+        };
+
+        webSocket.addEventListener('message', handleWebSocketMessage);
     };
 
     const initLoaderManagement = () => {
-        document.addEventListener('htmx:beforeRequest', () => {
-            const loader = document.getElementById('global-loader');
+        globalThis.document.addEventListener('htmx:beforeRequest', () => {
+            const loader = globalThis.document.querySelector('#global-loader');
             if (loader) {
                 loader.classList.add('active');
             }
         });
 
-        document.addEventListener('htmx:afterRequest', () => {
-            const loader = document.getElementById('global-loader');
+        globalThis.document.addEventListener('htmx:afterRequest', () => {
+            const loader = globalThis.document.querySelector('#global-loader');
             if (loader) {
                 loader.classList.remove('active');
             }
@@ -69,25 +99,44 @@
     };
 
     const initErrorToggle = () => {
-        const errorToggle = document.getElementById('errorToggle');
+        const errorToggle = globalThis.document.querySelector('#errorToggle');
         if (errorToggle) {
-            errorToggle.addEventListener('change', function () {
-                const rows = document.querySelectorAll('#logTableBody tr');
-                for (let i = 0; i < rows.length; i += 1) {
-                    const statusCell = rows[i].querySelector('[data-status]');
-                    if (statusCell && statusCell.getAttribute('data-status') === 'success') {
-                        rows[i].style.display = this.checked ? 'none' : '';
+            errorToggle.addEventListener('change', function handleErrorToggle() {
+                const rows = globalThis.document.querySelectorAll('#logTableBody tr');
+                for (const row of rows) {
+                    const statusCell = row.querySelector('[data-status]');
+                    if (statusCell && statusCell.dataset.status === 'success') {
+                        if (this.checked) {
+                            row.style.display = 'none';
+                        } else {
+                            row.style.display = '';
+                        }
                     }
                 }
             });
         }
     };
 
-    const initContextMenu = () => {
-        const menu = document.getElementById('context-menu');
-        let targetCell = null;
+    const copyCellContent = (targetCell) => {
+        if (targetCell) {
+            globalThis.navigator.clipboard.writeText(targetCell.textContent.trim());
+        }
+    };
 
-        document.addEventListener('contextmenu', (event) => {
+    const copyRowContent = (targetCell) => {
+        if (targetCell) {
+            const row = targetCell.closest('tr');
+            const cells = Array.prototype.slice.call(row.querySelectorAll('td'));
+            const text = cells.map((cell) => cell.textContent.trim()).join('\t');
+            globalThis.navigator.clipboard.writeText(text);
+        }
+    };
+
+    const initContextMenu = () => {
+        const menu = globalThis.document.querySelector('#context-menu');
+        let targetCell;
+
+        globalThis.document.addEventListener('contextmenu', (event) => {
             targetCell = event.target.closest('td');
             if (targetCell && menu) {
                 event.preventDefault();
@@ -99,119 +148,104 @@
             }
         });
 
-        document.addEventListener('click', () => {
+        globalThis.document.addEventListener('click', () => {
             if (menu) {
                 menu.style.display = 'none';
             }
         });
 
         if (menu) {
-            const copyCellBtn = document.getElementById('copy-cell');
-            if (copyCellBtn) {
-                copyCellBtn.addEventListener('click', () => {
-                    if (targetCell) {
-                        navigator.clipboard.writeText(targetCell.textContent.trim());
-                    }
-                });
-            }
-
-            const copyRowBtn = document.getElementById('copy-row');
-            if (copyRowBtn) {
-                copyRowBtn.addEventListener('click', () => {
-                    if (targetCell) {
-                        const row = targetCell.closest('tr');
-                        const cells = Array.prototype.slice.call(row.querySelectorAll('td'));
-                        const text = cells.map((cell) => cell.textContent.trim()).join('\t');
-                        navigator.clipboard.writeText(text);
-                    }
-                });
-            }
+            globalThis.document.querySelector('#copy-cell')?.addEventListener('click', () => copyCellContent(targetCell));
+            globalThis.document.querySelector('#copy-row')?.addEventListener('click', () => copyRowContent(targetCell));
         }
     };
 
+    const setupResizer = (header, index) => {
+        const resizer = header.querySelector('.resizer');
+        if (!resizer || resizer.dataset.initialized) {
+            return;
+        }
+
+        resizer.dataset.initialized = 'true';
+        let startX = 0;
+        let startWidth = 0;
+
+        const onMouseMove = (event) => {
+            const width = startWidth + (event.pageX - startX);
+            if (width > MIN_COLUMN_WIDTH) {
+                header.style.width = `${width}px`;
+                header.style.minWidth = `${width}px`;
+            }
+        };
+
+        const onMouseUp = () => {
+            globalThis.document.removeEventListener('mousemove', onMouseMove);
+            globalThis.document.removeEventListener('mouseup', onMouseUp);
+            resizer.classList.remove('resizing');
+            globalThis.localStorage.setItem(`col-width-${index}`, header.offsetWidth);
+        };
+
+        resizer.addEventListener('mousedown', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+
+            startX = event.pageX;
+            startWidth = header.offsetWidth;
+
+            globalThis.document.addEventListener('mousemove', onMouseMove);
+            globalThis.document.addEventListener('mouseup', onMouseUp);
+            resizer.classList.add('resizing');
+        });
+    };
+
     const initResizers = () => {
-        const table = document.getElementById('logTable');
+        const table = globalThis.document.querySelector('#logTable');
         if (!table) {
             return;
         }
 
         const headers = table.querySelectorAll('th');
 
-        headers.forEach((header, index) => {
-            const savedWidth = localStorage.getItem(`col-width-${index}`);
+        for (const [index, header] of headers.entries()) {
+            const savedWidth = globalThis.localStorage.getItem(`col-width-${index}`);
             if (savedWidth) {
                 header.style.width = `${savedWidth}px`;
                 header.style.minWidth = `${savedWidth}px`;
             }
-
-            const resizer = header.querySelector('.resizer');
-            if (!resizer || resizer.dataset.initialized) {
-                return;
-            }
-
-            resizer.dataset.initialized = 'true';
-            let startX = 0;
-            let startWidth = 0;
-
-            const onMouseMove = (event) => {
-                const width = startWidth + (event.pageX - startX);
-                if (width > MIN_COLUMN_WIDTH) {
-                    header.style.width = `${width}px`;
-                    header.style.minWidth = `${width}px`;
-                }
-            };
-
-            const onMouseUp = () => {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-                resizer.classList.remove('resizing');
-                localStorage.setItem(`col-width-${index}`, header.offsetWidth);
-            };
-
-            resizer.addEventListener('mousedown', (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-
-                startX = event.pageX;
-                startWidth = header.offsetWidth;
-
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-                resizer.classList.add('resizing');
-            });
-        });
+            setupResizer(header, index);
+        }
     };
 
     const applyColumnVisibility = (columnIndex, show) => {
-        const table = document.getElementById('logTable');
+        const table = globalThis.document.querySelector('#logTable');
         if (!table) {
             return;
         }
 
-        const header = table.querySelectorAll('th')[columnIndex];
-        if (header) {
-            header.classList.toggle('col-hidden', !show);
+        const headers = table.querySelectorAll('th');
+        if (headers[columnIndex]) {
+            headers[columnIndex].classList.toggle('col-hidden', !show);
         }
 
         const rows = table.querySelectorAll('tbody tr');
-        rows.forEach((row) => {
+        for (const row of rows) {
             const cell = row.querySelectorAll('td')[columnIndex];
             if (cell) {
                 cell.classList.toggle('col-hidden', !show);
             }
-        });
+        }
 
-        const checkbox = document.querySelector(`input[data-col-idx="${columnIndex}"]`);
+        const checkbox = globalThis.document.querySelector(`input[data-col-idx="${columnIndex}"]`);
         if (checkbox) {
             checkbox.checked = show;
         }
     };
 
     const initColumnVisibility = () => {
-        for (let i = 0; i < TOTAL_COLUMNS; i += 1) {
-            const visible = localStorage.getItem(`col-visible-${i}`);
+        for (let index = 0; index < TOTAL_COLUMNS; index += 1) {
+            const visible = globalThis.localStorage.getItem(`col-visible-${index}`);
             if (visible !== null) {
-                applyColumnVisibility(i, visible === 'true');
+                applyColumnVisibility(index, visible === 'true');
             }
         }
     };
@@ -224,25 +258,47 @@
         initResizers();
         initColumnVisibility();
 
-        document.addEventListener('htmx:afterOnLoad', (event) => {
-            if (event.detail.target.id === 'log-table-container' || event.detail.target.id === 'logTable') {
+        // Delegation for Alerts (Minimalist)
+        globalThis.document.addEventListener('change', (e) => {
+            const target = e.target;
+            if (target.id === 'notifToggle' && target.checked && globalThis.Notification.permission !== 'granted') {
+                globalThis.Notification.requestPermission().then((p) => {
+                    if (p !== 'granted') {
+                        target.checked = false;
+                    }
+                });
+            }
+        });
+
+        // Delegation for Column Visibility
+        globalThis.document.addEventListener('change', (e) => {
+            const target = e.target;
+            if (target.classList.contains('column-visibility-check')) {
+                const idx = parseInt(target.dataset.colIdx, 10);
+                const show = target.checked;
+                applyColumnVisibility(idx, show);
+                globalThis.localStorage.setItem(`col-visible-${idx}`, show);
+            }
+        });
+
+        // Delegation for Modal Detail Hash
+        globalThis.document.addEventListener('click', (e) => {
+            const row = e.target.closest('.log-row');
+            if (row) {
+                globalThis.location.hash = 'detailModal';
+            }
+        });
+
+        globalThis.document.addEventListener('htmx:afterOnLoad', (event) => {
+            const { target } = event.detail;
+            if (target.id === 'log-table-container' || target.id === 'logTable') {
                 initResizers();
             }
         });
     };
 
-    // --- EXPOSED API ---
-    window.toggleColumn = (columnIndex) => {
-        const event = window.event;
-        if (event && event.target) {
-            const show = event.target.checked;
-            applyColumnVisibility(columnIndex, show);
-            localStorage.setItem(`col-visible-${columnIndex}`, show);
-        }
-    };
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+    if (globalThis.document.readyState === 'loading') {
+        globalThis.document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }

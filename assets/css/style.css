@@ -287,6 +287,53 @@ body {
     box-shadow: 0 0 15px rgba(0, 242, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.btn-notif {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
+    color: var(--text-muted);
+    padding: 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-notif:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--text-main);
+    color: var(--text-main);
+}
+
+.btn-notif.active {
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    background: rgba(0, 242, 255, 0.05);
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+}
+
+.btn-notif.pulse {
+    animation: pulse-cyan 1s infinite;
+}
+
+@keyframes pulse-cyan {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.4);
+    }
+
+    70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 10px rgba(0, 242, 255, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(0, 242, 255, 0);
+    }
+}
+
 /* --- INPUT FIELDS --- */
 .input-glass {
     background: rgba(255, 255, 255, 0.03);

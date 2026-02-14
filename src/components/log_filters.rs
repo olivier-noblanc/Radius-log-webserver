@@ -52,6 +52,16 @@ pub fn LogFilters(props: LogFiltersProps) -> Element {
                 label { r#for: "errorToggle", class: "error-only-label", "ERRORS ONLY" }
             }
 
+            // Notification toggle (Minimalist)
+            div { class: "flex items-center ml-4 gap-8 text-xs text-muted",
+                input {
+                    r#type: "checkbox",
+                    id: "notifToggle",
+                    class: "cursor-pointer w-18 h-18"
+                }
+                label { r#for: "notifToggle", class: "error-only-label", "ALERTS" }
+            }
+
             input { r#type: "hidden", id: "sort_by", name: "sort_by", value: "timestamp" }
             input { r#type: "hidden", id: "sort_desc", name: "sort_desc", value: "true" }
 
