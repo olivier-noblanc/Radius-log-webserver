@@ -88,7 +88,7 @@ pub fn get_stats_data(cache: &LogCache) -> Stats {
     top_reasons.sort_by_key(|b| std::cmp::Reverse(b.1));
     top_reasons.truncate(10);
 
-    // --- CALCULS SVG / CSS POUR SSR ---
+    // --- SVG / CSS CALCULATIONS FOR SSR ---
     let max_rejects = rejections_by_hour.iter().map(|x| x.1).max().unwrap_or(1) as f32;
     let mut svg_line_points = String::new();
     for (i, (_hour, count)) in rejections_by_hour.iter().enumerate() {

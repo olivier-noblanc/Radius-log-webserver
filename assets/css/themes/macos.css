@@ -12,11 +12,11 @@
   --accent-red: #FF0000;
   --border-glass: #000000;
   --font-ui: 'Chicago', 'Geneva', sans-serif;
-  /* Chicago en priorité */
+  /* Chicago priority */
   --font-code: 'Monaco', 'Courier New', monospace;
 }
 
-/* --- KILLER DES ANIMATIONS GLOBALES --- */
+/* --- GLOBAL ANIMATION KILLER --- */
 [data-theme="macos"] * {
   animation: none !important;
   transition: none !important;
@@ -32,7 +32,7 @@ body {
   color: var(--text-main);
 }
 
-/* --- EFFET BISEAU 3D --- */
+/* --- 3D BEVEL EFFECT --- */
 .glass-panel,
 .main-header,
 .modal-content {
@@ -48,7 +48,7 @@ body {
   transform: none !important;
 }
 
-/* Titre des fenêtres */
+/* Window titles */
 .main-header {
   background: #E0E0E0 !important;
   background-image: repeating-linear-gradient(90deg,
@@ -60,7 +60,7 @@ body {
   padding: 6px 8px !important;
 }
 
-/* --- BOUTONS (OUTSET) --- */
+/* --- BUTTONS (OUTSET) --- */
 .btn-glass {
   background: #D8D8D8 !important;
   border: 1px solid #404040 !important;
@@ -185,13 +185,13 @@ td {
    SVG Pixel Art 32×32 — Rotation 180°
    ========================================== */
 
-/* Cacher les loaders des autres thèmes */
+/* Hide other theme loaders */
 [data-theme="macos"] .neon-ring,
 [data-theme="macos"] .win31-hourglass {
   display: none !important;
 }
 
-/* Conteneur style Mac */
+/* Mac style container */
 [data-theme="macos"] #global-loader .loader-box {
   background: #E0E0E0 !important;
   border: 1px solid #000 !important;
@@ -204,7 +204,7 @@ td {
   gap: 12px !important;
 }
 
-/* Montre MacOS System 7 — Pixel Art AUTHENTIQUE */
+/* MacOS System 7 Watch — AUTHENTIC Pixel Art */
 [data-theme="macos"] .macos-watch {
   display: block !important;
   width: 32px !important;
@@ -238,7 +238,7 @@ td {
   }
 }
 
-/* Texte en Chicago */
+/* Chicago text */
 [data-theme="macos"] .loader-text .loader-title {
   display: none !important;
 }

@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use windows::core::PCWSTR;
 use windows::Win32::Security::Cryptography::{
@@ -106,7 +107,7 @@ pub fn fetch_schannel_details_safe(timestamp_str: &str) -> Result<Vec<String>> {
                 if matches!(record.EventID, 36888 | 36874 | 36871 | 36887) {
                     let mut message_parts = Vec::new();
 
-                    // --- START OF SECURE ZONE ---
+                    // --- START OF SECURE ZONE (Manual Translation Required in Component if needed) ---
                     let strings_offset = offset + record.StringOffset as usize;
                     let buffer_len = buffer.len();
 
@@ -258,13 +259,13 @@ pub fn get_ciphers_config() -> Vec<CipherInfo> {
                 .unwrap_or(0)
                 == 1;
 
+            let cipher_lang_key = format!(
+                "security_audit.vulns.ciphers.{}",
+                get_cipher_display_key(&cipher_name)
+            );
             ciphers.push(CipherInfo {
                 id: "---".to_string(),
-                name: format!(
-                    "{} ({})",
-                    cipher_name,
-                    get_cipher_display_name(&cipher_name)
-                ),
+                name: format!("{} ({})", cipher_name, t!(&cipher_lang_key)),
                 enabled,
             });
         }
@@ -272,12 +273,12 @@ pub fn get_ciphers_config() -> Vec<CipherInfo> {
     ciphers
 }
 
-fn get_cipher_display_name(id: &str) -> String {
+fn get_cipher_display_key(id: &str) -> &'static str {
     match id {
-        "00010002" => "RC4 128/128".to_string(),
-        "00006603" => "TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA".to_string(),
-        "00000004" => "MD5".to_string(),
-        _ => "Unknown Cipher or Suite".to_string(),
+        "00010002" => "id_00010002",
+        "00006603" => "id_00006603",
+        "00000004" => "id_00000004",
+        _ => "unknown",
     }
 }
 

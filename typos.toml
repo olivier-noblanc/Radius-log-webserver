@@ -3,17 +3,8 @@ extend-exclude = [
     "*.min.js",
     "target/",
     "Cargo.lock",
-    "locales/fr.json"
+    "locales/*.json"
 ]
 
-[default.extend-words]
-# Termes techniques ou abréviations légitimes
-EDE = "EDE"
-ue = "ue"
-ot = "ot"
-Ot = "Ot"
-Ue = "Ue"
-PERSISTANCE = "PERSISTANCE"
-EFFET = "EFFET"
-CALCULS = "CALCULS"
-Attributs = "Attributs"
+[default]
+# No whitelisted words allowed. Use English in source code or inline ignores for technical terms.

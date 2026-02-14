@@ -15,11 +15,11 @@ pub fn Header(props: HeaderProps) -> Element {
 
             div { class: "flex flex-col",
                 a { href: "/", class: "brand-logo",
-                    // Icône LOGO Pixelisée (System 7)
+                    // Pixelated LOGO Icon (System 7)
                     svg {
                         width: "24", height: "24", view_box: "0 0 24 24",
                         fill: "none", stroke: "currentColor", stroke_width: "2",
-                        // Attributs pour le rendu pixelisé net
+                        // Attributes for sharp pixelated rendering
                         shape_rendering: "crispEdges",
                         stroke_linejoin: "miter",
                         path { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }
@@ -101,11 +101,11 @@ pub fn Header(props: HeaderProps) -> Element {
                     href: if props.is_authorized { "/security-audit" } else { "#securityModal" },
                     class: "btn-glass btn-audit",
 
-                    // Icône SÉCURITÉ Pixelisée (Bouclier)
+                    // Pixelated SECURITY Icon (Shield)
                     svg {
                         width: "20", height: "20", view_box: "0 0 24 24",
                         fill: "none", stroke: "currentColor", stroke_width: "2",
-                        // Attributs pour le rendu pixelisé net
+                        // Attributes for sharp pixelated rendering
                         shape_rendering: "crispEdges",
                         stroke_linecap: "square",
                         stroke_linejoin: "miter",

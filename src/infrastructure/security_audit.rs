@@ -141,6 +141,37 @@ pub struct WindowsCertificateStore;
 impl CertificateStore for WindowsCertificateStore {
     fn list_certificates(&self, store_name: &str) -> Result<Vec<CertificateInfo>> {
         read_system_store(store_name)
+            .map_err(|(msg, code)| anyhow::anyhow!("{} (OS Error {})", msg, code))
+    }
+}
+
+/// Helper to get a translation key for a Windows error code
+pub fn get_win_error_key(code: i32) -> Option<&'static str> {
+    match code as u32 {
+        // System Errors
+        2 => Some("security_audit.win_errors.err_2"),
+        3 => Some("security_audit.win_errors.err_3"),
+        5 => Some("security_audit.win_errors.err_5"),
+        6 => Some("security_audit.win_errors.err_6"),
+        8 => Some("security_audit.win_errors.err_8"),
+        13 => Some("security_audit.win_errors.err_13"),
+        14 => Some("security_audit.win_errors.err_14"),
+        32 => Some("security_audit.win_errors.err_32"),
+        87 => Some("security_audit.win_errors.err_87"),
+
+        // Crypto API specific errors (Standard Windows HRESULTs for Crypto)
+        0x80070002 => Some("security_audit.win_errors.err_0x80070002"),
+        0x80070005 => Some("security_audit.win_errors.err_0x80070005"),
+        0x80092004 => Some("security_audit.win_errors.err_0x80092004"),
+        0x80090016 => Some("security_audit.win_errors.err_0x80090016"),
+        0x80090010 => Some("security_audit.win_errors.err_0x80090010"),
+        0x8009000B => Some("security_audit.win_errors.err_0x8009000B"),
+        0x80092003 => Some("security_audit.win_errors.err_0x80092003"),
+        0x800B0109 => Some("security_audit.win_errors.err_0x800B0109"),
+        0x80092026 => Some("security_audit.win_errors.err_0x80092026"),
+        0x80092013 => Some("security_audit.win_errors.err_0x80092013"),
+
+        _ => None,
     }
 }
 
@@ -150,12 +181,20 @@ pub fn read_certificate_store() -> Vec<CertificateInfo> {
 }
 
 /// Read certificates from a specific Windows System Store
-pub fn read_system_store(store_name: &str) -> Result<Vec<CertificateInfo>> {
+/// Returns Result with certificates or a tuple of (error_message, os_error_code)
+pub fn read_system_store(
+    store_name: &str,
+) -> std::result::Result<Vec<CertificateInfo>, (String, i32)> {
     let mut certificates = Vec::new();
 
     // Open LOCAL_MACHINE store
-    let store = CertStore::open_local_machine(store_name)
-        .with_context(|| format!("Failed to open certificate store {}", store_name))?;
+    let store = match CertStore::open_local_machine(store_name) {
+        Ok(s) => s,
+        Err(e) => {
+            let os_error = e.raw_os_error().unwrap_or(0);
+            return Err((e.to_string(), os_error));
+        }
+    };
 
     // Load NTAuth store for comparison if needed
     let ntauth_thumbprints = if store_name != "NTAuth" {
@@ -603,20 +642,51 @@ pub fn perform_security_audit() -> SecurityAuditReport {
                 Ok(certs) => {
                     *target = certs;
                 }
-                Err(e) => {
-                    tracing::error!("Failed to read certificate store {}: {}", name, e);
-                    scan_errors.push((name, e.to_string()));
+                Err((msg, code)) => {
+                    tracing::error!(
+                        "Failed to read certificate store {}: {} (OS Error {})",
+                        name,
+                        msg,
+                        code
+                    );
+                    scan_errors.push((name, msg, code));
                 }
             }
         }
     }
 
-    // Add maintenance alarms for any scan errors
-    for (name, err) in scan_errors {
+    // Process scan errors: Group Access Denied (Code 5) errors to keep UI clean
+    let mut access_denied_stores = Vec::new();
+    for (name, msg, code) in scan_errors {
+        if code == 5 {
+            access_denied_stores.push(name);
+        } else {
+            // Unexpected technical errors remain CRITICAL
+            let error_desc = get_win_error_key(code)
+                .map(|key| format!(": {}", t!(key)))
+                .unwrap_or_default();
+            report.add_maintenance_alarm(
+                "CRITICAL",
+                &t!("security_audit.vulns.maintenance_cert_title", name = name),
+                &format!("{} - Error {}{}", msg, code, error_desc),
+            );
+        }
+    }
+
+    if !access_denied_stores.is_empty() {
+        let stores_list = access_denied_stores.join(", ");
+        let error_desc = get_win_error_key(5)
+            .map(|key| t!(key).to_string())
+            .unwrap_or_else(|| "Access Denied".to_string());
+
         report.add_maintenance_alarm(
-            "CRITICAL",
-            &t!("security_audit.vulns.maintenance_cert_title", name = name),
-            &t!("security_audit.vulns.maintenance_cert_desc", error = err),
+            "LOW",
+            &t!("security_audit.vulns.maintenance_access_denied_title"),
+            &t!(
+                "security_audit.vulns.maintenance_access_denied_desc",
+                error_desc = error_desc,
+                stores = stores_list
+            ),
         );
     }
 
