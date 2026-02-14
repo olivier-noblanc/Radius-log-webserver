@@ -30,14 +30,14 @@
         var protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
         ws = new WebSocket(protocol + '//' + location.host + '/ws');
 
-        ws.onopen = function () { updateStatus(true); };
-        ws.onclose = function () {
+        ws.addEventListener('open', function () { updateStatus(true); });
+        ws.addEventListener('close', function () {
             updateStatus(false);
             setTimeout(connectWebSocket, 5000);
-        };
-        ws.onmessage = function () {
+        });
+        ws.addEventListener('message', function () {
             htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
-        };
+        });
     }
 
     // --- HTMX GLOBAL EVENTS (Loader Management) ---
@@ -58,7 +58,7 @@
         // Error filter toggle (client-side only)
         var errorToggle = document.getElementById('errorToggle');
         if (errorToggle) {
-            errorToggle.onchange = function () {
+            errorToggle.addEventListener('change', function () {
                 var rows = document.querySelectorAll('#logTableBody tr');
                 for (var i = 0; i < rows.length; i++) {
                     var status = rows[i].querySelector('[data-status]');
@@ -66,7 +66,7 @@
                         rows[i].style.display = this.checked ? 'none' : '';
                     }
                 }
-            };
+            });
         }
 
         // --- MINIMALIST CONTEXT MENU ---
@@ -88,35 +88,44 @@
         document.addEventListener('click', function () { if (menu) menu.style.display = 'none'; });
 
         if (menu) {
-            document.getElementById('copy-cell').onclick = function () {
+            document.getElementById('copy-cell').addEventListener('click', function () {
                 if (targetCell) navigator.clipboard.writeText(targetCell.textContent.trim());
-            };
-            document.getElementById('copy-row').onclick = function () {
+            });
+            document.getElementById('copy-row').addEventListener('click', function () {
                 if (targetCell) {
                     var row = targetCell.closest('tr');
                     var cells = Array.prototype.slice.call(row.querySelectorAll('td'));
                     var text = cells.map(function (c) { return c.textContent.trim(); }).join('\t');
                     navigator.clipboard.writeText(text);
                 }
-            };
+            });
         }
 
         // --- PERSISTENT COLUMN RESIZING ---
-        var table = document.getElementById('logTable');
-        if (table) {
+        function initResizers() {
+            var table = document.getElementById('logTable');
+            if (!table) return;
             var headers = table.querySelectorAll('th');
 
-            // Restore widths
             headers.forEach(function (th, idx) {
-                var width = localStorage.getItem('col-width-' + idx);
-                if (width) th.style.width = width + 'px';
+                // Restore widths from localStorage
+                var savedWidth = localStorage.getItem('col-width-' + idx);
+                if (savedWidth) {
+                    th.style.width = savedWidth + 'px';
+                    th.style.minWidth = savedWidth + 'px';
+                }
 
                 var resizer = th.querySelector('.resizer');
-                if (!resizer) return;
+                if (!resizer || resizer.dataset.initialized) return;
 
+                resizer.dataset.initialized = "true";
                 var startX, startWidth;
 
                 resizer.addEventListener('mousedown', function (e) {
+                    // STOP PROPAGATION to prevent triggering hx-get (sorting) on th
+                    e.stopPropagation();
+                    e.preventDefault();
+
                     startX = e.pageX;
                     startWidth = th.offsetWidth;
 
@@ -129,6 +138,7 @@
                     var width = startWidth + (e.pageX - startX);
                     if (width > 50) {
                         th.style.width = width + 'px';
+                        th.style.minWidth = width + 'px';
                     }
                 }
 
@@ -140,6 +150,15 @@
                 }
             });
         }
+
+        initResizers();
+
+        // Re-initialize resizers after HTMX swaps the table
+        document.addEventListener('htmx:afterOnLoad', function (e) {
+            if (e.detail.target.id === 'log-table-container' || e.detail.target.id === 'logTable') {
+                initResizers();
+            }
+        });
     }
 
     // --- COLUMN VISIBILITY ---

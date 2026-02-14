@@ -71,3 +71,13 @@
     font-display: swap;
     src: url('/fonts/JetBrainsMono-Bold.woff2') format('woff2');
 }
+
+/* === CHICAGO (Retro Mac Font) === */
+
+@font-face {
+    font-family: 'Chicago';
+    src: url('/fonts/chicago.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}

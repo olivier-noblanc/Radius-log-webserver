@@ -1,15 +1,4 @@
 /* ==========================================
-   CHICAGO - Police Système Macintosh 1-7.5
-   ========================================== */
-@font-face {
-  font-family: 'Chicago';
-  src: url('/fonts/chicago.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* ==========================================
    THEME: MACINTOSH SYSTEM 7 / 8 (PLATINUM)
    ========================================== */
 
@@ -156,6 +145,7 @@ th {
   border: 1px solid #808080 !important;
   border-bottom: 2px solid #000000 !important;
   color: #000 !important;
+  font-family: 'Chicago', sans-serif !important;
   font-weight: bold !important;
   text-transform: uppercase;
   font-size: 11px;
