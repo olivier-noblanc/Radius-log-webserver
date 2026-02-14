@@ -7,11 +7,16 @@ use sha1::{Digest, Sha1};
 use winreg::enums::*;
 use winreg::RegKey;
 use x509_parser::prelude::*;
+use x509_parser::public_key::PublicKey;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SecurityAuditReport {
     pub timestamp: String,
     pub certificates: Vec<CertificateInfo>,
+    pub ca_certificates: Vec<CertificateInfo>,
+    pub intermediate_certificates: Vec<CertificateInfo>,
+    pub trusted_publishers: Vec<CertificateInfo>,
+    pub disallowed_certificates: Vec<CertificateInfo>,
     pub tls_config: TlsConfiguration,
     pub event_log_analysis: Vec<String>,
     pub vulnerabilities: Vec<SecurityVulnerability>,
@@ -28,6 +33,12 @@ pub struct CertificateInfo {
     pub is_expired: bool,
     pub is_self_signed: bool,
     pub days_until_expiration: i64,
+    pub in_ntauth: bool,
+    pub provider: String,
+    pub algo: String,
+    pub bits: u32,
+    pub is_modern_ksp: bool,
+    pub wpa3_ready: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -60,6 +71,10 @@ impl SecurityAuditReport {
         Self {
             timestamp: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
             certificates: Vec::new(),
+            ca_certificates: Vec::new(),
+            intermediate_certificates: Vec::new(),
+            trusted_publishers: Vec::new(),
+            disallowed_certificates: Vec::new(),
             tls_config: TlsConfiguration::default(),
             event_log_analysis: Vec::new(),
             vulnerabilities: Vec::new(),
@@ -103,42 +118,130 @@ impl Default for TlsConfiguration {
 
 /// Read certificates from Windows Certificate Store using schannel crate
 pub fn read_certificate_store() -> Vec<CertificateInfo> {
+    read_system_store("MY")
+}
+
+/// Read certificates from a specific Windows System Store
+pub fn read_system_store(store_name: &str) -> Vec<CertificateInfo> {
     let mut certificates = Vec::new();
 
-    // Open LOCAL_MACHINE\MY store (machine personal certificates)
-    let store = match CertStore::open_local_machine("MY") {
+    // Open LOCAL_MACHINE store
+    let store = match CertStore::open_local_machine(store_name) {
         Ok(s) => s,
         Err(e) => {
-            tracing::error!("Failed to open certificate store: {}", e);
+            tracing::error!("Failed to open certificate store {}: {}", store_name, e);
             return certificates;
         }
+    };
+
+    // Load NTAuth store for comparison if needed
+    let ntauth_thumbprints = if store_name != "NTAuth" {
+        read_ntauth_thumbprints()
+    } else {
+        Vec::new()
     };
 
     // Iterate through all certificates
     for cert in store.certs() {
         match parse_certificate(&cert) {
-            Ok(cert_info) => certificates.push(cert_info),
+            Ok(mut cert_info) => {
+                if ntauth_thumbprints.contains(&cert_info.thumbprint) {
+                    cert_info.in_ntauth = true;
+                }
+                certificates.push(cert_info);
+            }
             Err(e) => {
-                tracing::warn!("Failed to parse certificate: {}", e);
+                tracing::warn!("Failed to parse certificate in {}: {}", store_name, e);
                 continue;
             }
         }
     }
 
     tracing::info!(
-        "Found {} certificates in LOCAL_MACHINE\\MY store",
-        certificates.len()
+        "Found {} certificates in LOCAL_MACHINE\\{} store",
+        certificates.len(),
+        store_name
     );
     certificates
 }
 
+/// Helper to read thumbprints from the NTAuth store
+fn read_ntauth_thumbprints() -> Vec<String> {
+    let mut thumbprints = Vec::new();
+    if let Ok(store) = CertStore::open_local_machine("NTAuth") {
+        for cert in store.certs() {
+            if let Ok(der_bytes) = get_cert_der(&cert) {
+                thumbprints.push(compute_sha1_thumbprint(der_bytes));
+            }
+        }
+    }
+    thumbprints
+}
+
+/// Helper to get DER bytes from a CertContext
+fn get_cert_der(cert: &CertContext) -> Result<&[u8], Box<dyn std::error::Error>> {
+    unsafe {
+        let p_cert = cert.as_ptr() as *const windows::Win32::Security::Cryptography::CERT_CONTEXT;
+        if p_cert.is_null() {
+            return Err("Null certificate context pointer".into());
+        }
+        Ok(std::slice::from_raw_parts(
+            (*p_cert).pbCertEncoded,
+            (*p_cert).cbCertEncoded as usize,
+        ))
+    }
+}
+
+/// Helper to get Key Provider info from Windows Certificate Context
+fn get_cert_provider(cert: &CertContext) -> String {
+    use windows::Win32::Security::Cryptography::{
+        CertGetCertificateContextProperty, CERT_KEY_PROV_INFO_PROP_ID, CRYPT_KEY_PROV_INFO,
+    };
+
+    unsafe {
+        let p_cert = cert.as_ptr() as *const windows::Win32::Security::Cryptography::CERT_CONTEXT;
+        let mut cb_data = 0;
+
+        // 1. Get size first
+        if CertGetCertificateContextProperty(p_cert, CERT_KEY_PROV_INFO_PROP_ID, None, &mut cb_data)
+            .is_err()
+        {
+            return "No Provider Info".to_string();
+        }
+
+        // 2. Read data
+        let mut buffer = vec![0u8; cb_data as usize];
+        if CertGetCertificateContextProperty(
+            p_cert,
+            CERT_KEY_PROV_INFO_PROP_ID,
+            Some(buffer.as_mut_ptr() as *mut _),
+            &mut cb_data,
+        )
+        .is_err()
+        {
+            return "No Provider Info".to_string();
+        }
+
+        let prov_info = &*(buffer.as_ptr() as *const CRYPT_KEY_PROV_INFO);
+        if prov_info.pwszProvName.is_null() {
+            return "Unknown Provider".to_string();
+        }
+
+        // Convert PWSTR to String
+        let ptr = prov_info.pwszProvName.0;
+        let mut len = 0;
+        while *ptr.add(len) != 0 {
+            len += 1;
+        }
+        let slice = std::slice::from_raw_parts(ptr, len);
+        String::from_utf16_lossy(slice)
+    }
+}
+
 /// Parse a certificate using x509-parser
 fn parse_certificate(cert: &CertContext) -> Result<CertificateInfo, Box<dyn std::error::Error>> {
-    // Get DER-encoded certificate (requires minimal unsafe to access the raw pointer from schannel)
-    let der_bytes = unsafe {
-        let p_cert = cert.as_ptr() as *const windows::Win32::Security::Cryptography::CERT_CONTEXT;
-        std::slice::from_raw_parts((*p_cert).pbCertEncoded, (*p_cert).cbCertEncoded as usize)
-    };
+    // Get DER-encoded certificate
+    let der_bytes = get_cert_der(cert)?;
 
     // Parse with x509-parser
     let (_, x509) = X509Certificate::from_der(der_bytes)?;
@@ -182,6 +285,39 @@ fn parse_certificate(cert: &CertContext) -> Result<CertificateInfo, Box<dyn std:
     // Compute SHA-1 thumbprint
     let thumbprint = compute_sha1_thumbprint(der_bytes);
 
+    // Key properties
+    let provider = get_cert_provider(cert);
+    let is_modern_ksp = provider.contains("Software Key Storage Provider")
+        || provider.contains("Smart Card Key Storage Provider")
+        || provider.contains("Platform Key Storage Provider");
+
+    let mut algo = "Unknown".to_string();
+    let mut bits = 0;
+
+    // Algorithm and bits from x509-parser
+    if let Ok(pub_key) = x509.public_key().parsed() {
+        match pub_key {
+            PublicKey::RSA(rsa) => {
+                algo = "RSA".to_string();
+                bits = (rsa.modulus.len() * 8) as u32;
+            }
+            PublicKey::EC(ec) => {
+                algo = "ECDSA".to_string();
+                // EC length is harder to get simply but we can infer or use a fixed value if P-384
+                bits = (ec.data().len() * 4) as u32; // Rough estimate for display
+            }
+            _ => {
+                algo = format!("{:?}", pub_key);
+            }
+        }
+    }
+
+    // WPA3 Ready (192-bit mode) criteria:
+    // - ECDSA P-384 OR RSA 3072+
+    // - Must be on a Key Storage Provider (KSP)
+    let wpa3_ready =
+        is_modern_ksp && ((algo == "ECDSA" && bits >= 384) || (algo == "RSA" && bits >= 3072));
+
     Ok(CertificateInfo {
         subject,
         issuer,
@@ -191,6 +327,12 @@ fn parse_certificate(cert: &CertContext) -> Result<CertificateInfo, Box<dyn std:
         is_expired,
         is_self_signed,
         days_until_expiration,
+        in_ntauth: false, // Default, will be checked during store reading
+        provider,
+        algo,
+        bits,
+        is_modern_ksp,
+        wpa3_ready,
     })
 }
 
@@ -395,6 +537,38 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
             );
         }
     }
+
+    // NTAuth missing check for CAs and Intermediate CAs
+    let mut ntauth_missing = Vec::new();
+
+    for cert in &report.ca_certificates {
+        if !cert.in_ntauth {
+            ntauth_missing.push(cert.subject.clone());
+        }
+    }
+    for cert in &report.intermediate_certificates {
+        if !cert.in_ntauth {
+            ntauth_missing.push(cert.subject.clone());
+        }
+    }
+
+    if !ntauth_missing.is_empty() {
+        report.add_vulnerability(
+            "MEDIUM",
+            "CAs Missing from NTAuth Store",
+            &format!(
+                "The following CAs are not in NTAuthStore: {}. This may cause RADIUS authentication failures.",
+                ntauth_missing.join(", ")
+            ),
+            None,
+        );
+        report.add_recommendation(
+            "Add missing CAs to NTAuth store via AD: certutil -dspublish -f 'cert_file.cer' NTAuthCA"
+        );
+        report.add_recommendation(
+            "Add missing CAs to local NTAuth store: certutil -addstore -f NTAuth 'cert_file.cer'",
+        );
+    }
 }
 
 /// Perform complete security audit with robust error handling (Try-style)
@@ -404,10 +578,29 @@ pub fn perform_security_audit() -> SecurityAuditReport {
     tracing::info!("Starting robust security audit...");
 
     // 1. Read certificates from Windows Certificate Store (Safe wrap)
-    match std::panic::catch_unwind(read_certificate_store) {
-        Ok(certs) => {
-            report.certificates = certs;
-            tracing::info!("Analyzed {} certificates", report.certificates.len());
+    match std::panic::catch_unwind(|| {
+        (
+            read_system_store("MY"),
+            read_system_store("Root"),
+            read_system_store("CA"),
+            read_system_store("TrustedPublisher"),
+            read_system_store("Disallowed"),
+        )
+    }) {
+        Ok((my_certs, root_certs, ca_certs, pub_certs, bad_certs)) => {
+            report.certificates = my_certs;
+            report.ca_certificates = root_certs;
+            report.intermediate_certificates = ca_certs;
+            report.trusted_publishers = pub_certs;
+            report.disallowed_certificates = bad_certs;
+            tracing::info!(
+                "Analyzed {} personal, {} root, {} intermediate, {} publishers, {} disallowed certificates",
+                report.certificates.len(),
+                report.ca_certificates.len(),
+                report.intermediate_certificates.len(),
+                report.trusted_publishers.len(),
+                report.disallowed_certificates.len()
+            );
         }
         Err(_) => {
             tracing::error!("CRITICAL: Certificate store reading panicked!");

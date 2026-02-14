@@ -70,44 +70,129 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
             div { class: "mb-8",
                 h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
                     "📜 Windows Certificate Store"
-                    span { class: "text-sm font-normal opacity-50", "(LOCAL_MACHINE\\MY)" }
                 }
 
-                if props.report.certificates.is_empty() {
-                    div { class: "glass-panel p-6 text-center border-dashed border-2 border-muted/30",
-                        div { class: "text-2xl mb-2", "🔍" }
-                        div { class: "text-sm font-bold text-muted", "No certificates found in LOCAL_MACHINE\\MY" }
-                        div { class: "text-xxs text-muted mt-1", "This is normal if no machine-wide SSL/RADIUS certificates have been installed." }
+                div { class: "space-y-8",
+                    // 1. Personal Certificates
+                    div {
+                        h3 { class: "text-lg font-bold mb-3 opacity-80", "👤 Personal (MY)" }
+                        if props.report.certificates.is_empty() {
+                            div { class: "glass-panel p-4 text-xs text-muted italic", "No personal certificates found." }
+                        } else {
+                            {render_cert_grid(&props.report.certificates)}
+                        }
                     }
-                } else {
-                    div { class: "grid grid-cols-1 md:grid-cols-2 gap-4",
-                        for cert in &props.report.certificates {
-                            div {
-                                class: format!(
-                                    "glass-panel p-4 {}",
-                                    if cert.is_expired { "border-l-4 border-red-500" }
-                                    else if cert.days_until_expiration < 30 { "border-l-4 border-yellow-500" }
-                                    else { "" }
-                                ),
 
-                                div { class: "font-bold text-sm mb-2", "{cert.subject}" }
-                                div { class: "text-xxs text-muted space-y-1",
-                                    div { "Issuer: {cert.issuer}" }
-                                    div { "Expires: {cert.valid_to}" }
-                                    div {
-                                        class: if cert.is_expired { "text-fail font-bold" }
-                                               else if cert.days_until_expiration < 30 { "text-yellow-500 font-bold" }
-                                               else { "text-success" },
-                                        if cert.is_expired {
-                                            "❌ EXPIRED"
-                                        } else if cert.days_until_expiration < 30 {
-                                            "⚠️ Expires in {cert.days_until_expiration} days"
-                                        } else {
-                                            "✅ Valid ({cert.days_until_expiration} days remaining)"
+                    // 2. Intermediate Authorities
+                    div {
+                        h3 { class: "text-lg font-bold mb-3 opacity-80", "🏢 Intermediate Authorities (CA)" }
+                        if props.report.intermediate_certificates.is_empty() {
+                            div { class: "glass-panel p-4 text-xs text-muted italic", "No intermediate certificates found." }
+                        } else {
+                            {render_cert_grid(&props.report.intermediate_certificates)}
+                        }
+                    }
+
+                    // 3. Root Authorities
+                    div {
+                        h3 { class: "text-lg font-bold mb-3 opacity-80", "🏛️ Root Authorities (Root)" }
+                        if props.report.ca_certificates.is_empty() {
+                            div { class: "glass-panel p-4 text-xs text-muted italic", "No root certificates found." }
+                        } else {
+                            {render_cert_grid(&props.report.ca_certificates)}
+                        }
+                    }
+
+                    // 4. Trusted Publishers
+                    div {
+                        h3 { class: "text-lg font-bold mb-3 opacity-80", "✍️ Trusted Publishers" }
+                        if props.report.trusted_publishers.is_empty() {
+                            div { class: "glass-panel p-4 text-xs text-muted italic", "No trusted publishers found." }
+                        } else {
+                            {render_cert_grid(&props.report.trusted_publishers)}
+                        }
+                    }
+
+                    // 5. Disallowed Certificates
+                    if !props.report.disallowed_certificates.is_empty() {
+                        div {
+                            h3 { class: "text-lg font-bold mb-3 text-fail", "🚫 Disallowed Certificates" }
+                            {render_cert_grid(&props.report.disallowed_certificates)}
+                        }
+                    }
+
+                    // 6. Admin Toolbox (Hints & Documentation)
+                    div { class: "mt-8 border-t border-border pt-6",
+                        h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
+                            span { "🧰" }
+                            "Admin Toolbox"
+                        }
+
+                        div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
+                            // Certificate Renewal
+                            div { class: "glass-panel p-4 border-l-4 border-blue-500",
+                                h4 { class: "font-bold text-blue-400 mb-2 flex items-center gap-2",
+                                    span { "🔄" }
+                                    "Certificate Renewal / Import"
+                                }
+                                div { class: "text-xxs space-y-2 opacity-90",
+                                    p { "To renew or import a machine certificate into the Personal store:" }
+                                    div { class: "space-y-2",
+                                        div {
+                                            p { class: "mb-1 font-bold text-xxs opacity-70", "• CMD (certutil):" }
+                                            div { class: "bg-black/40 p-2 rounded font-mono text-success break-all",
+                                                "certutil -importpfx -f -p \"password\" \"path\\to\\cert.pfx\""
+                                            }
+                                        }
+                                        div {
+                                            p { class: "mb-1 font-bold text-xxs opacity-70", "• PowerShell:" }
+                                            div { class: "bg-black/40 p-2 rounded font-mono text-success break-all",
+                                                "$pwd = ConvertTo-SecureString -String \"password\" -Force -AsPlainText; Import-PfxCertificate -FilePath \"path\\to\\cert.pfx\" -CertStoreLocation Cert:\\LocalMachine\\My -Password $pwd"
+                                            }
                                         }
                                     }
-                                    if cert.is_self_signed {
-                                        div { class: "text-yellow-500", "⚠️ Self-Signed" }
+                                    ul { class: "list-disc ml-4 space-y-1 mt-2",
+                                        li { "Use " b { "KSP" } " (Key Storage Provider) for maximum security & WPA3 compatibility." }
+                                        li { "Use " b { "CSP" } " (Legacy) only if required by very old client devices." }
+                                    }
+                                }
+                            }
+
+                            // NTAuth Management
+                            div { class: "glass-panel p-4 border-l-4 border-yellow-500",
+                                h4 { class: "font-bold text-yellow-500 mb-2 flex items-center gap-2",
+                                    span { "🏛️" }
+                                    "NTAuth Store Management"
+                                }
+                                div { class: "text-xxs space-y-2 opacity-90",
+                                    p { "If a CA is missing from NTAuth store (needed for RADIUS Trust):" }
+                                    div { class: "space-y-3",
+                                        div {
+                                            p { class: "mb-1 font-bold", "• Enterprise-wide (via Active Directory):" }
+                                            div { class: "space-y-1",
+                                                p { class: "text-[9px] opacity-60", "CMD:" }
+                                                div { class: "bg-black/40 p-1.5 rounded font-mono text-success break-all",
+                                                    "certutil -dspublish -f \"CA_cert.cer\" NTAuthCA"
+                                                }
+                                            }
+                                        }
+                                        div {
+                                            p { class: "mb-1 font-bold", "• Local Machine only (Standalone):" }
+                                            div { class: "space-y-2",
+                                                div {
+                                                    p { class: "text-[9px] opacity-60", "CMD:" }
+                                                    div { class: "bg-black/40 p-1.5 rounded font-mono text-success break-all",
+                                                        "certutil -addstore -f NTAuth \"CA_cert.cer\""
+                                                    }
+                                                }
+                                                div {
+                                                    p { class: "text-[9px] opacity-60", "PowerShell:" }
+                                                    div { class: "bg-black/40 p-1.5 rounded font-mono text-success break-all",
+                                                        "Import-Certificate -FilePath \"CA_cert.cer\" -CertStoreLocation Cert:\\LocalMachine\\NTAuth"
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -295,6 +380,82 @@ fn ProtocolBadge(name: String, enabled: bool, critical: bool) -> Element {
             div { class: "text-2xl mb-1", "{icon}" }
             div { class: "text-xxs font-bold", "{name}" }
             div { class: "text-xxs mt-1 opacity-70", if enabled { "ENABLED" } else { "DISABLED" } }
+        }
+    }
+}
+
+fn render_cert_grid(certs: &[crate::infrastructure::security_audit::CertificateInfo]) -> Element {
+    rsx! {
+        div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
+            for cert in certs {
+                div {
+                    class: format!(
+                        "glass-panel p-4 {}",
+                        if cert.is_expired { "border-l-4 border-red-500" }
+                        else if cert.days_until_expiration < 30 { "border-l-4 border-yellow-500" }
+                        else { "" }
+                    ),
+
+                    div { class: "flex justify-between items-start mb-2",
+                        div { class: "font-bold text-sm truncate pr-2", title: "{cert.subject}", "{cert.subject}" }
+                        div { class: "flex gap-1 flex-shrink-0",
+                            if cert.wpa3_ready {
+                                span {
+                                    class: "bg-purple-500/20 text-purple-400 text-[10px] px-1.5 py-0.5 rounded border border-purple-500/30 font-bold",
+                                    "WPA3 READY"
+                                }
+                            }
+                            if cert.in_ntauth {
+                                span {
+                                    class: "bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded border border-blue-500/30 font-bold",
+                                    "NTAuth"
+                                }
+                            } else if !cert.is_self_signed && !cert.subject.contains("Found Local Cert") {
+                                span {
+                                    class: "bg-yellow-500/20 text-yellow-500 text-[10px] px-1.5 py-0.5 rounded border border-yellow-500/30 font-bold",
+                                    "NOT IN NTAUTH"
+                                }
+                            }
+                        }
+                    }
+
+                    div { class: "text-xxs text-muted space-y-1",
+                        div { class: "truncate", title: "{cert.issuer}", "Issuer: {cert.issuer}" }
+                        div { "Expires: {cert.valid_to}" }
+                        div { class: "flex items-center gap-2",
+                            span { "{cert.algo} {cert.bits} bits" }
+                            if cert.is_modern_ksp {
+                                span { class: "text-success", "[KSP]" }
+                            } else {
+                                span { class: "text-yellow-500", "[Legacy CSP]" }
+                            }
+                        }
+                        div { class: "truncate opacity-60 italic", title: "{cert.provider}", "Provider: {cert.provider}" }
+                        div {
+                            class: if cert.is_expired { "text-fail font-bold" }
+                                   else if cert.days_until_expiration < 30 { "text-yellow-500 font-bold" }
+                                   else { "text-success" },
+                            if cert.is_expired {
+                                "❌ EXPIRED"
+                            } else if cert.days_until_expiration < 30 {
+                                "⚠️ Expires in {cert.days_until_expiration} days"
+                            } else {
+                                "✅ Valid ({cert.days_until_expiration} days remaining)"
+                            }
+                        }
+                        if cert.is_self_signed {
+                            div { class: "text-yellow-500", "⚠️ Self-Signed" }
+                        }
+
+                        if !cert.in_ntauth && !cert.is_self_signed && !cert.subject.contains("Found Local Cert") {
+                            div { class: "mt-2 p-1.5 bg-yellow-500/5 border border-yellow-500/20 rounded",
+                                div { class: "text-yellow-500 font-bold mb-1", "💡 Resolution Hint:" }
+                                div { class: "italic opacity-80", "Run: certutil -dspublish -f 'cert.cer' NTAuthCA (AD) or certutil -addstore -f NTAuth 'cert.cer' (Local)" }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
