@@ -2,15 +2,47 @@ use anyhow::{Context, Result};
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use windows::core::PCWSTR;
+use windows::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 use windows::Win32::Security::Cryptography::{
     CertCloseStore, CertDuplicateCertificateContext, CertEnumCertificatesInStore, CertOpenStore,
     CERT_STORE_PROV_SYSTEM_A, PKCS_7_ASN_ENCODING, X509_ASN_ENCODING,
 };
+use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
 use windows::Win32::System::EventLog::{
     CloseEventLog, OpenEventLogW, ReadEventLogW, EVENTLOGRECORD, READ_EVENT_LOG_READ_FLAGS,
 };
+use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
 use winreg::RegKey;
+
+/// Checks if the current process is running with administrator privileges.
+pub fn is_elevated() -> bool {
+    unsafe {
+        let mut token: HANDLE = INVALID_HANDLE_VALUE;
+        if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token).is_err() {
+            return false;
+        }
+
+        let mut elevation = TOKEN_ELEVATION::default();
+        let mut size = std::mem::size_of::<TOKEN_ELEVATION>() as u32;
+
+        let result = GetTokenInformation(
+            token,
+            TokenElevation,
+            Some(&mut elevation as *mut _ as *mut _),
+            size,
+            &mut size,
+        );
+
+        let _ = CloseHandle(token);
+
+        if result.is_ok() {
+            elevation.TokenIsElevated != 0
+        } else {
+            false
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ProtocolInfo {
@@ -201,10 +233,13 @@ pub fn fetch_schannel_details(timestamp_str: &str) -> Vec<String> {
 
 pub fn get_schannel_logging_level() -> u32 {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    hklm.open_subkey(r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL")
-        .ok()
-        .and_then(|k| k.get_value::<u32, _>("EventLogging").ok())
-        .unwrap_or(0)
+    hklm.open_subkey_with_flags(
+        r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL",
+        KEY_READ,
+    )
+    .ok()
+    .and_then(|k| k.get_value::<u32, _>("EventLogging").ok())
+    .unwrap_or(0)
 }
 
 pub fn read_schannel_config() -> crate::infrastructure::security_audit::TlsConfiguration {
@@ -285,12 +320,13 @@ fn get_cipher_display_key(id: &str) -> &'static str {
 pub fn get_certificates_config() -> Vec<CertInfo> {
     let mut certificates = Vec::new();
     unsafe {
+        let store_name = std::ffi::CString::new("MY").unwrap();
         if let Ok(store) = CertOpenStore(
             CERT_STORE_PROV_SYSTEM_A,
             X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
             None,
-            windows::Win32::Security::Cryptography::CERT_OPEN_STORE_FLAGS(0x00020000), // LOCAL_MACHINE
-            Some(windows::core::w!("MY").as_ptr() as *const std::ffi::c_void),
+            windows::Win32::Security::Cryptography::CERT_OPEN_STORE_FLAGS(0x00020000 | 0x00008000), // LOCAL_MACHINE | READONLY
+            Some(store_name.as_ptr() as *const std::ffi::c_void),
         ) {
             let mut p_cert_context = CertEnumCertificatesInStore(store, None);
             while !p_cert_context.is_null() {
@@ -314,8 +350,10 @@ pub fn get_certificates_config() -> Vec<CertInfo> {
 
 pub fn get_log_path_from_registry() -> String {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    if let Ok(key) = hklm.open_subkey(r"SYSTEM\CurrentControlSet\Services\RemoteAccess\Parameters")
-    {
+    if let Ok(key) = hklm.open_subkey_with_flags(
+        r"SYSTEM\CurrentControlSet\Services\RemoteAccess\Parameters",
+        KEY_READ,
+    ) {
         if let Ok(path) = key.get_value::<String, _>("LogPath") {
             return path;
         }

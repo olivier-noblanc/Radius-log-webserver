@@ -1,9 +1,6 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use rust_i18n::t;
-use schannel::cert_context::CertContext;
-use schannel::cert_store::CertStore;
-use schannel::RawPointer;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use winreg::enums::*;
@@ -180,6 +177,14 @@ pub fn read_certificate_store() -> Vec<CertificateInfo> {
     read_system_store("MY").unwrap_or_default()
 }
 
+use windows::Win32::Security::Cryptography::{
+    CertCloseStore, CertEnumCertificatesInStore, CertOpenStore, CERT_CONTEXT,
+    CERT_QUERY_ENCODING_TYPE, CERT_STORE_PROV_SYSTEM_W, CERT_STORE_READONLY_FLAG,
+    CERT_SYSTEM_STORE_LOCAL_MACHINE,
+};
+
+// ... (keep structs)
+
 /// Read certificates from a specific Windows System Store
 /// Returns Result with certificates or a tuple of (error_message, os_error_code)
 pub fn read_system_store(
@@ -187,36 +192,68 @@ pub fn read_system_store(
 ) -> std::result::Result<Vec<CertificateInfo>, (String, i32)> {
     let mut certificates = Vec::new();
 
-    // Open LOCAL_MACHINE store
-    let store = match CertStore::open_local_machine(store_name) {
-        Ok(s) => s,
-        Err(e) => {
-            let os_error = e.raw_os_error().unwrap_or(0);
-            return Err((e.to_string(), os_error));
+    unsafe {
+        // Convert store_name to Wide string for API
+        let store_name_w: Vec<u16> = store_name
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+
+        let store_handle_res = CertOpenStore(
+            CERT_STORE_PROV_SYSTEM_W,
+            CERT_QUERY_ENCODING_TYPE(0),
+            None,
+            // FORCE READ ONLY Access to avoid "Access Denied" for non-admins
+            // CERT_STORE_READONLY_FLAG is CERT_OPEN_STORE_FLAGS type
+            // CERT_SYSTEM_STORE_LOCAL_MACHINE is u32 type
+            CERT_STORE_READONLY_FLAG
+                | windows::Win32::Security::Cryptography::CERT_OPEN_STORE_FLAGS(
+                    CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                ),
+            Some(store_name_w.as_ptr() as *const _),
+        );
+
+        if let Err(e) = store_handle_res {
+            return Err((e.message().to_string(), e.code().0));
         }
-    };
+        let store_handle = store_handle_res.unwrap();
 
-    // Load NTAuth store for comparison if needed
-    let ntauth_thumbprints = if store_name != "NTAuth" {
-        read_ntauth_thumbprints().unwrap_or_default()
-    } else {
-        Vec::new()
-    };
+        // Load NTAuth store for comparison if needed
+        let ntauth_thumbprints = if store_name != "NTAuth" {
+            read_ntauth_thumbprints().unwrap_or_default()
+        } else {
+            Vec::new()
+        };
 
-    // Iterate through all certificates
-    for cert in store.certs() {
-        match parse_certificate(&cert) {
-            Ok(mut cert_info) => {
-                if ntauth_thumbprints.contains(&cert_info.thumbprint) {
-                    cert_info.in_ntauth = true;
+        // Iterate through all certificates
+        let mut p_cert_context: *const CERT_CONTEXT = std::ptr::null();
+
+        loop {
+            p_cert_context = CertEnumCertificatesInStore(store_handle, Some(p_cert_context));
+            if p_cert_context.is_null() {
+                break;
+            }
+
+            // We must NOT free p_cert_context manually inside the loop,
+            // CertEnumCertificatesInStore frees the *previous* one.
+            // But for parsing, we are just reading from the pointer.
+
+            match parse_certificate(p_cert_context) {
+                Ok(mut cert_info) => {
+                    if ntauth_thumbprints.contains(&cert_info.thumbprint) {
+                        cert_info.in_ntauth = true;
+                    }
+                    certificates.push(cert_info);
                 }
-                certificates.push(cert_info);
-            }
-            Err(e) => {
-                tracing::warn!("Failed to parse certificate in {}: {}", store_name, e);
-                continue;
+                Err(e) => {
+                    // Log but continue
+                    tracing::warn!("Failed to parse certificate in {}: {}", store_name, e);
+                    continue;
+                }
             }
         }
+
+        let _ = CertCloseStore(Some(store_handle), 0);
     }
 
     tracing::info!(
@@ -230,76 +267,98 @@ pub fn read_system_store(
 /// Helper to read thumbprints from the NTAuth store
 fn read_ntauth_thumbprints() -> Result<Vec<String>> {
     let mut thumbprints = Vec::new();
-    let store = CertStore::open_local_machine("NTAuth")
-        .context("Failed to open NTAuth certificate store")?;
+    // We also use ReadOnly for NTAuth to be safe
+    unsafe {
+        let store = CertOpenStore(
+            CERT_STORE_PROV_SYSTEM_W,
+            CERT_QUERY_ENCODING_TYPE(0),
+            None,
+            CERT_STORE_READONLY_FLAG
+                | windows::Win32::Security::Cryptography::CERT_OPEN_STORE_FLAGS(
+                    CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                ),
+            Some(windows::core::w!("NTAuth").as_ptr() as *const _),
+        );
 
-    for cert in store.certs() {
-        if let Ok(der_bytes) = get_cert_der(&cert) {
-            thumbprints.push(compute_sha1_thumbprint(der_bytes));
+        if let Ok(store_handle) = store {
+            let mut p_cert_context: *const CERT_CONTEXT = std::ptr::null();
+            loop {
+                p_cert_context = CertEnumCertificatesInStore(store_handle, Some(p_cert_context));
+                if p_cert_context.is_null() {
+                    break;
+                }
+
+                if let Ok(der_bytes) = get_cert_der(p_cert_context) {
+                    thumbprints.push(compute_sha1_thumbprint(der_bytes));
+                }
+            }
+            let _ = CertCloseStore(Some(store_handle), 0);
+        } else if let Err(e) = store {
+            tracing::error!("Failed to open NTAuth store: {}", e);
         }
     }
+
+    tracing::info!("Found {} thumbprints in NTAuth store", thumbprints.len());
 
     Ok(thumbprints)
 }
 
-/// Helper to get DER bytes from a CertContext
-fn get_cert_der(cert: &CertContext) -> Result<&[u8]> {
-    unsafe {
-        let p_cert = cert.as_ptr() as *const windows::Win32::Security::Cryptography::CERT_CONTEXT;
-        if p_cert.is_null() {
-            anyhow::bail!("Null certificate context pointer");
-        }
-        Ok(std::slice::from_raw_parts(
-            (*p_cert).pbCertEncoded,
-            (*p_cert).cbCertEncoded as usize,
-        ))
+/// Helper to get DER bytes from a Raw CertContext
+/// # Safety
+/// p_cert must be a valid pointer to a CERT_CONTEXT
+unsafe fn get_cert_der(p_cert: *const CERT_CONTEXT) -> Result<&'static [u8]> {
+    if p_cert.is_null() {
+        anyhow::bail!("Null certificate context pointer");
     }
+    Ok(std::slice::from_raw_parts(
+        (*p_cert).pbCertEncoded,
+        (*p_cert).cbCertEncoded as usize,
+    ))
 }
 
 /// Helper to get Key Provider info from Windows Certificate Context
-fn get_cert_provider(cert: &CertContext) -> Result<String> {
+unsafe fn get_cert_provider(p_cert: *const CERT_CONTEXT) -> Result<String> {
     use windows::Win32::Security::Cryptography::{
         CertGetCertificateContextProperty, CERT_KEY_PROV_INFO_PROP_ID, CRYPT_KEY_PROV_INFO,
     };
 
-    unsafe {
-        let p_cert = cert.as_ptr() as *const windows::Win32::Security::Cryptography::CERT_CONTEXT;
-        let mut cb_data = 0;
+    let mut cb_data = 0;
 
-        // 1. Get size first
-        CertGetCertificateContextProperty(p_cert, CERT_KEY_PROV_INFO_PROP_ID, None, &mut cb_data)
-            .context("Failed to get certificate key provider property size")?;
+    // 1. Get size first
+    CertGetCertificateContextProperty(p_cert, CERT_KEY_PROV_INFO_PROP_ID, None, &mut cb_data)
+        .context("Failed to get certificate key provider property size")?;
 
-        // 2. Read data
-        let mut buffer = vec![0u8; cb_data as usize];
-        CertGetCertificateContextProperty(
-            p_cert,
-            CERT_KEY_PROV_INFO_PROP_ID,
-            Some(buffer.as_mut_ptr() as *mut _),
-            &mut cb_data,
-        )
-        .context("Failed to read certificate key provider property")?;
+    // 2. Read data
+    let mut buffer = vec![0u8; cb_data as usize];
+    CertGetCertificateContextProperty(
+        p_cert,
+        CERT_KEY_PROV_INFO_PROP_ID,
+        Some(buffer.as_mut_ptr() as *mut _),
+        &mut cb_data,
+    )
+    .context("Failed to read certificate key provider property")?;
 
-        let prov_info = &*(buffer.as_ptr() as *const CRYPT_KEY_PROV_INFO);
-        if prov_info.pwszProvName.is_null() {
-            anyhow::bail!("Certificate provider name is null");
-        }
-
-        // Convert PWSTR to String
-        let ptr = prov_info.pwszProvName.0;
-        let mut len = 0;
-        while *ptr.add(len) != 0 {
-            len += 1;
-        }
-        let slice = std::slice::from_raw_parts(ptr, len);
-        Ok(String::from_utf16_lossy(slice))
+    let prov_info = &*(buffer.as_ptr() as *const CRYPT_KEY_PROV_INFO);
+    if prov_info.pwszProvName.is_null() {
+        anyhow::bail!("Certificate provider name is null");
     }
+
+    // Convert PWSTR to String
+    let ptr = prov_info.pwszProvName.0;
+    let mut len = 0;
+    while *ptr.add(len) != 0 {
+        len += 1;
+    }
+    let slice = std::slice::from_raw_parts(ptr, len);
+    Ok(String::from_utf16_lossy(slice))
 }
 
 /// Parse a certificate using x509-parser
-fn parse_certificate(cert: &CertContext) -> Result<CertificateInfo> {
+/// # Safety
+/// p_cert must be a valid pointer
+unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateInfo> {
     // Get DER-encoded certificate
-    let der_bytes = get_cert_der(cert)?;
+    let der_bytes = get_cert_der(p_cert)?;
 
     // Parse with x509-parser
     let (_, x509) = X509Certificate::from_der(der_bytes).context("Failed to parse X509 DER")?;
@@ -344,7 +403,7 @@ fn parse_certificate(cert: &CertContext) -> Result<CertificateInfo> {
     let thumbprint = compute_sha1_thumbprint(der_bytes);
 
     // Key properties
-    let provider = get_cert_provider(cert).unwrap_or_else(|_| "Unknown Provider".to_string());
+    let provider = get_cert_provider(p_cert).unwrap_or_else(|_| "Unknown Provider".to_string());
     let is_modern_ksp = provider.contains("Software Key Storage Provider")
         || provider.contains("Smart Card Key Storage Provider")
         || provider.contains("Platform Key Storage Provider");
@@ -442,7 +501,7 @@ pub fn read_schannel_config() -> Result<TlsConfiguration> {
 fn is_protocol_enabled(hklm: &RegKey, base_path: &str, protocol: &str) -> bool {
     let server_path = format!("{}\\{}\\Server", base_path, protocol);
 
-    if let Ok(key) = hklm.open_subkey(&server_path) {
+    if let Ok(key) = hklm.open_subkey_with_flags(&server_path, KEY_READ) {
         // Check "Enabled" DWORD
         match key.get_value::<u32, _>("Enabled") {
             Ok(1) => return true,
@@ -465,7 +524,7 @@ fn is_protocol_enabled(hklm: &RegKey, base_path: &str, protocol: &str) -> bool {
 fn read_cipher_suites(hklm: &RegKey) -> Vec<String> {
     let cipher_path = r"SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002";
 
-    let suites = match hklm.open_subkey(cipher_path) {
+    let suites = match hklm.open_subkey_with_flags(cipher_path, KEY_READ) {
         Ok(key) => match key.get_value::<String, _>("Functions") {
             Ok(functions_str) => functions_str
                 .split(',')
@@ -608,11 +667,14 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
     }
 
     if !ntauth_missing.is_empty() {
-        let cas = ntauth_missing.join(", ");
+        let ca_list = ntauth_missing.join(", ");
         report.add_vulnerability(
             "MEDIUM",
             &t!("security_audit.vulns.ntauth_missing_title"),
-            &t!("security_audit.vulns.ntauth_missing_desc", cas = cas),
+            &t!(
+                "security_audit.vulns.ntauth_missing_desc",
+                ca_list = ca_list
+            ),
             None,
         );
         report.add_recommendation(&t!("security_audit.vulns.ntauth_missing_rec_ad"));
@@ -679,15 +741,31 @@ pub fn perform_security_audit() -> SecurityAuditReport {
             .map(|key| t!(key).to_string())
             .unwrap_or_else(|| "Access Denied".to_string());
 
-        report.add_maintenance_alarm(
-            "LOW",
-            &t!("security_audit.vulns.maintenance_access_denied_title"),
-            &t!(
-                "security_audit.vulns.maintenance_access_denied_desc",
-                error_desc = error_desc,
-                stores = stores_list
-            ),
-        );
+        let is_admin = crate::infrastructure::win32::is_elevated();
+
+        if is_admin {
+            // Even as Admin, access is denied (System level permission issue)
+            report.add_maintenance_alarm(
+                "HIGH",
+                &t!("security_audit.vulns.maintenance_access_denied_admin_title"),
+                &t!(
+                    "security_audit.vulns.maintenance_access_denied_admin_desc",
+                    error_desc = error_desc,
+                    stores = stores_list
+                ),
+            );
+        } else {
+            // Classic case: not running as admin
+            report.add_maintenance_alarm(
+                "LOW",
+                &t!("security_audit.vulns.maintenance_access_denied_title"),
+                &t!(
+                    "security_audit.vulns.maintenance_access_denied_desc",
+                    error_desc = error_desc,
+                    stores = stores_list
+                ),
+            );
+        }
     }
 
     tracing::info!(
