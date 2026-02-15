@@ -817,11 +817,14 @@ pub fn perform_security_audit() -> SecurityAuditReport {
         }
     }
 
-    // 4. Detect vulnerabilities
+    // 4. Filter CA chains to only show those used by MY certificates
+    filter_ca_chains(&mut report);
+
+    // 5. Detect vulnerabilities
     detect_vulnerabilities(&mut report);
     tracing::info!("Found {} vulnerabilities", report.vulnerabilities.len());
 
-    // 5. General recommendations
+    // 6. General recommendations
     if report.vulnerabilities.is_empty() {
         if report
             .event_log_analysis
@@ -849,6 +852,70 @@ pub fn perform_security_audit() -> SecurityAuditReport {
     }
 
     report
+}
+
+/// Filter Intermediate and Root CAs to only include those that are part of the chain
+/// of the certificates found in the "MY" store.
+fn filter_ca_chains(report: &mut SecurityAuditReport) {
+    use std::collections::HashSet;
+
+    let mut used_thumbprints = HashSet::new();
+    let mut pending_issuers = HashSet::new();
+
+    // 1. Initial set of issuers from the personal certificates we actually use
+    for cert in &report.certificates {
+        pending_issuers.insert(cert.issuer.clone());
+    }
+
+    // 2. Recursively find issuers in Intermediate and Root stores
+    let mut found_new = true;
+    while found_new {
+        found_new = false;
+        let mut next_issuers = HashSet::new();
+
+        // Check Intermediate CAs
+        for cert in &report.intermediate_certificates {
+            if !used_thumbprints.contains(&cert.thumbprint)
+                && pending_issuers.contains(&cert.subject)
+            {
+                used_thumbprints.insert(cert.thumbprint.clone());
+                next_issuers.insert(cert.issuer.clone());
+                found_new = true;
+            }
+        }
+
+        // Check Root CAs
+        for cert in &report.ca_certificates {
+            if !used_thumbprints.contains(&cert.thumbprint)
+                && pending_issuers.contains(&cert.subject)
+            {
+                used_thumbprints.insert(cert.thumbprint.clone());
+                next_issuers.insert(cert.issuer.clone());
+                found_new = true;
+            }
+        }
+
+        pending_issuers = next_issuers;
+    }
+
+    let before_int = report.intermediate_certificates.len();
+    let before_root = report.ca_certificates.len();
+
+    // 3. Apply the filters
+    report
+        .intermediate_certificates
+        .retain(|c| used_thumbprints.contains(&c.thumbprint));
+    report
+        .ca_certificates
+        .retain(|c| used_thumbprints.contains(&c.thumbprint));
+
+    tracing::info!(
+        "Filtered CA chains: kept {}/{} intermediate, {}/{} root CAs",
+        report.intermediate_certificates.len(),
+        before_int,
+        report.ca_certificates.len(),
+        before_root
+    );
 }
 
 #[cfg(test)]
