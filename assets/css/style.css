@@ -83,6 +83,12 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+body.is-resizing-columns,
+body.is-resizing-columns * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
 .app-wrapper {
     min-height: 100vh;
     display: flex;

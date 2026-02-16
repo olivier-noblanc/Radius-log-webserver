@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
+use std::collections::HashSet;
 use winreg::enums::*;
 use winreg::RegKey;
 use x509_parser::prelude::*;
@@ -156,7 +157,7 @@ pub fn get_win_error_key(code: i32) -> Option<&'static str> {
         32 => Some("security_audit.win_errors.err_32"),
         87 => Some("security_audit.win_errors.err_87"),
 
-        // Crypto API specific errors (Standard Windows HRESULTs for Crypto)
+        // Crypto API specific errors
         0x80070002 => Some("security_audit.win_errors.err_0x80070002"),
         0x80070005 => Some("security_audit.win_errors.err_0x80070005"),
         0x80092004 => Some("security_audit.win_errors.err_0x80092004"),
@@ -183,8 +184,6 @@ use windows::Win32::Security::Cryptography::{
     CERT_SYSTEM_STORE_LOCAL_MACHINE,
 };
 
-// ... (keep structs)
-
 /// Read certificates from a specific Windows System Store
 /// Returns Result with certificates or a tuple of (error_message, os_error_code)
 pub fn read_system_store(
@@ -193,7 +192,6 @@ pub fn read_system_store(
     let mut certificates = Vec::new();
 
     unsafe {
-        // Convert store_name to Wide string for API
         let store_name_w: Vec<u16> = store_name
             .encode_utf16()
             .chain(std::iter::once(0))
@@ -203,9 +201,6 @@ pub fn read_system_store(
             CERT_STORE_PROV_SYSTEM_W,
             CERT_QUERY_ENCODING_TYPE(0),
             None,
-            // FORCE READ ONLY Access to avoid "Access Denied" for non-admins
-            // CERT_STORE_READONLY_FLAG is CERT_OPEN_STORE_FLAGS type
-            // CERT_SYSTEM_STORE_LOCAL_MACHINE is u32 type
             CERT_STORE_READONLY_FLAG
                 | windows::Win32::Security::Cryptography::CERT_OPEN_STORE_FLAGS(
                     CERT_SYSTEM_STORE_LOCAL_MACHINE,
@@ -218,14 +213,12 @@ pub fn read_system_store(
         }
         let store_handle = store_handle_res.unwrap();
 
-        // Load NTAuth store for comparison if needed
         let ntauth_thumbprints = if store_name != "NTAuth" {
             read_ntauth_thumbprints().unwrap_or_default()
         } else {
             Vec::new()
         };
 
-        // Iterate through all certificates
         let mut p_cert_context: *const CERT_CONTEXT = std::ptr::null();
 
         loop {
@@ -233,10 +226,6 @@ pub fn read_system_store(
             if p_cert_context.is_null() {
                 break;
             }
-
-            // We must NOT free p_cert_context manually inside the loop,
-            // CertEnumCertificatesInStore frees the *previous* one.
-            // But for parsing, we are just reading from the pointer.
 
             match parse_certificate(p_cert_context) {
                 Ok(mut cert_info) => {
@@ -246,7 +235,6 @@ pub fn read_system_store(
                     certificates.push(cert_info);
                 }
                 Err(e) => {
-                    // Log but continue
                     tracing::warn!("Failed to parse certificate in {}: {}", store_name, e);
                     continue;
                 }
@@ -267,7 +255,6 @@ pub fn read_system_store(
 /// Helper to read thumbprints from the NTAuth store
 fn read_ntauth_thumbprints() -> Result<Vec<String>> {
     let mut thumbprints = Vec::new();
-    // We also use ReadOnly for NTAuth to be safe
     unsafe {
         let store = CertOpenStore(
             CERT_STORE_PROV_SYSTEM_W,
@@ -324,11 +311,9 @@ unsafe fn get_cert_provider(p_cert: *const CERT_CONTEXT) -> Result<String> {
 
     let mut cb_data = 0;
 
-    // 1. Get size first
     CertGetCertificateContextProperty(p_cert, CERT_KEY_PROV_INFO_PROP_ID, None, &mut cb_data)
         .context("Failed to get certificate key provider property size")?;
 
-    // 2. Read data
     let mut buffer = vec![0u8; cb_data as usize];
     CertGetCertificateContextProperty(
         p_cert,
@@ -343,7 +328,6 @@ unsafe fn get_cert_provider(p_cert: *const CERT_CONTEXT) -> Result<String> {
         anyhow::bail!("Certificate provider name is null");
     }
 
-    // Convert PWSTR to String
     let ptr = prov_info.pwszProvName.0;
     let mut len = 0;
     while *ptr.add(len) != 0 {
@@ -357,13 +341,10 @@ unsafe fn get_cert_provider(p_cert: *const CERT_CONTEXT) -> Result<String> {
 /// # Safety
 /// p_cert must be a valid pointer
 unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateInfo> {
-    // Get DER-encoded certificate
     let der_bytes = get_cert_der(p_cert)?;
 
-    // Parse with x509-parser
     let (_, x509) = X509Certificate::from_der(der_bytes).context("Failed to parse X509 DER")?;
 
-    // Extract subject
     let subject = x509
         .subject()
         .iter_common_name()
@@ -372,7 +353,6 @@ unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateIn
         .unwrap_or("Unknown")
         .to_string();
 
-    // Extract issuer
     let issuer = x509
         .issuer()
         .iter_common_name()
@@ -381,7 +361,6 @@ unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateIn
         .unwrap_or("Unknown")
         .to_string();
 
-    // Extract validity
     let not_before = x509.validity().not_before.timestamp();
     let not_after = x509.validity().not_after.timestamp();
 
@@ -391,18 +370,14 @@ unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateIn
     let valid_from = valid_from_dt.format("%Y-%m-%d %H:%M:%S UTC").to_string();
     let valid_to = valid_to_dt.format("%Y-%m-%d %H:%M:%S UTC").to_string();
 
-    // Calculate expiration
     let now = Utc::now();
     let days_until_expiration = (valid_to_dt - now.naive_utc().and_utc()).num_days();
     let is_expired = days_until_expiration < 0;
 
-    // Check if self-signed
     let is_self_signed = subject == issuer;
 
-    // Compute SHA-1 thumbprint
     let thumbprint = compute_sha1_thumbprint(der_bytes);
 
-    // Key properties
     let provider = get_cert_provider(p_cert).unwrap_or_else(|_| "Unknown Provider".to_string());
     let is_modern_ksp = provider.contains("Software Key Storage Provider")
         || provider.contains("Smart Card Key Storage Provider")
@@ -411,7 +386,6 @@ unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateIn
     let mut algo = "Unknown".to_string();
     let mut bits = 0;
 
-    // Algorithm and bits from x509-parser
     if let Ok(pub_key) = x509.public_key().parsed() {
         match pub_key {
             PublicKey::RSA(rsa) => {
@@ -420,8 +394,7 @@ unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateIn
             }
             PublicKey::EC(ec) => {
                 algo = "ECDSA".to_string();
-                // EC length is harder to get simply but we can infer or use a fixed value if P-384
-                bits = (ec.data().len() * 4) as u32; // Rough estimate for display
+                bits = (ec.data().len() * 4) as u32;
             }
             _ => {
                 algo = format!("{:?}", pub_key);
@@ -429,9 +402,6 @@ unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateIn
         }
     }
 
-    // WPA3 Ready (192-bit mode) criteria:
-    // - ECDSA P-384 OR RSA 3072+
-    // - Must be on a Key Storage Provider (KSP)
     let wpa3_ready =
         is_modern_ksp && ((algo == "ECDSA" && bits >= 384) || (algo == "RSA" && bits >= 3072));
 
@@ -444,7 +414,7 @@ unsafe fn parse_certificate(p_cert: *const CERT_CONTEXT) -> Result<CertificateIn
         is_expired,
         is_self_signed,
         days_until_expiration,
-        in_ntauth: false, // Default, will be checked during store reading
+        in_ntauth: false,
         provider,
         algo,
         bits,
@@ -459,7 +429,6 @@ fn compute_sha1_thumbprint(der_bytes: &[u8]) -> String {
     hasher.update(der_bytes);
     let result = hasher.finalize();
 
-    // Format as uppercase hex with colons (Windows style)
     result
         .iter()
         .map(|b| format!("{:02X}", b))
@@ -474,17 +443,14 @@ pub fn read_schannel_config() -> Result<TlsConfiguration> {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let schannel_path = r"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols";
 
-    // Check TLS/SSL versions
     config.ssl_3_0_enabled = is_protocol_enabled(&hklm, schannel_path, "SSL 3.0");
     config.tls_1_0_enabled = is_protocol_enabled(&hklm, schannel_path, "TLS 1.0");
     config.tls_1_1_enabled = is_protocol_enabled(&hklm, schannel_path, "TLS 1.1");
     config.tls_1_2_enabled = is_protocol_enabled(&hklm, schannel_path, "TLS 1.2");
     config.tls_1_3_enabled = is_protocol_enabled(&hklm, schannel_path, "TLS 1.3");
 
-    // Read cipher suites
     config.cipher_suites = read_cipher_suites(&hklm);
 
-    // Detect weak ciphers
     let weak_patterns = vec!["RC4", "3DES", "DES", "NULL", "EXPORT", "anon"];
     for cipher in &config.cipher_suites {
         for pattern in &weak_patterns {
@@ -502,22 +468,17 @@ fn is_protocol_enabled(hklm: &RegKey, base_path: &str, protocol: &str) -> bool {
     let server_path = format!("{}\\{}\\Server", base_path, protocol);
 
     if let Ok(key) = hklm.open_subkey_with_flags(&server_path, KEY_READ) {
-        // Check "Enabled" DWORD
         match key.get_value::<u32, _>("Enabled") {
             Ok(1) => return true,
             Ok(0) => return false,
-            _ => {
-                // If "Enabled" not set, check "DisabledByDefault"
-                match key.get_value::<u32, _>("DisabledByDefault") {
-                    Ok(0) => return true,
-                    Ok(1) => return false,
-                    _ => {}
-                }
-            }
+            _ => match key.get_value::<u32, _>("DisabledByDefault") {
+                Ok(0) => return true,
+                Ok(1) => return false,
+                _ => {}
+            },
         }
     }
 
-    // Default values for Windows 10/11
     matches!(protocol, "TLS 1.2" | "TLS 1.3")
 }
 
@@ -543,6 +504,7 @@ fn read_cipher_suites(hklm: &RegKey) -> Vec<String> {
     suites
 }
 
+/// Detects vulnerabilities in the audit report
 pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
     // TLS/SSL version checks
     if report.tls_config.ssl_3_0_enabled {
@@ -652,20 +614,32 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
         }
     }
 
-    // NTAuth missing check for CAs and Intermediate CAs
+    // NTAuth check - Only DIRECT ISSUERS need to be in NTAuth
+    let mut direct_issuers = HashSet::new();
+    
+    // 1. Collect all direct issuers from MY certificates
+    for cert in &report.certificates {
+        direct_issuers.insert(cert.issuer.clone());
+    }
+
     let mut ntauth_missing = Vec::new();
 
-    for cert in &report.ca_certificates {
-        if !cert.in_ntauth {
-            ntauth_missing.push(cert.subject.clone());
-        }
-    }
+    // 2. Check if these direct issuers are in NTAuth (intermediate CAs)
     for cert in &report.intermediate_certificates {
-        if !cert.in_ntauth {
+        if direct_issuers.contains(&cert.subject) && !cert.in_ntauth {
             ntauth_missing.push(cert.subject.clone());
         }
     }
 
+    // 3. Check if these direct issuers are in NTAuth (root CAs)
+    //    This handles the case where a cert is issued directly by a root CA
+    for cert in &report.ca_certificates {
+        if direct_issuers.contains(&cert.subject) && !cert.in_ntauth {
+            ntauth_missing.push(cert.subject.clone());
+        }
+    }
+
+    // 4. Report vulnerability only if direct issuers are missing from NTAuth
     if !ntauth_missing.is_empty() {
         let ca_list = ntauth_missing.join(", ");
         report.add_vulnerability(
@@ -682,7 +656,7 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
     }
 }
 
-/// Perform complete security audit with robust error handling (Try-style)
+/// Perform complete security audit with robust error handling
 pub fn perform_security_audit() -> SecurityAuditReport {
     let mut report = SecurityAuditReport::new();
 
@@ -717,13 +691,12 @@ pub fn perform_security_audit() -> SecurityAuditReport {
         }
     }
 
-    // Process scan errors: Group Access Denied (Code 5) errors to keep UI clean
+    // Process scan errors
     let mut access_denied_stores = Vec::new();
     for (name, msg, code) in scan_errors {
         if code == 5 {
             access_denied_stores.push(name);
         } else {
-            // Unexpected technical errors remain CRITICAL
             let error_desc = get_win_error_key(code)
                 .map(|key| format!(": {}", t!(key)))
                 .unwrap_or_default();
@@ -744,7 +717,6 @@ pub fn perform_security_audit() -> SecurityAuditReport {
         let is_admin = crate::infrastructure::win32::is_elevated();
 
         if is_admin {
-            // Even as Admin, access is denied (System level permission issue)
             report.add_maintenance_alarm(
                 "HIGH",
                 &t!("security_audit.vulns.maintenance_access_denied_admin_title"),
@@ -755,7 +727,6 @@ pub fn perform_security_audit() -> SecurityAuditReport {
                 ),
             );
         } else {
-            // Classic case: not running as admin
             report.add_maintenance_alarm(
                 "LOW",
                 &t!("security_audit.vulns.maintenance_access_denied_title"),
@@ -819,6 +790,28 @@ pub fn perform_security_audit() -> SecurityAuditReport {
 
     // 4. Filter CA chains to only show those used by MY certificates
     filter_ca_chains(&mut report);
+    
+    // 4.5 Deduplicate certificates (Windows sometimes stores duplicates)
+    deduplicate_certificates(&mut report.certificates);
+    deduplicate_certificates(&mut report.ca_certificates);
+    deduplicate_certificates(&mut report.intermediate_certificates);
+    deduplicate_certificates(&mut report.trusted_publishers);
+    deduplicate_certificates(&mut report.disallowed_certificates);
+
+    /// Deduplicate certificates by thumbprint (keep only one per unique cert)
+    fn deduplicate_certificates(certs: &mut Vec<CertificateInfo>) {
+        use std::collections::HashSet;
+        
+        let mut seen_thumbprints = HashSet::new();
+        certs.retain(|cert| {
+            if seen_thumbprints.contains(&cert.thumbprint) {
+                false // Duplicate, remove
+            } else {
+                seen_thumbprints.insert(cert.thumbprint.clone());
+                true // First occurrence, keep
+            }
+        });
+    }
 
     // 5. Detect vulnerabilities
     detect_vulnerabilities(&mut report);
@@ -854,26 +847,22 @@ pub fn perform_security_audit() -> SecurityAuditReport {
     report
 }
 
-/// Filter Intermediate and Root CAs to only include those that are part of the chain
-/// of the certificates found in the "MY" store.
+/// Filter Intermediate and Root CAs to only include those in the chain of MY certificates
 fn filter_ca_chains(report: &mut SecurityAuditReport) {
-    use std::collections::HashSet;
-
     let mut used_thumbprints = HashSet::new();
     let mut pending_issuers = HashSet::new();
 
-    // 1. Initial set of issuers from the personal certificates we actually use
+    // 1. Initial set of issuers from personal certificates
     for cert in &report.certificates {
         pending_issuers.insert(cert.issuer.clone());
     }
 
-    // 2. Recursively find issuers in Intermediate and Root stores
+    // 2. Recursively find issuers
     let mut found_new = true;
     while found_new {
         found_new = false;
         let mut next_issuers = HashSet::new();
 
-        // Check Intermediate CAs
         for cert in &report.intermediate_certificates {
             if !used_thumbprints.contains(&cert.thumbprint)
                 && pending_issuers.contains(&cert.subject)
@@ -884,7 +873,6 @@ fn filter_ca_chains(report: &mut SecurityAuditReport) {
             }
         }
 
-        // Check Root CAs
         for cert in &report.ca_certificates {
             if !used_thumbprints.contains(&cert.thumbprint)
                 && pending_issuers.contains(&cert.subject)
@@ -901,7 +889,6 @@ fn filter_ca_chains(report: &mut SecurityAuditReport) {
     let before_int = report.intermediate_certificates.len();
     let before_root = report.ca_certificates.len();
 
-    // 3. Apply the filters
     report
         .intermediate_certificates
         .retain(|c| used_thumbprints.contains(&c.thumbprint));
@@ -967,13 +954,79 @@ mod tests {
     }
 
     #[test]
+    fn test_ntauth_check_direct_issuer_only() {
+        let mut report = SecurityAuditReport::new();
+
+        // Certificat MY émis par "AC Infrastructure-4"
+        report.certificates.push(CertificateInfo {
+            subject: "PRO202512NPS001".to_string(),
+            issuer: "AC Infrastructure-4".to_string(),
+            valid_from: "2025-01-01".to_string(),
+            valid_to: "2028-01-01".to_string(),
+            thumbprint: "CERT1".to_string(),
+            is_expired: false,
+            is_self_signed: false,
+            days_until_expiration: 1000,
+            in_ntauth: false,
+            provider: "KSP".to_string(),
+            algo: "RSA".to_string(),
+            bits: 2048,
+            is_modern_ksp: true,
+            wpa3_ready: false,
+        });
+
+        // AC Infrastructure-4 (émetteur direct) DANS NTAuth
+        report.intermediate_certificates.push(CertificateInfo {
+            subject: "AC Infrastructure-4".to_string(),
+            issuer: "AC Racine-4".to_string(),
+            valid_from: "2024-01-01".to_string(),
+            valid_to: "2034-01-01".to_string(),
+            thumbprint: "CA1".to_string(),
+            is_expired: false,
+            is_self_signed: false,
+            days_until_expiration: 3000,
+            in_ntauth: true, // ✅ OK
+            provider: "CSP".to_string(),
+            algo: "RSA".to_string(),
+            bits: 4096,
+            is_modern_ksp: false,
+            wpa3_ready: false,
+        });
+
+        // AC Racine-4 (auto-signée) PAS dans NTAuth
+        report.ca_certificates.push(CertificateInfo {
+            subject: "AC Racine-4".to_string(),
+            issuer: "AC Racine-4".to_string(),
+            valid_from: "2020-01-01".to_string(),
+            valid_to: "2044-01-01".to_string(),
+            thumbprint: "ROOT1".to_string(),
+            is_expired: false,
+            is_self_signed: true,
+            days_until_expiration: 6000,
+            in_ntauth: false, // ✅ Normal, pas l'émetteur direct
+            provider: "CSP".to_string(),
+            algo: "RSA".to_string(),
+            bits: 4096,
+            is_modern_ksp: false,
+            wpa3_ready: false,
+        });
+
+        detect_vulnerabilities(&mut report);
+
+        // ✅ Aucune vulnérabilité NTAuth ne doit être détectée
+        assert!(
+            !report
+                .vulnerabilities
+                .iter()
+                .any(|v| v.title.contains("NTAuth")),
+            "No NTAuth vulnerability should be detected when direct issuer is in NTAuth"
+        );
+    }
+
+    #[test]
     fn test_perform_security_audit_not_empty() {
-        // This test verifies that the audit runs without panicking and returns a coherent report.
-        // On a build machine, there might not be any certificates, but the report
-        // should still be generated.
         let report = perform_security_audit();
         assert!(!report.timestamp.is_empty());
-        // The audit must contain either success recommendations or vulnerabilities/error recommendations
         assert!(!report.recommendations.is_empty() || !report.vulnerabilities.is_empty());
     }
 }
