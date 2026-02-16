@@ -471,13 +471,11 @@ fn is_protocol_enabled(hklm: &RegKey, base_path: &str, protocol: &str) -> bool {
         match key.get_value::<u32, _>("Enabled") {
             Ok(1) => return true,
             Ok(0) => return false,
-            _ => {
-                match key.get_value::<u32, _>("DisabledByDefault") {
-                    Ok(0) => return true,
-                    Ok(1) => return false,
-                    _ => {}
-                }
-            }
+            _ => match key.get_value::<u32, _>("DisabledByDefault") {
+                Ok(0) => return true,
+                Ok(1) => return false,
+                _ => {}
+            },
         }
     }
 
@@ -506,7 +504,8 @@ fn read_cipher_suites(hklm: &RegKey) -> Vec<String> {
     suites
 }
 
-/// Détecte les vulnérabilités dans le rapport d'audit
+/// Detects vulnerabilities in the audit report
+/// Detects vulnerabilities in the audit report
 pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
     // TLS/SSL version checks
     if report.tls_config.ssl_3_0_enabled {
@@ -616,7 +615,7 @@ pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
         }
     }
 
-    // ✅ CORRECTION : NTAuth check - Only DIRECT ISSUERS need to be in NTAuth
+    // NTAuth check - Only DIRECT ISSUERS need to be in NTAuth
     let mut direct_issuers = HashSet::new();
     
     // 1. Collect all direct issuers from MY certificates
@@ -936,7 +935,7 @@ mod tests {
     #[test]
     fn test_ntauth_check_direct_issuer_only() {
         let mut report = SecurityAuditReport::new();
-        
+
         // Certificat MY émis par "AC Infrastructure-4"
         report.certificates.push(CertificateInfo {
             subject: "PRO202512NPS001".to_string(),
@@ -995,7 +994,10 @@ mod tests {
 
         // ✅ Aucune vulnérabilité NTAuth ne doit être détectée
         assert!(
-            !report.vulnerabilities.iter().any(|v| v.title.contains("NTAuth")),
+            !report
+                .vulnerabilities
+                .iter()
+                .any(|v| v.title.contains("NTAuth")),
             "No NTAuth vulnerability should be detected when direct issuer is in NTAuth"
         );
     }
