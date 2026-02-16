@@ -505,7 +505,6 @@ fn read_cipher_suites(hklm: &RegKey) -> Vec<String> {
 }
 
 /// Detects vulnerabilities in the audit report
-/// Detects vulnerabilities in the audit report
 pub fn detect_vulnerabilities(report: &mut SecurityAuditReport) {
     // TLS/SSL version checks
     if report.tls_config.ssl_3_0_enabled {
