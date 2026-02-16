@@ -50,6 +50,33 @@ $env:PORT=9000; ./target/release/radius-log-webserver
 ```
 The server will be available at `http://localhost:8080` (or your custom port) and on your local network.
 
+## Windows Service Installation
+
+A dedicated installer script is available to register the binary as a native Windows service:
+
+```powershell
+# 1) Build the release binary
+cargo build --release
+
+# 2) (Optional but recommended) Prepare a restricted account + ACLs
+.\scripts\secure_deploy.ps1
+
+# 3) Install/update Windows service (LocalSystem)
+.\scripts\install-service.ps1 `
+  -BinaryPath "C:\path\to\radius-log-webserver.exe" `
+  -StartServiceAfterInstall
+
+# 4) Install/update Windows service (dedicated account)
+.\scripts\install-service.ps1 `
+  -BinaryPath "C:\path\to\radius-log-webserver.exe" `
+  -ServiceUser ".\svc_log_reader" `
+  -ServicePassword "<PASSWORD_FROM_VAULT>" `
+  -Port 8080 `
+  -StartServiceAfterInstall
+```
+
+The script configures service recovery (auto restart on failures), updates an existing service in-place, and can start the service immediately.
+
 ## Deployment
 
 This project includes a **Nightly Build** CI/CD pipeline. Every commit triggers a fresh build and release available on GitHub.
