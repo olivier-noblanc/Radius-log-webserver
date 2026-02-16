@@ -138,20 +138,41 @@ const applyOrder = (order) => {
     }
 };
 
+const getColumnStorageKey = (head, idx) => {
+    const key = head.dataset.colKey;
+    if (key) {
+        return `col-width-${key}`;
+    }
+    return `col-width-${idx}`;
+};
+
+const applyColumnWidth = (head, width) => {
+    const colKey = head.dataset.colKey;
+    if (colKey) {
+        const colCells = document.querySelectorAll(`[data-col-key="${colKey}"]`);
+        for (const cell of colCells) {
+            cell.style.width = `${width}px`;
+        }
+        return;
+    }
+    head.style.width = `${width}px`;
+};
+
 const setupResizerListener = (head, idx, resizer) => {
     resizer.addEventListener('mousedown', (event) => {
         const startX = event.pageX;
         const startW = head.offsetWidth;
+        const storageKey = getColumnStorageKey(head, idx);
         const onMove = (me) => {
             const width = startW + (me.pageX - startX);
             if (width > MIN_WIDTH) {
-                head.style.width = `${width}px`;
+                applyColumnWidth(head, width);
             }
         };
         const onUp = () => {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
-            localStorage.setItem(`col-width-${idx}`, head.offsetWidth);
+            localStorage.setItem(storageKey, head.offsetWidth);
         };
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -170,9 +191,17 @@ const initResizers = () => {
     if (!tbl) { return; }
     const heads = tbl.querySelectorAll('th');
     for (const [idx, head] of heads.entries()) {
-        const sw = localStorage.getItem(`col-width-${idx}`);
+        const storageKey = getColumnStorageKey(head, idx);
+        const oldStorageKey = `col-width-${idx}`;
+        const sw = localStorage.getItem(storageKey) || localStorage.getItem(oldStorageKey);
         if (sw) {
-            head.style.width = `${sw}px`;
+            const width = Number.parseInt(sw, 10);
+            if (!Number.isNaN(width) && width > MIN_WIDTH) {
+                applyColumnWidth(head, width);
+                if (!localStorage.getItem(storageKey)) {
+                    localStorage.setItem(storageKey, `${width}`);
+                }
+            }
         }
         setupResizer(head, idx);
     }
