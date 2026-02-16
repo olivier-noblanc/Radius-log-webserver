@@ -790,6 +790,28 @@ pub fn perform_security_audit() -> SecurityAuditReport {
 
     // 4. Filter CA chains to only show those used by MY certificates
     filter_ca_chains(&mut report);
+    
+    // 4.5 Deduplicate certificates (Windows sometimes stores duplicates)
+    deduplicate_certificates(&mut report.certificates);
+    deduplicate_certificates(&mut report.ca_certificates);
+    deduplicate_certificates(&mut report.intermediate_certificates);
+    deduplicate_certificates(&mut report.trusted_publishers);
+    deduplicate_certificates(&mut report.disallowed_certificates);
+
+    /// Deduplicate certificates by thumbprint (keep only one per unique cert)
+    fn deduplicate_certificates(certs: &mut Vec<CertificateInfo>) {
+        use std::collections::HashSet;
+        
+        let mut seen_thumbprints = HashSet::new();
+        certs.retain(|cert| {
+            if seen_thumbprints.contains(&cert.thumbprint) {
+                false // Duplicate, remove
+            } else {
+                seen_thumbprints.insert(cert.thumbprint.clone());
+                true // First occurrence, keep
+            }
+        });
+    }
 
     // 5. Detect vulnerabilities
     detect_vulnerabilities(&mut report);
