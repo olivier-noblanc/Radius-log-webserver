@@ -16,7 +16,7 @@ $ServiceRunAs = "NT AUTHORITY\LocalService"
 
 # Executable is expected in the same folder as this script.
 $ServiceExecutablePath = $null
-$ServiceArguments = ""
+$ServiceArguments = "--service"
 
 # Generate a complex password with Bitwarden/Password Manager and paste it here
 $Password = "ComplexPassword_To_Generate_In_Bitwarden_!" 
