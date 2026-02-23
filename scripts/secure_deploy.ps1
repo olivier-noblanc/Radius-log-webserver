@@ -195,7 +195,6 @@ Write-Host "[$ServiceName] Installing/updating Windows service..." -ForegroundCo
 if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath) -or -not (Test-Path $ServiceExecutablePath)) {
     Write-Host "Error: Radius executable not found next to this script." -ForegroundColor Red
     Write-Host "Expected path: $ServiceExecutablePath" -ForegroundColor Yellow
-    Write-Host "Copy radius-log-webserver.exe in the same folder as secure_deploy.ps1, then rerun." -ForegroundColor Yellow
     exit 1
 }
 
@@ -207,39 +206,56 @@ $binaryPath = if ([string]::IsNullOrWhiteSpace($ServiceArguments)) {
 
 $existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
-if ($null -eq $existingService) {
-    try {
-        New-Service -Name $ServiceName `
-            -DisplayName $ServiceDisplayName `
-            -BinaryPathName $binaryPath `
-            -Description $ServiceDescription `
-            -StartupType Automatic
+if ($null -ne $existingService) {
+    Write-Host "[$ServiceName] Service exists. Stopping and removing for clean reinstall..." -ForegroundColor Yellow
 
-        # Force run account to LocalService by default.
-        sc.exe config $ServiceName obj= "$ServiceRunAs" | Out-Null
+    Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
 
-        Write-Host "[$ServiceName] Service installed with account $ServiceRunAs." -ForegroundColor Green
-    } catch {
-        Write-Host "Error installing service: $_" -ForegroundColor Red
+    $timeout = 10
+    while ($timeout -gt 0) {
+        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if ($svc.Status -eq 'Stopped') { break }
+        Start-Sleep -Seconds 1
+        $timeout--
+    }
+
+    sc.exe delete $ServiceName | Out-Null
+
+    # Attendre que le SCM libère le service (max 30s)
+    $waited = 0
+    do {
+        Start-Sleep -Seconds 2
+        $waited += 2
+        $check = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    } while ($null -ne $check -and $waited -lt 30)
+
+    if ($null -ne (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue)) {
+        Write-Host "Error: Service still registered after 30s. Close services.msc and retry." -ForegroundColor Red
         exit 1
     }
-} else {
-    try {
-        # Update existing service configuration (path, account, startup).
-        sc.exe config $ServiceName binPath= "$binaryPath" obj= "$ServiceRunAs" start= auto | Out-Null
-        sc.exe description $ServiceName "$ServiceDescription" | Out-Null
-        Write-Host "[$ServiceName] Service configuration updated." -ForegroundColor Green
-    } catch {
-        Write-Host "Error updating service: $_" -ForegroundColor Red
-        exit 1
-    }
+
+    Write-Host "[$ServiceName] Service deleted." -ForegroundColor Green
+}
+
+try {
+    New-Service -Name $ServiceName `
+        -DisplayName $ServiceDisplayName `
+        -BinaryPathName $binaryPath `
+        -Description $ServiceDescription `
+        -StartupType Automatic
+
+    sc.exe config $ServiceName obj= "$ServiceRunAs" | Out-Null
+    Write-Host "[$ServiceName] Service installed with account $ServiceRunAs." -ForegroundColor Green
+} catch {
+    Write-Host "Error installing service: $_" -ForegroundColor Red
+    exit 1
 }
 
 try {
     Start-Service -Name $ServiceName -ErrorAction Stop
     Write-Host "[$ServiceName] Service started successfully." -ForegroundColor Green
 } catch {
-    Write-Host "Warning: service could not be started automatically: $_" -ForegroundColor Yellow
+    Write-Host "Warning: service could not be started: $_" -ForegroundColor Yellow
     Write-Host "Check 'Get-Service $ServiceName' and 'sc.exe qc $ServiceName' for details." -ForegroundColor Yellow
 }
 
