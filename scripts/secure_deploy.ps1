@@ -186,7 +186,6 @@ if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath) -or -not (Test-Path $Se
     Write-Host "Error: Radius executable not found." -ForegroundColor Red
     Write-Host "Checked script folder, parent folder, and standard install paths." -ForegroundColor Yellow
     Write-Host "Set `$ServiceExecutablePath explicitly at the top of this script if needed." -ForegroundColor Yellow
-if (-not (Test-Path $ServiceExecutablePath)) {
     Write-Host "Error: executable not found at '$ServiceExecutablePath'." -ForegroundColor Red
     Write-Host "Deploy the binary first, then rerun this script." -ForegroundColor Yellow
     exit 1
