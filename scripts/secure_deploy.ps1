@@ -12,10 +12,10 @@ $ServiceUser = "svc_log_reader"
 $ServiceName = "RadiusLogWebserver"
 $ServiceDisplayName = "Radius Log Webserver"
 $ServiceDescription = "Secure web interface for monitoring RADIUS/NPS logs in real time."
+$ServiceRunAs = "NT AUTHORITY\LocalService"
 
-# Set to the path where your compiled executable is deployed on the server.
+# Executable is expected in the same folder as this script.
 $ServiceExecutablePath = $null
-$ServiceExecutablePath = "C:\radius\webserver\\radius-log-webserver.exe"
 $ServiceArguments = ""
 
 # Generate a complex password with Bitwarden/Password Manager and paste it here
@@ -29,17 +29,10 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     exit 1
 }
 
-# Resolve executable path automatically if not explicitly configured.
+# Resolve executable path from the script folder (no hardcoded path).
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath)) {
-    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
-    $candidatePaths = @(
-        (Join-Path $scriptRoot "radius-log-webserver.exe"),
-        (Join-Path (Split-Path $scriptRoot -Parent) "radius-log-webserver.exe"),
-        "C:\Radius-log-webserver\radius-log-webserver.exe",
-        "C:\Program Files\Radius-log-webserver\radius-log-webserver.exe"
-    )
-
-    $ServiceExecutablePath = $candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+    $ServiceExecutablePath = Join-Path $scriptRoot "radius-log-webserver.exe"
 }
 
 # --- STEP 1: USER CREATION ---
@@ -78,15 +71,24 @@ if (Test-Path $LogPath) {
         # Create Rule: ReadAndExecute
         # Propagation: ContainerInherit + ObjectInherit (Inherit for subfolders)
         $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-            $ServiceUser, 
-            "ReadAndExecute", 
-            "ContainerInherit,ObjectInherit", 
-            "None", 
+            $ServiceUser,
+            "ReadAndExecute",
+            "ContainerInherit,ObjectInherit",
+            "None",
             "Allow"
         )
-        
-        # Apply Rule
+
+        $localServiceRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $ServiceRunAs,
+            "ReadAndExecute",
+            "ContainerInherit,ObjectInherit",
+            "None",
+            "Allow"
+        )
+
+        # Apply Rules
         $acl.SetAccessRule($accessRule)
+        $acl.SetAccessRule($localServiceRule)
         Set-Acl $LogPath $acl
         
         Write-Host "[$ServiceUser] Read rights granted on $LogPath" -ForegroundColor Green
@@ -111,13 +113,21 @@ foreach ($key in $keysToConfigure) {
         try {
             $regAcl = Get-Acl $key
             $regRule = New-Object System.Security.AccessControl.RegistryAccessRule(
-                $ServiceUser, 
-                "ReadKey", 
-                "None", 
-                "None", 
+                $ServiceUser,
+                "ReadKey",
+                "None",
+                "None",
+                "Allow"
+            )
+            $localServiceRegRule = New-Object System.Security.AccessControl.RegistryAccessRule(
+                $ServiceRunAs,
+                "ReadKey",
+                "None",
+                "None",
                 "Allow"
             )
             $regAcl.SetAccessRule($regRule)
+            $regAcl.SetAccessRule($localServiceRegRule)
             Set-Acl $key $regAcl
             Write-Host "[$ServiceUser] Read rights granted on $key" -ForegroundColor Green
         } catch {
@@ -183,18 +193,11 @@ try {
 Write-Host "[$ServiceName] Installing/updating Windows service..." -ForegroundColor Cyan
 
 if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath) -or -not (Test-Path $ServiceExecutablePath)) {
-    Write-Host "Error: Radius executable not found." -ForegroundColor Red
-    Write-Host "Checked script folder, parent folder, and standard install paths." -ForegroundColor Yellow
-    Write-Host "Set `$ServiceExecutablePath explicitly at the top of this script if needed." -ForegroundColor Yellow
-    Write-Host "Error: executable not found at '$ServiceExecutablePath'." -ForegroundColor Red
-    Write-Host "Deploy the binary first, then rerun this script." -ForegroundColor Yellow
+    Write-Host "Error: Radius executable not found next to this script." -ForegroundColor Red
+    Write-Host "Expected path: $ServiceExecutablePath" -ForegroundColor Yellow
+    Write-Host "Copy radius-log-webserver.exe in the same folder as secure_deploy.ps1, then rerun." -ForegroundColor Yellow
     exit 1
 }
-
-$serviceCredential = New-Object System.Management.Automation.PSCredential(
-    ".\\$ServiceUser",
-    (ConvertTo-SecureString $Password -AsPlainText -Force)
-)
 
 $binaryPath = if ([string]::IsNullOrWhiteSpace($ServiceArguments)) {
     "`"$ServiceExecutablePath`""
@@ -210,10 +213,12 @@ if ($null -eq $existingService) {
             -DisplayName $ServiceDisplayName `
             -BinaryPathName $binaryPath `
             -Description $ServiceDescription `
-            -StartupType Automatic `
-            -Credential $serviceCredential
+            -StartupType Automatic
 
-        Write-Host "[$ServiceName] Service installed." -ForegroundColor Green
+        # Force run account to LocalService by default.
+        sc.exe config $ServiceName obj= "$ServiceRunAs" | Out-Null
+
+        Write-Host "[$ServiceName] Service installed with account $ServiceRunAs." -ForegroundColor Green
     } catch {
         Write-Host "Error installing service: $_" -ForegroundColor Red
         exit 1
@@ -221,7 +226,7 @@ if ($null -eq $existingService) {
 } else {
     try {
         # Update existing service configuration (path, account, startup).
-        sc.exe config $ServiceName binPath= "$binaryPath" obj= ".\\$ServiceUser" password= "$Password" start= auto | Out-Null
+        sc.exe config $ServiceName binPath= "$binaryPath" obj= "$ServiceRunAs" start= auto | Out-Null
         sc.exe description $ServiceName "$ServiceDescription" | Out-Null
         Write-Host "[$ServiceName] Service configuration updated." -ForegroundColor Green
     } catch {
