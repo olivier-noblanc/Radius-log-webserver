@@ -1,23 +1,38 @@
 <#
 .SYNOPSIS
-    Secure deployment script for the Radius Log Webserver service user.
+    Secure deployment script for the Radius Log Webserver service account and Windows service.
 .DESCRIPTION
-    Creates a dedicated "Read-Only" user, configures File/Registry ACLs, 
-    and grants the "Log on as a service" right.
+    Creates a dedicated "Read-Only" user, configures File/Registry ACLs,
+    grants the "Log on as a service" right, and installs/updates the
+    Radius Log Webserver Windows service.
 #>
 
 # --- CONFIGURATION ---
 $ServiceUser = "svc_log_reader"
+$ServiceName = "RadiusLogWebserver"
+$ServiceDisplayName = "Radius Log Webserver"
+$ServiceDescription = "Secure web interface for monitoring RADIUS/NPS logs in real time."
+$ServiceRunAs = "NT AUTHORITY\LocalService"
+
+# Executable is expected in the same folder as this script.
+$ServiceExecutablePath = $null
+$ServiceArguments = ""
+
 # Generate a complex password with Bitwarden/Password Manager and paste it here
 $Password = "ComplexPassword_To_Generate_In_Bitwarden_!" 
 $LogPath = "C:\Windows\System32\LogFiles"
-$RegPath = "HKLM:\SYSTEM\CurrentControlSet\Services"
 
 # --- PRE-CHECKS ---
 # Admin Rights Check
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host "Error: This script must be run as Administrator." -ForegroundColor Red
     exit 1
+}
+
+# Resolve executable path from the script folder (no hardcoded path).
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath)) {
+    $ServiceExecutablePath = Join-Path $scriptRoot "radius-log-webserver.exe"
 }
 
 # --- STEP 1: USER CREATION ---
@@ -29,7 +44,7 @@ if ($null -eq $userExists) {
         New-LocalUser -Name $ServiceUser -Password (ConvertTo-SecureString $Password -AsPlainText -Force) `
             -FullName "Service Log Reader (Secure)" `
             -Description "Dedicated service account with read-only rights for Radius Log Viewer." `
-            -PasswordNeverExpires
+            -PasswordNeverExpires $true
         Write-Host "[$ServiceUser] User created successfully." -ForegroundColor Green
     } catch {
         Write-Host "Error creating user: $_" -ForegroundColor Red
@@ -38,7 +53,7 @@ if ($null -eq $userExists) {
 } else {
     Write-Host "[$ServiceUser] User already exists. Updating password..." -ForegroundColor Yellow
     try {
-        Set-LocalUser -Name $ServiceUser -Password (ConvertTo-SecureString $Password -AsPlainText -Force) -PasswordNeverExpires
+        Set-LocalUser -Name $ServiceUser -Password (ConvertTo-SecureString $Password -AsPlainText -Force) -PasswordNeverExpires $true
         Write-Host "[$ServiceUser] Password updated." -ForegroundColor Green
     } catch {
         Write-Host "Error updating password: $_" -ForegroundColor Red
@@ -56,15 +71,24 @@ if (Test-Path $LogPath) {
         # Create Rule: ReadAndExecute
         # Propagation: ContainerInherit + ObjectInherit (Inherit for subfolders)
         $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-            $ServiceUser, 
-            "ReadAndExecute", 
-            "ContainerInherit,ObjectInherit", 
-            "None", 
+            $ServiceUser,
+            "ReadAndExecute",
+            "ContainerInherit,ObjectInherit",
+            "None",
             "Allow"
         )
-        
-        # Apply Rule
+
+        $localServiceRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $ServiceRunAs,
+            "ReadAndExecute",
+            "ContainerInherit,ObjectInherit",
+            "None",
+            "Allow"
+        )
+
+        # Apply Rules
         $acl.SetAccessRule($accessRule)
+        $acl.SetAccessRule($localServiceRule)
         Set-Acl $LogPath $acl
         
         Write-Host "[$ServiceUser] Read rights granted on $LogPath" -ForegroundColor Green
@@ -89,13 +113,21 @@ foreach ($key in $keysToConfigure) {
         try {
             $regAcl = Get-Acl $key
             $regRule = New-Object System.Security.AccessControl.RegistryAccessRule(
-                $ServiceUser, 
-                "ReadKey", 
-                "None", 
-                "None", 
+                $ServiceUser,
+                "ReadKey",
+                "None",
+                "None",
+                "Allow"
+            )
+            $localServiceRegRule = New-Object System.Security.AccessControl.RegistryAccessRule(
+                $ServiceRunAs,
+                "ReadKey",
+                "None",
+                "None",
                 "Allow"
             )
             $regAcl.SetAccessRule($regRule)
+            $regAcl.SetAccessRule($localServiceRegRule)
             Set-Acl $key $regAcl
             Write-Host "[$ServiceUser] Read rights granted on $key" -ForegroundColor Green
         } catch {
@@ -124,7 +156,11 @@ try {
 
     foreach ($line in $content) {
         if ($line -match "^SeServiceLogonRight") {
-            $newContent += "$line,$ServiceUser"
+            if ($line -match "(^|,)\*?$ServiceUser(,|$)") {
+                $newContent += $line
+            } else {
+                $newContent += "$line,$ServiceUser"
+            }
             $found = $true
         } else {
             $newContent += $line
@@ -153,8 +189,62 @@ try {
     Remove-Item $secExport, $secImport, "secedit.sdb" -ErrorAction SilentlyContinue
 }
 
+# --- STEP 5: SERVICE INSTALL / UPDATE ---
+Write-Host "[$ServiceName] Installing/updating Windows service..." -ForegroundColor Cyan
+
+if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath) -or -not (Test-Path $ServiceExecutablePath)) {
+    Write-Host "Error: Radius executable not found next to this script." -ForegroundColor Red
+    Write-Host "Expected path: $ServiceExecutablePath" -ForegroundColor Yellow
+    Write-Host "Copy radius-log-webserver.exe in the same folder as secure_deploy.ps1, then rerun." -ForegroundColor Yellow
+    exit 1
+}
+
+$binaryPath = if ([string]::IsNullOrWhiteSpace($ServiceArguments)) {
+    "`"$ServiceExecutablePath`""
+} else {
+    "`"$ServiceExecutablePath`" $ServiceArguments"
+}
+
+$existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+
+if ($null -eq $existingService) {
+    try {
+        New-Service -Name $ServiceName `
+            -DisplayName $ServiceDisplayName `
+            -BinaryPathName $binaryPath `
+            -Description $ServiceDescription `
+            -StartupType Automatic
+
+        # Force run account to LocalService by default.
+        sc.exe config $ServiceName obj= "$ServiceRunAs" | Out-Null
+
+        Write-Host "[$ServiceName] Service installed with account $ServiceRunAs." -ForegroundColor Green
+    } catch {
+        Write-Host "Error installing service: $_" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    try {
+        # Update existing service configuration (path, account, startup).
+        sc.exe config $ServiceName binPath= "$binaryPath" obj= "$ServiceRunAs" start= auto | Out-Null
+        sc.exe description $ServiceName "$ServiceDescription" | Out-Null
+        Write-Host "[$ServiceName] Service configuration updated." -ForegroundColor Green
+    } catch {
+        Write-Host "Error updating service: $_" -ForegroundColor Red
+        exit 1
+    }
+}
+
+try {
+    Start-Service -Name $ServiceName -ErrorAction Stop
+    Write-Host "[$ServiceName] Service started successfully." -ForegroundColor Green
+} catch {
+    Write-Host "Warning: service could not be started automatically: $_" -ForegroundColor Yellow
+    Write-Host "Check 'Get-Service $ServiceName' and 'sc.exe qc $ServiceName' for details." -ForegroundColor Yellow
+}
+
 Write-Host "---------------------------------------------------" -ForegroundColor Cyan
 Write-Host "Configuration complete!" -ForegroundColor Green
-Write-Host "The account is ready for use." -ForegroundColor Green
+Write-Host "The account and service are ready for use." -ForegroundColor Green
 Write-Host "Password: $Password (Keep it in Bitwarden)" -ForegroundColor Yellow
 Write-Host "---------------------------------------------------"
