@@ -1,17 +1,25 @@
 <#
 .SYNOPSIS
-    Secure deployment script for the Radius Log Webserver service user.
+    Secure deployment script for the Radius Log Webserver service account and Windows service.
 .DESCRIPTION
-    Creates a dedicated "Read-Only" user, configures File/Registry ACLs, 
-    and grants the "Log on as a service" right.
+    Creates a dedicated "Read-Only" user, configures File/Registry ACLs,
+    grants the "Log on as a service" right, and installs/updates the
+    Radius Log Webserver Windows service.
 #>
 
 # --- CONFIGURATION ---
 $ServiceUser = "svc_log_reader"
+$ServiceName = "RadiusLogWebserver"
+$ServiceDisplayName = "Radius Log Webserver"
+$ServiceDescription = "Secure web interface for monitoring RADIUS/NPS logs in real time."
+
+# Set to the path where your compiled executable is deployed on the server.
+$ServiceExecutablePath = "C:\Radius-log-webserver\radius-log-webserver.exe"
+$ServiceArguments = ""
+
 # Generate a complex password with Bitwarden/Password Manager and paste it here
 $Password = "ComplexPassword_To_Generate_In_Bitwarden_!" 
 $LogPath = "C:\Windows\System32\LogFiles"
-$RegPath = "HKLM:\SYSTEM\CurrentControlSet\Services"
 
 # --- PRE-CHECKS ---
 # Admin Rights Check
@@ -153,8 +161,64 @@ try {
     Remove-Item $secExport, $secImport, "secedit.sdb" -ErrorAction SilentlyContinue
 }
 
+# --- STEP 5: SERVICE INSTALL / UPDATE ---
+Write-Host "[$ServiceName] Installing/updating Windows service..." -ForegroundColor Cyan
+
+if (-not (Test-Path $ServiceExecutablePath)) {
+    Write-Host "Error: executable not found at '$ServiceExecutablePath'." -ForegroundColor Red
+    Write-Host "Deploy the binary first, then rerun this script." -ForegroundColor Yellow
+    exit 1
+}
+
+$serviceCredential = New-Object System.Management.Automation.PSCredential(
+    ".\\$ServiceUser",
+    (ConvertTo-SecureString $Password -AsPlainText -Force)
+)
+
+$binaryPath = if ([string]::IsNullOrWhiteSpace($ServiceArguments)) {
+    "`"$ServiceExecutablePath`""
+} else {
+    "`"$ServiceExecutablePath`" $ServiceArguments"
+}
+
+$existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+
+if ($null -eq $existingService) {
+    try {
+        New-Service -Name $ServiceName `
+            -DisplayName $ServiceDisplayName `
+            -BinaryPathName $binaryPath `
+            -Description $ServiceDescription `
+            -StartupType Automatic `
+            -Credential $serviceCredential
+
+        Write-Host "[$ServiceName] Service installed." -ForegroundColor Green
+    } catch {
+        Write-Host "Error installing service: $_" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    try {
+        # Update existing service configuration (path, account, startup).
+        sc.exe config $ServiceName binPath= "$binaryPath" obj= ".\\$ServiceUser" password= "$Password" start= auto | Out-Null
+        sc.exe description $ServiceName "$ServiceDescription" | Out-Null
+        Write-Host "[$ServiceName] Service configuration updated." -ForegroundColor Green
+    } catch {
+        Write-Host "Error updating service: $_" -ForegroundColor Red
+        exit 1
+    }
+}
+
+try {
+    Start-Service -Name $ServiceName -ErrorAction Stop
+    Write-Host "[$ServiceName] Service started successfully." -ForegroundColor Green
+} catch {
+    Write-Host "Warning: service could not be started automatically: $_" -ForegroundColor Yellow
+    Write-Host "Check 'Get-Service $ServiceName' and 'sc.exe qc $ServiceName' for details." -ForegroundColor Yellow
+}
+
 Write-Host "---------------------------------------------------" -ForegroundColor Cyan
 Write-Host "Configuration complete!" -ForegroundColor Green
-Write-Host "The account is ready for use." -ForegroundColor Green
+Write-Host "The account and service are ready for use." -ForegroundColor Green
 Write-Host "Password: $Password (Keep it in Bitwarden)" -ForegroundColor Yellow
 Write-Host "---------------------------------------------------"
