@@ -9,7 +9,7 @@ use windows_service::{
         ServiceType,
     },
     service_control_handler::{self, ServiceControlHandlerResult},
-    service_dispatcher,
+    service_dispatcher, Error as WindowsServiceError,
 };
 
 use radius_log_webserver::api::handlers::{
@@ -40,12 +40,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     human_panic::setup_panic!();
 
     let args: Vec<String> = std::env::args().collect();
-    let is_service = args.iter().any(|arg| arg == "--service");
+    let force_console = args.iter().any(|arg| arg == "--console");
 
-    if is_service {
-        // In Service mode, we delegate to system_service_main which manages its own Runtime
-        service_dispatcher::start(SERVICE_NAME, ffi_service_main)?;
-    } else {
+    if !force_console {
+        match service_dispatcher::start(SERVICE_NAME, ffi_service_main) {
+            Ok(()) => return Ok(()),
+            Err(WindowsServiceError::Winapi(io_err)) if io_err.raw_os_error() == Some(1063) => {
+                tracing::info!(
+                    "Process not started by SCM; continuing in console mode (error 1063)."
+                );
+            }
+            Err(err) => return Err(Box::new(err)),
+        }
+    }
+
+    {
         // In Console mode (Development)
         // Create a channel to handle Ctrl+C
         let (shutdown_tx, shutdown_rx) = broadcast::channel::<()>(1);
@@ -97,7 +106,20 @@ fn system_service_main(_args: Vec<std::ffi::OsString>) {
     let status_handle = service_control_handler::register(SERVICE_NAME, event_handler)
         .expect("Failed to register service handler");
 
-    // Signal the service manager that the service is starting
+    // Signal the service manager that the service is starting.
+    status_handle
+        .set_service_status(ServiceStatus {
+            service_type: SERVICE_TYPE,
+            current_state: ServiceState::StartPending,
+            controls_accepted: ServiceControlAccept::empty(),
+            exit_code: ServiceExitCode::Win32(0),
+            checkpoint: 1,
+            wait_hint: Duration::from_secs(30),
+            process_id: None,
+        })
+        .expect("Failed to set service status to StartPending");
+
+    // Signal the service manager that the service is now running.
     status_handle
         .set_service_status(ServiceStatus {
             service_type: SERVICE_TYPE,
