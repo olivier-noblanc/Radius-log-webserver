@@ -204,54 +204,57 @@ $binaryPath = if ([string]::IsNullOrWhiteSpace($ServiceArguments)) {
     "`"$ServiceExecutablePath`" $ServiceArguments"
 }
 
-$existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+function ServiceExistsInRegistry {
+    return Test-Path "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName"
+}
 
-if ($null -ne $existingService) {
-    Write-Host "[$ServiceName] Service exists. Stopping and removing for clean reinstall..." -ForegroundColor Yellow
+if (ServiceExistsInRegistry) {
+    Write-Host "[$ServiceName] Service exists. Updating configuration..." -ForegroundColor Yellow
 
     Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
 
-    $timeout = 10
-    while ($timeout -gt 0) {
-        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-        if ($svc.Status -eq 'Stopped') { break }
-        Start-Sleep -Seconds 1
-        $timeout--
+    # Kill forcé si toujours vivant
+    $svcWmi = Get-WmiObject Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
+    if ($null -ne $svcWmi -and $svcWmi.ProcessId -gt 0) {
+        Write-Host "[$ServiceName] Killing process PID $($svcWmi.ProcessId)..." -ForegroundColor Yellow
+        taskkill /PID $svcWmi.ProcessId /F | Out-Null
+        Start-Sleep -Seconds 2
     }
 
-    sc.exe delete $ServiceName | Out-Null
+    # Update via sc.exe config (pas de delete, pas de problème SCM)
+    sc.exe config $ServiceName binPath= "$binaryPath" DisplayName= "$ServiceDisplayName" start= auto obj= "$ServiceRunAs" | Out-Null
+    sc.exe description $ServiceName "$ServiceDescription" | Out-Null
 
-    # Attendre que le SCM libère le service (max 30s)
-    $waited = 0
-    do {
-        Start-Sleep -Seconds 2
-        $waited += 2
-        $check = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-    } while ($null -ne $check -and $waited -lt 30)
-
-    if ($null -ne (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue)) {
-        Write-Host "Error: Service still registered after 30s. Close services.msc and retry." -ForegroundColor Red
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error updating service config." -ForegroundColor Red
         exit 1
     }
 
-    Write-Host "[$ServiceName] Service deleted." -ForegroundColor Green
-}
+    Write-Host "[$ServiceName] Service configuration updated." -ForegroundColor Green
 
-try {
-    New-Service -Name $ServiceName `
-        -DisplayName $ServiceDisplayName `
-        -BinaryPathName $binaryPath `
-        -Description $ServiceDescription `
-        -StartupType Automatic
+} else {
+    # Première installation
+    Write-Host "[$ServiceName] Creating service via sc.exe..." -ForegroundColor Cyan
 
-    sc.exe config $ServiceName obj= "$ServiceRunAs" | Out-Null
+    $scResult = sc.exe create $ServiceName `
+        binPath= "$binaryPath" `
+        DisplayName= "$ServiceDisplayName" `
+        start= auto `
+        obj= "$ServiceRunAs" 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error creating service: $scResult" -ForegroundColor Red
+        exit 1
+    }
+
+    sc.exe description $ServiceName "$ServiceDescription" | Out-Null
     Write-Host "[$ServiceName] Service installed with account $ServiceRunAs." -ForegroundColor Green
-} catch {
-    Write-Host "Error installing service: $_" -ForegroundColor Red
-    exit 1
 }
 
+# Démarrage
 try {
+    Start-Sleep -Seconds 2
     Start-Service -Name $ServiceName -ErrorAction Stop
     Write-Host "[$ServiceName] Service started successfully." -ForegroundColor Green
 } catch {
