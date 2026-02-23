@@ -15,6 +15,7 @@ $ServiceDescription = "Secure web interface for monitoring RADIUS/NPS logs in re
 
 # Set to the path where your compiled executable is deployed on the server.
 $ServiceExecutablePath = $null
+$ServiceExecutablePath = "C:\radius\webserver\\radius-log-webserver.exe"
 $ServiceArguments = ""
 
 # Generate a complex password with Bitwarden/Password Manager and paste it here
@@ -185,6 +186,9 @@ if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath) -or -not (Test-Path $Se
     Write-Host "Error: Radius executable not found." -ForegroundColor Red
     Write-Host "Checked script folder, parent folder, and standard install paths." -ForegroundColor Yellow
     Write-Host "Set `$ServiceExecutablePath explicitly at the top of this script if needed." -ForegroundColor Yellow
+if (-not (Test-Path $ServiceExecutablePath)) {
+    Write-Host "Error: executable not found at '$ServiceExecutablePath'." -ForegroundColor Red
+    Write-Host "Deploy the binary first, then rerun this script." -ForegroundColor Yellow
     exit 1
 }
 
