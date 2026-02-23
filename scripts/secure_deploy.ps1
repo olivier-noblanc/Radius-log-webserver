@@ -14,7 +14,8 @@ $ServiceDisplayName = "Radius Log Webserver"
 $ServiceDescription = "Secure web interface for monitoring RADIUS/NPS logs in real time."
 
 # Set to the path where your compiled executable is deployed on the server.
-$ServiceExecutablePath = "C:\Radius-log-webserver\radius-log-webserver.exe"
+$ServiceExecutablePath = $null
+$ServiceExecutablePath = "C:\radius\webserver\\radius-log-webserver.exe"
 $ServiceArguments = ""
 
 # Generate a complex password with Bitwarden/Password Manager and paste it here
@@ -28,6 +29,19 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     exit 1
 }
 
+# Resolve executable path automatically if not explicitly configured.
+if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath)) {
+    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+    $candidatePaths = @(
+        (Join-Path $scriptRoot "radius-log-webserver.exe"),
+        (Join-Path (Split-Path $scriptRoot -Parent) "radius-log-webserver.exe"),
+        "C:\Radius-log-webserver\radius-log-webserver.exe",
+        "C:\Program Files\Radius-log-webserver\radius-log-webserver.exe"
+    )
+
+    $ServiceExecutablePath = $candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+}
+
 # --- STEP 1: USER CREATION ---
 Write-Host "[$ServiceUser] Creating user..." -ForegroundColor Cyan
 
@@ -37,7 +51,7 @@ if ($null -eq $userExists) {
         New-LocalUser -Name $ServiceUser -Password (ConvertTo-SecureString $Password -AsPlainText -Force) `
             -FullName "Service Log Reader (Secure)" `
             -Description "Dedicated service account with read-only rights for Radius Log Viewer." `
-            -PasswordNeverExpires
+            -PasswordNeverExpires $true
         Write-Host "[$ServiceUser] User created successfully." -ForegroundColor Green
     } catch {
         Write-Host "Error creating user: $_" -ForegroundColor Red
@@ -46,7 +60,7 @@ if ($null -eq $userExists) {
 } else {
     Write-Host "[$ServiceUser] User already exists. Updating password..." -ForegroundColor Yellow
     try {
-        Set-LocalUser -Name $ServiceUser -Password (ConvertTo-SecureString $Password -AsPlainText -Force) -PasswordNeverExpires
+        Set-LocalUser -Name $ServiceUser -Password (ConvertTo-SecureString $Password -AsPlainText -Force) -PasswordNeverExpires $true
         Write-Host "[$ServiceUser] Password updated." -ForegroundColor Green
     } catch {
         Write-Host "Error updating password: $_" -ForegroundColor Red
@@ -132,7 +146,11 @@ try {
 
     foreach ($line in $content) {
         if ($line -match "^SeServiceLogonRight") {
-            $newContent += "$line,$ServiceUser"
+            if ($line -match "(^|,)\*?$ServiceUser(,|$)") {
+                $newContent += $line
+            } else {
+                $newContent += "$line,$ServiceUser"
+            }
             $found = $true
         } else {
             $newContent += $line
@@ -164,6 +182,10 @@ try {
 # --- STEP 5: SERVICE INSTALL / UPDATE ---
 Write-Host "[$ServiceName] Installing/updating Windows service..." -ForegroundColor Cyan
 
+if ([string]::IsNullOrWhiteSpace($ServiceExecutablePath) -or -not (Test-Path $ServiceExecutablePath)) {
+    Write-Host "Error: Radius executable not found." -ForegroundColor Red
+    Write-Host "Checked script folder, parent folder, and standard install paths." -ForegroundColor Yellow
+    Write-Host "Set `$ServiceExecutablePath explicitly at the top of this script if needed." -ForegroundColor Yellow
 if (-not (Test-Path $ServiceExecutablePath)) {
     Write-Host "Error: executable not found at '$ServiceExecutablePath'." -ForegroundColor Red
     Write-Host "Deploy the binary first, then rerun this script." -ForegroundColor Yellow
