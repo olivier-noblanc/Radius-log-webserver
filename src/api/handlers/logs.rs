@@ -39,7 +39,7 @@ pub struct ParseQuery {
 }
 
 fn default_limit() -> usize {
-    1000
+    100_000
 }
 
 #[derive(Deserialize)]
@@ -121,7 +121,7 @@ pub async fn log_rows_htmx(
         return HttpResponse::Forbidden().body("Access Denied");
     }
 
-    let logs = if cache.read().is_empty() || !query.file.is_empty() {
+    let logs = {
         let file_path = &query.file;
         let log_dir = get_log_path_from_registry();
 
@@ -152,19 +152,11 @@ pub async fn log_rows_htmx(
                 reqs.retain(|r| r.status.as_deref() == Some("fail"));
             }
 
-            // Mise à jour cache seulement si recherche vide et fichier principal
-            let latest_name = get_latest_log_file()
-                .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
-                .unwrap_or_default();
-            if query.search.is_empty() && target_file == latest_name {
-                cache.set(reqs.clone());
-            }
-            reqs
+            // Always update cache and retrieve objects with IDs
+            cache.set(reqs)
         } else {
             vec![]
         }
-    } else {
-        cache.get_latest(query.limit)
     };
 
     let mut logs = logs;

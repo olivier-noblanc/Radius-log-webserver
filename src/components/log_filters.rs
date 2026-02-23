@@ -6,6 +6,7 @@ pub struct LogFiltersProps {
     pub files: Vec<LogFile>,
     pub current_file: String,
     pub search_val: String,
+    pub error_only: bool,
 }
 
 #[component]
@@ -16,7 +17,7 @@ pub fn LogFilters(props: LogFiltersProps) -> Element {
             "hx-get": "/api/logs/rows",
             "hx-target": "#log-table-container",
             "hx-swap": "innerHTML",
-            "hx-trigger": "change from:select, change from:input[type=checkbox], input delay:500ms from:input[type=text]",
+            "hx-trigger": "submit, change from:select, change from:input[type=checkbox]",
             "hx-indicator": "#global-loader",
             class: "flex items-center mb-4 glass-panel panel-main",
 
@@ -47,6 +48,7 @@ pub fn LogFilters(props: LogFiltersProps) -> Element {
                     id: "errorToggle",
                     name: "error_only",
                     value: "true",
+                    checked: "{props.error_only}",
                     class: "cursor-pointer w-18 h-18"
                 }
                 label { r#for: "errorToggle", class: "error-only-label", "ERRORS ONLY" }

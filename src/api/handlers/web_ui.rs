@@ -168,7 +168,8 @@ pub async fn index(
                 crate::components::log_filters::LogFilters {
                     files: files,
                     current_file: current_file,
-                    search_val: search_val
+                    search_val: search_val,
+                    error_only: query.error_only
                 }
 
                 crate::components::log_table::LogTable {
@@ -373,7 +374,8 @@ pub async fn security_audit_page(req: HttpRequest) -> impl Responder {
                 crate::components::log_filters::LogFilters {
                     files: files,
                     current_file: latest_file,
-                    search_val: "".to_string()
+                    search_val: "".to_string(),
+                    error_only: false
                 }
                 div { id: "log-table-container" }
             }

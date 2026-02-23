@@ -25,13 +25,15 @@ impl LogCache {
         v
     }
 
-    pub fn extend(&self, new_items: Vec<RadiusRequest>) {
+    pub fn extend(&self, new_items: Vec<RadiusRequest>) -> Vec<RadiusRequest> {
+        let mut items_with_ids = Vec::new();
         for mut item in new_items {
             let id = self.next_id.fetch_add(1, Ordering::SeqCst);
-            // FIX: Assign ID here
             item.id = Some(id);
-            self.items.insert(id, item);
+            self.items.insert(id, item.clone());
+            items_with_ids.push(item);
         }
+        items_with_ids
     }
 
     // FIX: Method to retrieve a log by its unique ID
@@ -44,9 +46,9 @@ impl LogCache {
         self.next_id.store(0, Ordering::SeqCst);
     }
 
-    pub fn set(&self, new_items: Vec<RadiusRequest>) {
+    pub fn set(&self, new_items: Vec<RadiusRequest>) -> Vec<RadiusRequest> {
         self.clear();
-        self.extend(new_items);
+        self.extend(new_items)
     }
 
     pub fn get_latest(&self, count: usize) -> Vec<RadiusRequest> {

@@ -34,8 +34,7 @@ const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
 
 define_windows_service!(ffi_service_main, system_service_main);
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = init_logging();
     human_panic::setup_panic!();
 
@@ -53,9 +52,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(err) => return Err(Box::new(err)),
         }
     }
-
-    {
-        // In Console mode (Development)
+    // In Console mode (Development)
+    let rt = tokio::runtime::Runtime::new()?;
+    rt.block_on(async {
         // Create a channel to handle Ctrl+C
         let (shutdown_tx, shutdown_rx) = broadcast::channel::<()>(1);
 
@@ -74,8 +73,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
 
         // App launch
-        run_app(shutdown_rx).await?;
-    }
+        run_app(shutdown_rx).await
+    })?;
 
     Ok(())
 }
