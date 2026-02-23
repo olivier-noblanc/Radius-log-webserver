@@ -146,14 +146,34 @@ pub async fn log_rows_htmx(
             } else {
                 Some(query.search.as_str())
             };
-            let mut reqs = parse_xml_bytes(&mut reader, search_val, query.limit);
+            let reqs = parse_xml_bytes(&mut reader, search_val, query.limit);
+
+            // FIX: update the cache FIRST so all requests get stable IDs
+            let cached_reqs = cache.set(reqs);
+
+            let mut final_reqs = cached_reqs;
 
             if query.error_only {
-                reqs.retain(|r| r.status.as_deref() == Some("fail"));
+                let mut failed_session_ids = std::collections::HashSet::new();
+                for r in &final_reqs {
+                    if r.status.as_deref() == Some("fail") && !r.session_id.is_empty() {
+                        failed_session_ids.insert(r.session_id.clone());
+                    }
+                }
+
+                final_reqs.retain(|r| {
+                    if r.session_id.is_empty() || !failed_session_ids.contains(&r.session_id) {
+                        return false;
+                    }
+                    if r.status.as_deref() == Some("success") || r.req_type == "Accounting-Response"
+                    {
+                        return false;
+                    }
+                    true
+                });
             }
 
-            // Always update cache and retrieve objects with IDs
-            cache.set(reqs)
+            final_reqs
         } else {
             vec![]
         }
