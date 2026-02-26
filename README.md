@@ -42,13 +42,19 @@ graph TD
 # Build for release
 cargo build --release
 
-# Run the server (default port 8080)
+# Run the server (default: HTTP 8080 -> Redirects to HTTPS 8443)
 ./target/release/radius-log-webserver
 
-# Run with a custom port
-$env:PORT=9000; ./target/release/radius-log-webserver
+# Run with custom ports
+$env:PORT=9000; $env:HTTPS_PORT=9443; ./target/release/radius-log-webserver
 ```
-The server will be available at `http://localhost:8080` (or your custom port) and on your local network.
+
+### HTTPS Configuration
+To enable HTTPS, you must configure a certificate in the Windows Registry:
+1.  **Registry Path**: `HKLM\SOFTWARE\RadiusLogWebserver`
+2.  **Value**: `TlsThumbprint` (String) containing the SHA-1 thumbprint of your certificate in the `LOCAL_MACHINE\MY` store.
+
+The server will be available at `https://localhost:8443` (or your custom port). Unsecure traffic on `http://localhost:8080` will be automatically redirected to HTTPS.
 
 ## Deployment
 

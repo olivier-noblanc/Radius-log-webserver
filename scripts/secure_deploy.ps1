@@ -1,11 +1,13 @@
-<#
-.SYNOPSIS
-    Secure deployment script for the Radius Log Webserver service account and Windows service.
-.DESCRIPTION
-    Creates a dedicated "Read-Only" user, configures File/Registry ACLs,
-    grants the "Log on as a service" right, and installs/updates the
-    Radius Log Webserver Windows service.
-#>
+Param(
+    [Parameter(HelpMessage="HTTP port for redirection (default 8080)")]
+    [int]$HttpPort = 8080,
+
+    [Parameter(HelpMessage="HTTPS port for the main server (default 8443)")]
+    [int]$HttpsPort = 8443,
+
+    [Parameter(HelpMessage="SHA-1 Thumbprint of the TLS certificate")]
+    [string]$TlsThumbprint = $null
+)
 
 # --- CONFIGURATION ---
 $ServiceUser = "svc_log_reader"
@@ -21,6 +23,7 @@ $ServiceArguments = "--service"
 # Generate a complex password with Bitwarden/Password Manager and paste it here
 $Password = "ComplexPassword_To_Generate_In_Bitwarden_!" 
 $LogPath = "C:\Windows\System32\LogFiles"
+$ConfigRegistryPath = "HKLM:\SOFTWARE\RadiusLogWebserver"
 
 # --- PRE-CHECKS ---
 # Admin Rights Check
@@ -250,6 +253,27 @@ if (ServiceExistsInRegistry) {
 
     sc.exe description $ServiceName "$ServiceDescription" | Out-Null
     Write-Host "[$ServiceName] Service installed with account $ServiceRunAs." -ForegroundColor Green
+}
+
+# --- STEP 6: APP CONFIGURATION & PORTS ---
+Write-Host "[$ServiceName] Configuring ports and registry..." -ForegroundColor Cyan
+
+# 1. Config Registry (Thumbprint)
+if (!(Test-Path $ConfigRegistryPath)) {
+    New-Item -Path $ConfigRegistryPath -Force | Out-Null
+}
+if (![string]::IsNullOrWhiteSpace($TlsThumbprint)) {
+    $cleanThumb = $TlsThumbprint.Replace(":", "").Replace(" ", "").ToUpper()
+    Set-ItemProperty -Path $ConfigRegistryPath -Name "TlsThumbprint" -Value $cleanThumb
+    Write-Host "[$ServiceName] TLS Thumbprint configured in registry." -ForegroundColor Green
+}
+
+# 2. Service Environment (Ports)
+$serviceKey = "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName"
+if (Test-Path $serviceKey) {
+    $envStrings = @("PORT=$HttpPort", "HTTPS_PORT=$HttpsPort")
+    Set-ItemProperty -Path $serviceKey -Name "Environment" -Value $envStrings -Type MultiString
+    Write-Host "[$ServiceName] Ports configured: HTTP=$HttpPort, HTTPS=$HttpsPort" -ForegroundColor Green
 }
 
 # Démarrage
