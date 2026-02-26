@@ -43,8 +43,9 @@ const updateStatus = (connected) => {
     }
 };
 
+// Notification API requires a secure context (HTTPS or localhost)
 const notifyFailure = (req) => {
-    if (req.status === 'fail') {
+    if (req.status === 'fail' && globalThis.isSecureContext && typeof Notification !== 'undefined') {
         const failureNotif = new Notification(`FAIL: ${req.user}`, { body: req.reason });
         failureNotif.addEventListener('click', () => { focus(); });
     }
@@ -56,7 +57,8 @@ const handleWSData = (data) => {
     }
     const toggle = document.querySelector('#notifToggle');
     const enabled = toggle && toggle.checked;
-    if (enabled && Notification.permission === 'granted') {
+    // Only attempt notifications in a secure context where the API is available
+    if (enabled && globalThis.isSecureContext && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         for (const req of data.requests) {
             notifyFailure(req);
         }
@@ -211,7 +213,8 @@ const initReorder = () => {
 
 const handleDelegation = (event) => {
     const { target } = event;
-    if (target.id === 'notifToggle' && target.checked && Notification.permission !== 'granted') {
+    // Notification permission can only be requested in a secure context (HTTPS or localhost)
+    if (target.id === 'notifToggle' && target.checked && globalThis.isSecureContext && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
         Notification.requestPermission().then((perm) => {
             if (perm !== 'granted') { target.checked = false; }
         });
@@ -263,10 +266,18 @@ const initMenu = () => {
     if (menu) { setupMenuListeners(menu); }
 };
 
-const applyStored = () => {
-    for (const key of KEYS) {
-        const visibility = localStorage.getItem(`col-visible-${key}`);
-        if (visibility) { applyVisibility(key, visibility === 'true'); }
+const checkSecureContext = () => {
+    if (!globalThis.isSecureContext) {
+        const toggle = document.querySelector('#notifToggle');
+        if (toggle) {
+            toggle.disabled = true;
+            toggle.title = "HTTPS or localhost required for alerts";
+            const label = document.querySelector('label[for="notifToggle"]');
+            if (label) {
+                label.style.opacity = '0.5';
+                label.style.cursor = 'not-allowed';
+            }
+        }
     }
 };
 
@@ -277,6 +288,7 @@ const init = () => {
     initReorder();
     initDelegations();
     applyStored();
+    checkSecureContext();
 };
 
 if (document.readyState === 'loading') {

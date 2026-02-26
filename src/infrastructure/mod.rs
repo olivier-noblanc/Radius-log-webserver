@@ -1,6 +1,7 @@
 pub mod cache;
 pub mod file_watcher;
 pub mod security_audit;
+pub mod tls;
 pub mod win32;
 
 // Trait définit ici pour être partagé entre FileWatcher et WebSocket

@@ -851,6 +851,28 @@ pub fn perform_security_audit() -> SecurityAuditReport {
         }
     }
 
+    // 7. HTTPS Configuration Audit (Future proofing for 10+ years)
+    if let Some(thumbprint) = crate::infrastructure::tls::get_tls_thumbprint_from_registry() {
+        if crate::infrastructure::tls::find_cert_by_thumbprint(&thumbprint).is_err() {
+            report.add_maintenance_alarm(
+                "HIGH",
+                &t!("security_audit.vulns.https_not_found_title"),
+                &t!(
+                    "security_audit.vulns.https_not_found_desc",
+                    thumb = thumbprint
+                ),
+            );
+        }
+    } else {
+        report.add_vulnerability(
+            "LOW",
+            &t!("security_audit.vulns.https_missing_title"),
+            &t!("security_audit.vulns.https_missing_desc"),
+            None,
+        );
+        report.add_recommendation(&t!("security_audit.vulns.https_missing_rec"));
+    }
+
     report
 }
 

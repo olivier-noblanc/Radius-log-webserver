@@ -122,7 +122,12 @@
       "no_issues_rec": "✅ No security issues or Schannel errors detected.",
       "events_detected_rec": "ℹ️ Schannel events detected but no vulnerabilities found.",
       "critical_attention_rec": "⚠️ %{count} CRITICAL issues require immediate attention.",
-      "review_rec": "⚠️ Some vulnerabilities detected. Review recommendations."
+      "review_rec": "⚠️ Some vulnerabilities detected. Review recommendations.",
+      "https_missing_title": "HTTPS Not Configured (Unsecure Mode)",
+      "https_missing_desc": "The server is running in HTTP-only mode. Browser security features (Notifications, etc.) are disabled.",
+      "https_missing_rec": "Configure a TLS certificate in the 'TlsThumbprint' registry key (HKLM\\SOFTWARE\\RadiusLogWebserver) to enable HTTPS on port 8443.",
+      "https_not_found_title": "TLS Certificate Not Found",
+      "https_not_found_desc": "Thumbprint %{thumb} is configured but the certificate is missing from the LOCAL_MACHINE\\MY store."
     }
   }
 }

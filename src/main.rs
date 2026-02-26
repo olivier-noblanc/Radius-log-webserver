@@ -169,47 +169,67 @@ async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
     let watcher = FileWatcher::new(broadcaster.clone(), cache.clone(), stats_cache.clone());
     watcher.start(log_path.clone());
 
-    let port: u16 = std::env::var("PORT")
+    // Port configuration
+    let http_port: u16 = std::env::var("PORT")
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(8080);
 
-    tracing::info!("Server running at http://0.0.0.0:{}", port);
+    let https_port: u16 = std::env::var("HTTPS_PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(8443);
+
+    // Attempt to load TLS configuration from Windows Certificate Store
+    let tls_config = radius_log_webserver::infrastructure::tls::try_load_tls_config();
+
     tracing::info!("Build: {} (v{})", env!("VERGEN_GIT_SHA"), BUILD_VERSION);
 
-    // Server future creation (doesn't start immediately, defined here)
-    let server_future = HttpServer::new(move || {
+    // App factory closure to avoid duplication
+    let b_data = broadcaster_data.clone();
+    let c_data = cache_data.clone();
+    let s_data = stats_cache_data.clone();
+    let is_https = tls_config.is_some();
+
+    let main_server_factory = move || {
+        let mut default_headers = middleware::DefaultHeaders::new()
+            // CSP CONFIGURED FOR LOCAL ASSETS ONLY (100% offline)
+            .add((
+                "Content-Security-Policy",
+                [
+                    "default-src 'self'",
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+                    "script-src-elem 'self' 'unsafe-inline'",
+                    "style-src 'self' 'unsafe-inline'",
+                    "style-src-elem 'self' 'unsafe-inline'",
+                    "font-src 'self'",
+                    "img-src 'self' data: blob:",
+                    "connect-src 'self' ws: wss:",
+                    "object-src 'none'",
+                    "base-uri 'self'",
+                ]
+                .join("; "),
+            ))
+            .add(("X-Content-Type-Options", "nosniff"));
+
+        // Add HSTS if running in HTTPS mode
+        if is_https {
+            default_headers = default_headers.add((
+                "Strict-Transport-Security",
+                "max-age=31536000; includeSubDomains",
+            ));
+        }
+
         App::new()
             .wrap(middleware::Logger::default())
             .wrap(tracing_actix_web::TracingLogger::default())
-            .wrap(
-                middleware::DefaultHeaders::new()
-                    // CSP CONFIGURED FOR LOCAL ASSETS ONLY (100% offline)
-                    .add((
-                        "Content-Security-Policy",
-                        [
-                            "default-src 'self'",
-                            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-                            "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval'",
-                            "style-src 'self' 'unsafe-inline'",
-                            "style-src-elem 'self' 'unsafe-inline'",
-                            "font-src 'self'",
-                            "img-src 'self' data: blob:",
-                            "connect-src 'self' ws: wss:",
-                            "object-src 'none'",
-                            "base-uri 'self'",
-                        ]
-                        .join("; "),
-                    ))
-                    .add(("X-Content-Type-Options", "nosniff")),
-            )
-            .app_data(broadcaster_data.clone())
-            .app_data(cache_data.clone())
-            .app_data(stats_cache_data.clone())
+            .wrap(default_headers)
+            .app_data(b_data.clone())
+            .app_data(c_data.clone())
+            .app_data(s_data.clone())
             .wrap(middleware::Compress::default())
             .route("/", web::get().to(index))
             .route("/ws", web::get().to(ws_route))
-            // EMBEDDED ASSETS ROUTES (Build Time)
             .route("/css/{filename:.*}", web::get().to(serve_static_asset))
             .route("/js/{filename:.*}", web::get().to(serve_static_asset))
             .route("/fonts/{filename:.*}", web::get().to(serve_static_asset))
@@ -234,23 +254,58 @@ async fn run_app(mut shutdown: broadcast::Receiver<()>) -> std::io::Result<()> {
                 web::get().to(radius_log_webserver::api::handlers::web_ui::security_audit_page),
             )
             .route("/robots.txt", web::get().to(robots_txt))
-    })
-    .bind(format!("0.0.0.0:{}", port))?
-    .run();
+    };
 
-    // Graceful shutdown management via tokio::select! (Specific to Actix-Web 4)
-    // Wait for either the server to crash/finish, or for a shutdown signal
-    tokio::select! {
-        // Case 1: Server stops on its own (rare)
-        res = server_future => {
-            res
+    if let Some(tls_conf) = tls_config {
+        tracing::info!("HTTPS mode enabled. Binding to port {}", https_port);
+        tracing::info!(
+            "HTTP redirect enabled on port {} -> https://hostname:{}",
+            http_port,
+            https_port
+        );
+
+        let main_server = HttpServer::new(main_server_factory)
+            .bind_rustls_0_23(format!("0.0.0.0:{}", https_port), (*tls_conf).clone())?
+            .run();
+
+        let redirect_server = HttpServer::new(move || {
+            App::new().default_service(web::route().to(move |req: actix_web::HttpRequest| {
+                let host = req.connection_info().host().to_string();
+                let hostname = host.split(':').next().unwrap_or("localhost");
+                let path = req.uri().to_string();
+                let new_url = format!("https://{}:{}{}", hostname, https_port, path);
+                async move {
+                    actix_web::HttpResponse::MovedPermanently()
+                        .insert_header(("Location", new_url))
+                        .finish()
+                }
+            }))
+        })
+        .bind(format!("0.0.0.0:{}", http_port))?
+        .run();
+
+        tokio::select! {
+            res = main_server => res,
+            res = redirect_server => res,
+            _ = shutdown.recv() => {
+                tracing::info!("Graceful shutdown signal received, closing servers...");
+                Ok(())
+            }
         }
-        // Case 2: Shutdown signal received (via shutdown.recv())
-        _ = shutdown.recv() => {
-            tracing::info!("Graceful shutdown signal received, closing server...");
-            // By exiting this block, 'server_future' is dropped (abandoned),
-            // which automatically triggers Actix's graceful shutdown mechanism.
-            Ok(())
+    } else {
+        tracing::info!("HTTP-only mode enabled. Binding to port {}", http_port);
+        tracing::info!("(Secure context features like Browser Notifications may be disabled)");
+
+        let server_future = HttpServer::new(main_server_factory)
+            .bind(format!("0.0.0.0:{}", http_port))?
+            .run();
+
+        tokio::select! {
+            res = server_future => res,
+            _ = shutdown.recv() => {
+                tracing::info!("Graceful shutdown signal received, closing server...");
+                Ok(())
+            }
         }
     }
 }
