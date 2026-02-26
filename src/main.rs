@@ -58,19 +58,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Create a channel to handle Ctrl+C
         let (shutdown_tx, shutdown_rx) = broadcast::channel::<()>(1);
 
-            // Background task to listen for Ctrl+C
-            let tx_clone = shutdown_tx.clone();
-            tokio::spawn(async move {
-                match tokio::signal::ctrl_c().await {
-                    Ok(()) => {
-                        tracing::info!("Ctrl+C received, initiating graceful shutdown...");
-                        let _ = tx_clone.send(());
-                    }
-                    Err(err) => {
-                        eprintln!("Unable to listen for shutdown signal: {}", err);
-                    }
+        // Background task to listen for Ctrl+C
+        let tx_clone = shutdown_tx.clone();
+        tokio::spawn(async move {
+            match tokio::signal::ctrl_c().await {
+                Ok(()) => {
+                    tracing::info!("Ctrl+C received, initiating graceful shutdown...");
+                    let _ = tx_clone.send(());
                 }
-            });
+                Err(err) => {
+                    eprintln!("Unable to listen for shutdown signal: {}", err);
+                }
+            }
+        });
 
         // App launch
         run_app(shutdown_rx).await
