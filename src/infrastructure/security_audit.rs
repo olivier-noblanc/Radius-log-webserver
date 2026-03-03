@@ -863,7 +863,7 @@ pub fn perform_security_audit() -> SecurityAuditReport {
                 ),
             );
         }
-    } else {
+    } else if crate::infrastructure::tls::find_first_https_eligible_cert().is_err() {
         report.add_vulnerability(
             "LOW",
             &t!("security_audit.vulns.https_missing_title"),

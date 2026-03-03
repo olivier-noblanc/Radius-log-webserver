@@ -7,6 +7,7 @@ use schannel::RawPointer;
 use std::sync::Arc;
 use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
 use winreg::RegKey;
+use x509_parser::prelude::{FromDer, X509Certificate};
 
 /// Registry path where the TLS thumbprint is stored
 const REGISTRY_PATH: &str = r"SOFTWARE\RadiusLogWebserver";
@@ -197,20 +198,36 @@ pub fn build_rustls_config(
 
 /// Attempt to load TLS configuration. Returns None for HTTP mode.
 pub fn try_load_tls_config() -> Option<Arc<ServerConfig>> {
-    let thumbprint = get_tls_thumbprint_from_registry()?;
-
-    match load_tls_from_thumbprint(&thumbprint) {
-        Ok(config) => {
-            tracing::info!("HTTPS mode enabled ({}...) ", &thumbprint[..4]);
-            Some(Arc::new(config))
+    if let Some(thumbprint) = get_tls_thumbprint_from_registry() {
+        match load_tls_from_thumbprint(&thumbprint) {
+            Ok(config) => {
+                tracing::info!("HTTPS mode enabled ({}...) ", &thumbprint[..4]);
+                Some(Arc::new(config))
+            }
+            Err(e) => {
+                tracing::error!(
+                    "TLS Error (thumbprint: {}): {}. Falling back to HTTP.",
+                    &thumbprint[..4],
+                    e
+                );
+                None
+            }
         }
-        Err(e) => {
-            tracing::error!(
-                "TLS Error (thumbprint: {}): {}. Falling back to HTTP.",
-                &thumbprint[..4],
-                e
-            );
-            None
+    } else {
+        match load_tls_from_first_valid_machine_cert() {
+            Ok(config) => {
+                tracing::info!(
+                    "HTTPS mode enabled using the first eligible certificate in LOCAL_MACHINE\\MY"
+                );
+                Some(Arc::new(config))
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "No eligible TLS certificate found in LOCAL_MACHINE\\MY: {}. Falling back to HTTP.",
+                    e
+                );
+                None
+            }
         }
     }
 }
@@ -218,6 +235,49 @@ pub fn try_load_tls_config() -> Option<Arc<ServerConfig>> {
 /// Load TLS configuration from a certificate identified by its SHA-1 thumbprint.
 fn load_tls_from_thumbprint(thumbprint: &str) -> Result<ServerConfig> {
     let cert = find_cert_by_thumbprint(thumbprint)?;
+    let (certs, key) = extract_cert_and_key(&cert)?;
+    build_rustls_config(certs, key)
+}
+
+/// Return true if the certificate can be used for HTTPS server authentication.
+fn is_https_eligible(cert: &CertContext) -> bool {
+    let der = cert.to_der();
+    let Ok((_, parsed)) = X509Certificate::from_der(&der) else {
+        return false;
+    };
+
+    if parsed.validity().is_valid().is_err() {
+        return false;
+    }
+
+    if let Ok(Some(eku)) = parsed.extended_key_usage() {
+        return eku.server_auth;
+    }
+
+    true
+}
+
+/// Find the first valid certificate in LOCAL_MACHINE\MY that can be used for HTTPS and has an
+/// exportable private key.
+pub fn find_first_https_eligible_cert() -> Result<CertContext> {
+    let store = CertStore::open_local_machine("My")
+        .context("Failed to open LOCAL_MACHINE\\MY certificate store")?;
+
+    for cert in store.certs() {
+        if !is_https_eligible(&cert) {
+            continue;
+        }
+
+        if export_private_key_pkcs8(&cert).is_ok() {
+            return Ok(cert);
+        }
+    }
+
+    anyhow::bail!("No valid HTTPS certificate with exportable private key found")
+}
+
+fn load_tls_from_first_valid_machine_cert() -> Result<ServerConfig> {
+    let cert = find_first_https_eligible_cert()?;
     let (certs, key) = extract_cert_and_key(&cert)?;
     build_rustls_config(certs, key)
 }
