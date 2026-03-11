@@ -40,3 +40,6 @@ Use this map before searching:
 - Prefer targeted fixes that unblock CI without broad refactors.
 - Keep changes small and localized to the failing area.
 - Add comments only when future maintenance would otherwise be unclear.
+
+## Frontend Lint
+- `oxlint assets/js` can be run directly to validate JS lint without building the Rust `frontend_lint` binary.

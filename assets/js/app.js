@@ -43,15 +43,14 @@ const notifyFailure = (req) => {
         failureNotif.addEventListener('click', () => { focus(); });
     }
 };
-const updateNotificationUI = () => {
-    const toggle = document.querySelector('#notifToggle');
-    const warning = document.querySelector('#notifWarning');
-    if (!toggle || !warning) {
-        return;
-    }
-    const allowed = globalThis.isSecureContext === true
-        && typeof Notification !== 'undefined'
-        && Notification.permission !== 'denied';
+const getNotificationElements = () => ({
+    toggle: document.querySelector('#notifToggle'),
+    warning: document.querySelector('#notifWarning'),
+});
+const isNotificationAllowed = () => globalThis.isSecureContext === true
+    && typeof Notification !== 'undefined'
+    && Notification.permission !== 'denied';
+const applyNotificationState = (toggle, warning, allowed) => {
     if (allowed) {
         toggle.disabled = false;
         warning.hidden = true;
@@ -60,6 +59,13 @@ const updateNotificationUI = () => {
     toggle.checked = false;
     toggle.disabled = true;
     warning.hidden = false;
+};
+const updateNotificationUI = () => {
+    const { toggle, warning } = getNotificationElements();
+    if (!toggle || !warning) {
+        return;
+    }
+    applyNotificationState(toggle, warning, isNotificationAllowed());
 };
 const handleWSData = (data) => {
     if (data.type !== 'new_logs') {
