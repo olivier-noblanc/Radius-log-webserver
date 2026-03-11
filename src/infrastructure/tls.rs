@@ -374,7 +374,7 @@ fn load_tls_from_thumbprint(thumbprint: &str) -> Result<ServerConfig> {
 /// Return true if the certificate can be used for HTTPS server authentication.
 fn is_https_eligible(cert: &CertContext) -> bool {
     let der = cert.to_der();
-    let Ok((_, parsed)) = X509Certificate::from_der(&der) else {
+    let Ok((_, parsed)) = X509Certificate::from_der(der) else {
         return false;
     };
 

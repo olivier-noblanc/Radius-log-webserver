@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
 use crate::infrastructure::tls::TlsStatus;
+use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
@@ -879,11 +879,7 @@ pub fn perform_security_audit() -> SecurityAuditReport {
                     report.add_recommendation(&t!("security_audit.vulns.https_missing_rec"));
                 }
             } else {
-                let hint = report
-                    .tls_status
-                    .error_hint
-                    .clone()
-                    .unwrap_or_default();
+                let hint = report.tls_status.error_hint.clone().unwrap_or_default();
                 report.add_vulnerability(
                     "LOW",
                     &t!("security_audit.vulns.https_failed_title"),
