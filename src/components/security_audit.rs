@@ -471,12 +471,9 @@ fn render_cert_grid(certs: &[crate::infrastructure::security_audit::CertificateI
                                     class: "bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded border border-blue-500/30 font-bold",
                                     "NTAuth"
                                 }
-                            } else if !cert.is_self_signed && !cert.subject.contains("Found Local Cert") {
-                                span {
-                                    class: "bg-yellow-500/20 text-yellow-500 text-[10px] px-1.5 py-0.5 rounded border border-yellow-500/30 font-bold",
-                                    "NOT IN NTAUTH"
-                                }
                             }
+                            // ✅ FIX: Ne plus afficher "NOT IN NTAUTH" ici
+                            // Ce badge sera ajouté uniquement par la vulnérabilité si nécessaire
                         }
                     }
 
@@ -508,12 +505,8 @@ fn render_cert_grid(certs: &[crate::infrastructure::security_audit::CertificateI
                             div { class: "text-yellow-500", "⚠️ {rust_i18n::t!(\"security_audit.self_signed\").to_string()}" }
                         }
 
-                        if !cert.in_ntauth && !cert.is_self_signed && !cert.subject.contains("Found Local Cert") {
-                            div { class: "mt-2 p-1.5 bg-yellow-500/5 border border-yellow-500/20 rounded",
-                                div { class: "text-yellow-500 font-bold mb-1", "💡 {rust_i18n::t!(\"security_audit.resolution_hint\").to_string()}" }
-                                div { class: "italic opacity-80", {rust_i18n::t!("security_audit.resolution_hint_text").to_string()} }
-                            }
-                        }
+                        // ✅ SUPPRIMÉ: Le bloc "Resolution Hint" ne s'affiche plus ici
+                        // Il sera géré uniquement via la section "Vulnérabilités" si l'émetteur manque
                     }
                 }
             }
