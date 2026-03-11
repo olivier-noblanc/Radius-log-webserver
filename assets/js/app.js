@@ -1,22 +1,18 @@
 'use strict';
-
 const WS_INTERVAL = 5000;
 const MIN_WIDTH = 50;
 const HALF = 0.5;
 const NOT_SET = 0;
 const KEYS = ['timestamp', 'req_type', 'server', 'ap_ip', 'ap_name', 'mac', 'user', 'resp_type', 'reason'];
-
 let webSocket = { closed: true };
 let badge = { textContent: '' };
 let fallbackInterval = NOT_SET;
-
 const stopFallback = () => {
     if (fallbackInterval) {
         clearInterval(fallbackInterval);
         fallbackInterval = NOT_SET;
     }
 };
-
 const startFallback = () => {
     if (fallbackInterval) {
         return;
@@ -27,7 +23,6 @@ const startFallback = () => {
         }
     }, WS_INTERVAL);
 };
-
 const updateStatus = (connected) => {
     if (!badge.id) {
         badge = document.querySelector('#statusBadge') || badge;
@@ -42,41 +37,36 @@ const updateStatus = (connected) => {
         badge.classList.toggle('disconnected', !connected);
     }
 };
-
-// Notification API requires a secure context (HTTPS or localhost)
 const notifyFailure = (req) => {
     if (req.status === 'fail' && globalThis.isSecureContext && typeof Notification !== 'undefined') {
         const failureNotif = new Notification(`FAIL: ${req.user}`, { body: req.reason });
         failureNotif.addEventListener('click', () => { focus(); });
     }
 };
-
 const updateNotificationUI = () => {
     const toggle = document.querySelector('#notifToggle');
     const warning = document.querySelector('#notifWarning');
     if (!toggle || !warning) {
         return;
     }
-    const secure = globalThis.isSecureContext === true;
-    const apiAvailable = typeof Notification !== 'undefined';
-    const permissionDenied = apiAvailable && Notification.permission === 'denied';
-    const allowed = secure && apiAvailable && !permissionDenied;
-
-    if (!allowed) {
-        toggle.checked = false;
-        toggle.disabled = true;
-    } else {
+    const allowed = globalThis.isSecureContext === true
+        && typeof Notification !== 'undefined'
+        && Notification.permission !== 'denied';
+    if (allowed) {
         toggle.disabled = false;
+        warning.hidden = true;
+        return;
     }
+    toggle.checked = false;
+    toggle.disabled = true;
+    warning.hidden = false;
 };
-
 const handleWSData = (data) => {
     if (data.type !== 'new_logs') {
         return;
     }
     const toggle = document.querySelector('#notifToggle');
     const enabled = toggle && toggle.checked;
-    // Only attempt notifications in a secure context where the API is available
     if (enabled && globalThis.isSecureContext && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         for (const req of data.requests) {
             notifyFailure(req);
@@ -86,7 +76,6 @@ const handleWSData = (data) => {
         globalThis.htmx.ajax('GET', '/api/logs/rows', '#log-table-container');
     }
 };
-
 const handleWSMessage = (event) => {
     try {
         const data = JSON.parse(event.data);
@@ -97,7 +86,6 @@ const handleWSMessage = (event) => {
         }
     }
 };
-
 const connectWS = () => {
     let proto = 'ws:';
     if (location.protocol === 'https:') {
@@ -115,7 +103,6 @@ const connectWS = () => {
     });
     webSocket.addEventListener('message', handleWSMessage);
 };
-
 document.addEventListener('DOMContentLoaded', () => {
     updateNotificationUI();
     const toggle = document.querySelector('#notifToggle');
@@ -129,13 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
 const copyCell = (cell) => {
     if (cell) {
         navigator.clipboard.writeText(cell.textContent.trim());
     }
 };
-
 const copyRow = (cell) => {
     if (cell) {
         const row = cell.closest('tr');
@@ -144,7 +129,6 @@ const copyRow = (cell) => {
         navigator.clipboard.writeText(content);
     }
 };
-
 const applyVisibility = (key, show) => {
     const tbl = document.querySelector('#logTable');
     if (!tbl) { return; }
@@ -155,7 +139,6 @@ const applyVisibility = (key, show) => {
     const cb = document.querySelector(`input[data-col-key="${key}"]`);
     if (cb) { cb.checked = show; }
 };
-
 const applyOrder = (order) => {
     if (globalThis.htmx) {
         // Save order via server
@@ -172,7 +155,6 @@ const applyOrder = (order) => {
         });
     }
 };
-
 const setupResizerListener = (head, idx, resizer) => {
     resizer.addEventListener('mousedown', (event) => {
         const startX = event.pageX;
@@ -192,14 +174,12 @@ const setupResizerListener = (head, idx, resizer) => {
         document.addEventListener('mouseup', onUp);
     });
 };
-
 const setupResizer = (head, idx) => {
     const res = head.querySelector('.resizer');
     if (!res || res.dataset.init) { return; }
     res.dataset.init = '1';
     setupResizerListener(head, idx, res);
 };
-
 const initResizers = () => {
     const tbl = document.querySelector('#logTable');
     if (!tbl) { return; }
@@ -212,7 +192,6 @@ const initResizers = () => {
         setupResizer(head, idx);
     }
 };
-
 const setupReorder = (pick) => {
     let dragElement = { dataset: {} };
     pick.addEventListener('dragstart', (event) => {
@@ -238,12 +217,10 @@ const setupReorder = (pick) => {
         applyOrder(order);
     });
 };
-
 const initReorder = () => {
     const pick = document.querySelector('.column-picker');
     if (pick) { setupReorder(pick); }
 };
-
 const handleDelegation = (event) => {
     const { target } = event;
     // Notification permission can only be requested in a secure context (HTTPS or localhost)
@@ -258,7 +235,6 @@ const handleDelegation = (event) => {
         localStorage.setItem(`col-visible-${colKey}`, target.checked);
     }
 };
-
 const initDelegations = () => {
     document.addEventListener('change', handleDelegation);
     document.addEventListener('click', (event) => {
@@ -274,7 +250,6 @@ const initDelegations = () => {
         }
     });
 };
-
 const setupMenuListeners = (menu) => {
     let targetCell = { textContent: '' };
     document.addEventListener('contextmenu', (event) => {
@@ -293,12 +268,10 @@ const setupMenuListeners = (menu) => {
     const cRow = document.querySelector('#copy-row');
     if (cRow) { cRow.addEventListener('click', () => { copyRow(targetCell); }); }
 };
-
 const initMenu = () => {
     const menu = document.querySelector('#context-menu');
     if (menu) { setupMenuListeners(menu); }
 };
-
 const checkSecureContext = () => {
     if (!globalThis.isSecureContext) {
         const toggle = document.querySelector('#notifToggle');
@@ -313,7 +286,6 @@ const checkSecureContext = () => {
         }
     }
 };
-
 const init = () => {
     connectWS();
     initMenu();
@@ -323,7 +295,6 @@ const init = () => {
     applyStored();
     checkSecureContext();
 };
-
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else { init(); }

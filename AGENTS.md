@@ -26,6 +26,8 @@ Use this map before searching:
 - Use the repo map first.
 - If needed, run scoped searches (e.g., `rg -n --glob src/infrastructure/** pattern`).
 - Avoid repo-wide `rg` unless the map is insufficient.
+ - When using `cmd /c`, remember that `|`, `(`, `)` are command operators. Escape them with `^` inside quoted patterns, or wrap the whole command in `powershell -NoProfile -Command` to avoid cmd parsing issues.
+ - Prefer `rg` over PowerShell pipelines for quick counts or searches; if you need a line count, use a tiny `python -c` one-liner instead of `Measure-Object` (it avoids PS parsing pitfalls in this environment).
 
 ## CI/CD
 - For GitHub Actions failures: list runs, then fetch failed logs first (`gh run view <id> --log-failed`).
