@@ -4,6 +4,7 @@ use rustls::ServerConfig;
 use schannel::cert_context::{CertContext, HashAlgorithm};
 use schannel::cert_store::CertStore;
 use schannel::RawPointer;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
 use winreg::RegKey;
@@ -13,6 +14,29 @@ use x509_parser::prelude::{FromDer, X509Certificate};
 const REGISTRY_PATH: &str = r"SOFTWARE\RadiusLogWebserver";
 /// Registry value name for the certificate thumbprint
 const THUMBPRINT_VALUE: &str = "TlsThumbprint";
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TlsStatus {
+    pub https_enabled: bool,
+    pub source: String,
+    pub configured_thumbprint: Option<String>,
+    pub resolved_thumbprint: Option<String>,
+    pub error: Option<String>,
+    pub error_hint: Option<String>,
+}
+
+impl Default for TlsStatus {
+    fn default() -> Self {
+        Self {
+            https_enabled: false,
+            source: "auto".to_string(),
+            configured_thumbprint: None,
+            resolved_thumbprint: None,
+            error: None,
+            error_hint: None,
+        }
+    }
+}
 
 /// Read the TLS certificate thumbprint from the Windows Registry.
 /// Returns None if the registry key or value does not exist (= HTTP-only mode).
@@ -42,6 +66,114 @@ fn normalize_thumbprint(thumbprint: &str) -> String {
 /// Format raw fingerprint bytes as an uppercase hex string.
 fn format_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{:02X}", b)).collect()
+}
+
+fn cert_thumbprint(cert: &CertContext) -> Option<String> {
+    cert.fingerprint(HashAlgorithm::sha1())
+        .ok()
+        .map(|sha1_bytes| format_hex(&sha1_bytes))
+}
+
+fn build_tls_error_hint(error: &str) -> Option<String> {
+    let lower = error.to_lowercase();
+    if lower.contains("export") && lower.contains("key") {
+        return Some(
+            "Private key is not exportable. Reissue/import the certificate with an exportable private key (PFX) or mark the key as exportable."
+                .to_string(),
+        );
+    }
+    if lower.contains("no certificate found matching thumbprint") {
+        return Some(
+            "Thumbprint points to a missing certificate in LOCAL_MACHINE\\MY.".to_string(),
+        );
+    }
+    if lower.contains("no valid https certificate") {
+        return Some(
+            "No eligible certificate with Server Authentication and an exportable private key was found."
+                .to_string(),
+        );
+    }
+    if lower.contains("access denied") || lower.contains("failed to open ncrypt key") {
+        return Some(
+            "Grant the service account read access to the certificate private key.".to_string(),
+        );
+    }
+    None
+}
+
+/// Diagnose TLS configuration for UI and audit reporting.
+pub fn diagnose_tls_status() -> TlsStatus {
+    if let Some(thumbprint) = get_tls_thumbprint_from_registry() {
+        match find_cert_by_thumbprint(&thumbprint) {
+            Ok(cert) => match extract_cert_and_key(&cert) {
+                Ok(_) => TlsStatus {
+                    https_enabled: true,
+                    source: "registry".to_string(),
+                    configured_thumbprint: Some(thumbprint),
+                    resolved_thumbprint: cert_thumbprint(&cert),
+                    error: None,
+                    error_hint: None,
+                },
+                Err(e) => {
+                    let error = e.to_string();
+                    TlsStatus {
+                        https_enabled: false,
+                        source: "registry".to_string(),
+                        configured_thumbprint: Some(thumbprint),
+                        resolved_thumbprint: cert_thumbprint(&cert),
+                        error_hint: build_tls_error_hint(&error),
+                        error: Some(error),
+                    }
+                }
+            },
+            Err(e) => {
+                let error = e.to_string();
+                TlsStatus {
+                    https_enabled: false,
+                    source: "registry".to_string(),
+                    configured_thumbprint: Some(thumbprint),
+                    resolved_thumbprint: None,
+                    error_hint: build_tls_error_hint(&error),
+                    error: Some(error),
+                }
+            }
+        }
+    } else {
+        match find_first_https_eligible_cert() {
+            Ok(cert) => match extract_cert_and_key(&cert) {
+                Ok(_) => TlsStatus {
+                    https_enabled: true,
+                    source: "auto".to_string(),
+                    configured_thumbprint: None,
+                    resolved_thumbprint: cert_thumbprint(&cert),
+                    error: None,
+                    error_hint: None,
+                },
+                Err(e) => {
+                    let error = e.to_string();
+                    TlsStatus {
+                        https_enabled: false,
+                        source: "auto".to_string(),
+                        configured_thumbprint: None,
+                        resolved_thumbprint: cert_thumbprint(&cert),
+                        error_hint: build_tls_error_hint(&error),
+                        error: Some(error),
+                    }
+                }
+            },
+            Err(e) => {
+                let error = e.to_string();
+                TlsStatus {
+                    https_enabled: false,
+                    source: "auto".to_string(),
+                    configured_thumbprint: None,
+                    resolved_thumbprint: None,
+                    error_hint: build_tls_error_hint(&error),
+                    error: Some(error),
+                }
+            }
+        }
+    }
 }
 
 /// Find a certificate in the LOCAL_MACHINE\MY store matching the given SHA-1 thumbprint.

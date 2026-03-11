@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use crate::infrastructure::tls::TlsStatus;
 use chrono::{DateTime, Utc};
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
@@ -17,6 +18,7 @@ pub struct SecurityAuditReport {
     pub trusted_publishers: Vec<CertificateInfo>,
     pub disallowed_certificates: Vec<CertificateInfo>,
     pub tls_config: TlsConfiguration,
+    pub tls_status: TlsStatus,
     pub event_log_analysis: Vec<String>,
     pub vulnerabilities: Vec<SecurityVulnerability>,
     pub recommendations: Vec<String>,
@@ -76,6 +78,7 @@ impl SecurityAuditReport {
             trusted_publishers: Vec::new(),
             disallowed_certificates: Vec::new(),
             tls_config: TlsConfiguration::default(),
+            tls_status: TlsStatus::default(),
             event_log_analysis: Vec::new(),
             vulnerabilities: Vec::new(),
             recommendations: Vec::new(),
@@ -851,26 +854,63 @@ pub fn perform_security_audit() -> SecurityAuditReport {
         }
     }
 
-    // 7. HTTPS Configuration Audit (Future proofing for 10+ years)
-    if let Some(thumbprint) = crate::infrastructure::tls::get_tls_thumbprint_from_registry() {
-        if crate::infrastructure::tls::find_cert_by_thumbprint(&thumbprint).is_err() {
-            report.add_maintenance_alarm(
-                "HIGH",
-                &t!("security_audit.vulns.https_not_found_title"),
-                &t!(
-                    "security_audit.vulns.https_not_found_desc",
-                    thumb = thumbprint
-                ),
+    // 7. HTTPS Configuration Audit (explicit root-cause for UI)
+    report.tls_status = crate::infrastructure::tls::diagnose_tls_status();
+
+    if !report.tls_status.https_enabled {
+        if let Some(err) = report.tls_status.error.clone() {
+            if err.contains("No certificate found matching thumbprint") {
+                if let Some(thumbprint) = report.tls_status.configured_thumbprint.clone() {
+                    report.add_maintenance_alarm(
+                        "HIGH",
+                        &t!("security_audit.vulns.https_not_found_title"),
+                        &t!(
+                            "security_audit.vulns.https_not_found_desc",
+                            thumb = thumbprint
+                        ),
+                    );
+                } else {
+                    report.add_vulnerability(
+                        "LOW",
+                        &t!("security_audit.vulns.https_missing_title"),
+                        &t!("security_audit.vulns.https_missing_desc"),
+                        None,
+                    );
+                    report.add_recommendation(&t!("security_audit.vulns.https_missing_rec"));
+                }
+            } else {
+                let hint = report
+                    .tls_status
+                    .error_hint
+                    .clone()
+                    .unwrap_or_default();
+                report.add_vulnerability(
+                    "LOW",
+                    &t!("security_audit.vulns.https_failed_title"),
+                    &t!(
+                        "security_audit.vulns.https_failed_desc",
+                        error = err,
+                        hint = hint
+                    ),
+                    None,
+                );
+                if !hint.is_empty() {
+                    report.add_recommendation(&t!(
+                        "security_audit.vulns.https_failed_rec",
+                        hint = hint
+                    ));
+                }
+            }
+        } else {
+            report.add_vulnerability(
+                "LOW",
+                &t!("security_audit.vulns.https_missing_title"),
+                &t!("security_audit.vulns.https_missing_desc"),
+                None,
             );
+            report.add_recommendation(&t!("security_audit.vulns.https_missing_rec"));
         }
-    } else if crate::infrastructure::tls::find_first_https_eligible_cert().is_err() {
-        report.add_vulnerability(
-            "LOW",
-            &t!("security_audit.vulns.https_missing_title"),
-            &t!("security_audit.vulns.https_missing_desc"),
-            None,
-        );
-        report.add_recommendation(&t!("security_audit.vulns.https_missing_rec"));
+        report.add_recommendation(&t!("security_audit.vulns.notifications_https_rec"));
     }
 
     report

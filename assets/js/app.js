@@ -51,6 +51,25 @@ const notifyFailure = (req) => {
     }
 };
 
+const updateNotificationUI = () => {
+    const toggle = document.querySelector('#notifToggle');
+    const warning = document.querySelector('#notifWarning');
+    if (!toggle || !warning) {
+        return;
+    }
+    const secure = globalThis.isSecureContext === true;
+    const apiAvailable = typeof Notification !== 'undefined';
+    const permissionDenied = apiAvailable && Notification.permission === 'denied';
+    const allowed = secure && apiAvailable && !permissionDenied;
+
+    if (!allowed) {
+        toggle.checked = false;
+        toggle.disabled = true;
+    } else {
+        toggle.disabled = false;
+    }
+};
+
 const handleWSData = (data) => {
     if (data.type !== 'new_logs') {
         return;
@@ -96,6 +115,20 @@ const connectWS = () => {
     });
     webSocket.addEventListener('message', handleWSMessage);
 };
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateNotificationUI();
+    const toggle = document.querySelector('#notifToggle');
+    if (toggle && typeof Notification !== 'undefined') {
+        toggle.addEventListener('change', () => {
+            if (toggle.checked && Notification.permission === 'default') {
+                Notification.requestPermission().finally(updateNotificationUI);
+            } else {
+                updateNotificationUI();
+            }
+        });
+    }
+});
 
 const copyCell = (cell) => {
     if (cell) {

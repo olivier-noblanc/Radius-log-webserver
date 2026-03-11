@@ -6,7 +6,25 @@ Param(
     [int]$HttpsPort = 8443,
 
     [Parameter(HelpMessage="SHA-1 Thumbprint of the TLS certificate")]
-    [string]$TlsThumbprint = $null
+    [string]$TlsThumbprint = $null,
+
+    [Parameter(HelpMessage="Enable IIS reverse proxy with HTTPS termination")]
+    [switch]$EnableIisProxy = $false,
+
+    [Parameter(HelpMessage="Install IIS if missing (admin required)")]
+    [switch]$InstallIis = $false,
+
+    [Parameter(HelpMessage="IIS site name (default RadiusLogWebserver)")]
+    [string]$IisSiteName = "RadiusLogWebserver",
+
+    [Parameter(HelpMessage="IIS app pool name (default RadiusLogWebserver)")]
+    [string]$IisAppPoolName = "RadiusLogWebserver",
+
+    [Parameter(HelpMessage="Optional IIS host header for HTTPS binding (SNI)")]
+    [string]$IisHostName = $null,
+
+    [Parameter(HelpMessage="Force IIS proxy setup even if URL Rewrite/ARR are missing")]
+    [switch]$ForceIisProxy = $false
 )
 
 # --- CONFIGURATION ---
@@ -24,6 +42,137 @@ $ServiceArguments = "--service"
 $Password = "ComplexPassword_To_Generate_In_Bitwarden_!" 
 $LogPath = "C:\Windows\System32\LogFiles"
 $ConfigRegistryPath = "HKLM:\SOFTWARE\RadiusLogWebserver"
+
+# --- IIS HELPERS ---
+function Ensure-IisInstalled {
+    param([switch]$DoInstall)
+
+    if (Get-Module -ListAvailable -Name WebAdministration) {
+        Import-Module WebAdministration -ErrorAction SilentlyContinue
+        return $true
+    }
+
+    if (-not $DoInstall) {
+        return $false
+    }
+
+    # Try Server Core / Windows Server cmdlets first
+    if (Get-Command Install-WindowsFeature -ErrorAction SilentlyContinue) {
+        Install-WindowsFeature Web-Server,Web-WebServer,Web-Common-Http,Web-Default-Doc,Web-Static-Content | Out-Null
+    } elseif (Get-Command Enable-WindowsOptionalFeature -ErrorAction SilentlyContinue) {
+        Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole,IIS-WebServer,IIS-CommonHttpFeatures,IIS-DefaultDocument,IIS-StaticContent -All -NoRestart | Out-Null
+    }
+
+    Import-Module WebAdministration -ErrorAction SilentlyContinue
+    return (Get-Module -ListAvailable -Name WebAdministration) -ne $null
+}
+
+function Configure-IisReverseProxy {
+    param(
+        [string]$SiteName,
+        [string]$AppPoolName,
+        [int]$HttpsPort,
+        [int]$HttpPort,
+        [string]$Thumbprint,
+        [string]$HostName
+    )
+
+    if (-not (Ensure-IisInstalled -DoInstall:$InstallIis)) {
+        Write-Host "IIS not installed. Re-run with -InstallIis or install IIS manually." -ForegroundColor Red
+        return $false
+    }
+
+    # Check URL Rewrite module (required for reverse proxy)
+    $rewriteModule = Get-WebGlobalModule | Where-Object { $_.Name -eq "RewriteModule" }
+    if (-not $rewriteModule) {
+        Write-Host "IIS URL Rewrite module not found. Install URL Rewrite + ARR before enabling proxy." -ForegroundColor Yellow
+        Write-Host "Download: https://www.iis.net/downloads/microsoft/url-rewrite (URL Rewrite) and ARR." -ForegroundColor Yellow
+        if (-not $ForceIisProxy) {
+            Write-Host "Re-run with -ForceIisProxy to configure IIS anyway (proxy will not work until modules are installed)." -ForegroundColor Yellow
+            return $false
+        }
+    }
+
+    # Enable ARR proxy if appcmd exists
+    $appcmd = Join-Path $env:SystemRoot "System32\inetsrv\appcmd.exe"
+    if (Test-Path $appcmd) {
+        & $appcmd set config -section:system.webServer/proxy /enabled:"True" /preserveHostHeader:"True" /commit:apphost | Out-Null
+    }
+
+    # Create IIS proxy site root
+    $iisRoot = Join-Path $scriptRoot "iis-proxy"
+    if (!(Test-Path $iisRoot)) {
+        New-Item -ItemType Directory -Path $iisRoot | Out-Null
+    }
+
+    # Write minimal reverse proxy web.config
+    $webConfig = @"
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.webServer>
+    <rewrite>
+      <rules>
+        <rule name="ReverseProxyAll" stopProcessing="true">
+          <match url="(.*)" />
+          <action type="Rewrite" url="http://localhost:$HttpPort/{R:1}" />
+        </rule>
+      </rules>
+    </rewrite>
+  </system.webServer>
+</configuration>
+"@
+    $webConfig | Set-Content -Path (Join-Path $iisRoot "web.config") -Encoding UTF8
+
+    # App Pool
+    if (-not (Test-Path "IIS:\AppPools\$AppPoolName")) {
+        New-WebAppPool -Name $AppPoolName | Out-Null
+    }
+    Set-ItemProperty "IIS:\AppPools\$AppPoolName" -Name managedRuntimeVersion -Value ""
+
+    # Site
+    if (Test-Path "IIS:\Sites\$SiteName") {
+        Set-ItemProperty "IIS:\Sites\$SiteName" -Name physicalPath -Value $iisRoot
+        Set-ItemProperty "IIS:\Sites\$SiteName" -Name applicationPool -Value $AppPoolName
+    } else {
+        New-Website -Name $SiteName -Port 80 -PhysicalPath $iisRoot -ApplicationPool $AppPoolName | Out-Null
+    }
+
+    # Remove default HTTP binding on 80 (optional) and set HTTPS binding
+    Get-WebBinding -Name $SiteName -Protocol http -ErrorAction SilentlyContinue | Remove-WebBinding -ErrorAction SilentlyContinue
+
+    $bindingParams = @{ Name = $SiteName; Protocol = "https"; Port = $HttpsPort }
+    if (![string]::IsNullOrWhiteSpace($HostName)) { $bindingParams["HostHeader"] = $HostName }
+    if (-not (Get-WebBinding @bindingParams -ErrorAction SilentlyContinue)) {
+        New-WebBinding @bindingParams | Out-Null
+    }
+
+    # Bind certificate from LocalMachine\My
+    $cleanThumb = $Thumbprint.Replace(":", "").Replace(" ", "").ToUpper()
+    $cert = Get-Item "Cert:\LocalMachine\My\$cleanThumb" -ErrorAction SilentlyContinue
+    if ($null -eq $cert) {
+        Write-Host "IIS HTTPS binding failed: certificate not found in LocalMachine\\My." -ForegroundColor Red
+        return $false
+    }
+
+    Push-Location IIS:\SslBindings
+    try {
+        $sslFlags = 0
+        $bindingKey = "0.0.0.0!$HttpsPort"
+        if (![string]::IsNullOrWhiteSpace($HostName)) {
+            $sslFlags = 1
+            $bindingKey = "0.0.0.0!$HttpsPort!$HostName"
+        }
+        if (Test-Path $bindingKey) {
+            Remove-Item $bindingKey -ErrorAction SilentlyContinue
+        }
+        New-Item $bindingKey -Thumbprint $cleanThumb -SSLFlags $sslFlags | Out-Null
+    } finally {
+        Pop-Location
+    }
+
+    Write-Host "[IIS] Reverse proxy configured: https://$($HostName ?? 'localhost'):$HttpsPort -> http://localhost:$HttpPort" -ForegroundColor Green
+    return $true
+}
 
 # --- PRE-CHECKS ---
 # Admin Rights Check
@@ -262,7 +411,9 @@ Write-Host "[$ServiceName] Configuring ports and registry..." -ForegroundColor C
 if (!(Test-Path $ConfigRegistryPath)) {
     New-Item -Path $ConfigRegistryPath -Force | Out-Null
 }
-if (![string]::IsNullOrWhiteSpace($TlsThumbprint)) {
+if ($EnableIisProxy) {
+    Write-Host "[$ServiceName] IIS proxy enabled: skipping TlsThumbprint registry (app will run HTTP-only)." -ForegroundColor Yellow
+} elseif (![string]::IsNullOrWhiteSpace($TlsThumbprint)) {
     $cleanThumb = $TlsThumbprint.Replace(":", "").Replace(" ", "").ToUpper()
     Set-ItemProperty -Path $ConfigRegistryPath -Name "TlsThumbprint" -Value $cleanThumb
     Write-Host "[$ServiceName] TLS Thumbprint configured in registry." -ForegroundColor Green
@@ -274,6 +425,16 @@ if (Test-Path $serviceKey) {
     $envStrings = @("PORT=$HttpPort", "HTTPS_PORT=$HttpsPort")
     Set-ItemProperty -Path $serviceKey -Name "Environment" -Value $envStrings -Type MultiString
     Write-Host "[$ServiceName] Ports configured: HTTP=$HttpPort, HTTPS=$HttpsPort" -ForegroundColor Green
+}
+
+# --- STEP 7: IIS REVERSE PROXY (OPTIONAL) ---
+if ($EnableIisProxy) {
+    if ([string]::IsNullOrWhiteSpace($TlsThumbprint)) {
+        Write-Host "IIS proxy requires -TlsThumbprint for HTTPS binding." -ForegroundColor Red
+    } else {
+        Configure-IisReverseProxy -SiteName $IisSiteName -AppPoolName $IisAppPoolName `
+            -HttpsPort $HttpsPort -HttpPort $HttpPort -Thumbprint $TlsThumbprint -HostName $IisHostName | Out-Null
+    }
 }
 
 # Démarrage

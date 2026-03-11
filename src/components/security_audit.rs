@@ -26,6 +26,8 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
         .iter()
         .filter(|v| v.severity == "MEDIUM")
         .count();
+    let tls = &props.report.tls_status;
+    let https_enabled = tls.https_enabled;
 
     rsx! {
         div { class: "security-audit-container p-6",
@@ -46,6 +48,37 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                     div { class: "mt-4 p-4 bg-green-500/10 border-l-4 border-green-500",
                         div { class: "text-xl font-bold text-success", "✅ {rust_i18n::t!(\"security_audit.no_critical_issues\").to_string()}" }
                         div { class: "text-sm mt-2", {rust_i18n::t!("security_audit.system_baseline_met").to_string()} }
+                    }
+                }
+            }
+
+            // HTTPS Status (explicit root-cause)
+            div { class: "mb-8",
+                h2 { class: "text-xl font-bold mb-4 flex items-center gap-2",
+                    "?? {rust_i18n::t!(\"security_audit.https_status\").to_string()}"
+                }
+                div {
+                    class: format!(
+                        "glass-panel p-4 border-l-4 {}",
+                        if https_enabled { "border-green-500 bg-green-500/10" } else { "border-red-500 bg-red-500/10" }
+                    ),
+                    div { class: "text-sm font-bold",
+                        {if https_enabled { rust_i18n::t!("security_audit.https_enabled").to_string() } else { rust_i18n::t!("security_audit.https_disabled").to_string() }}
+                    }
+                    div { class: "text-xxs text-muted mt-2 space-y-1",
+                        div { "{rust_i18n::t!(\"security_audit.https_source\").to_string()}: {if tls.source == \"registry\" { rust_i18n::t!(\"security_audit.https_source_registry\").to_string() } else { rust_i18n::t!(\"security_audit.https_source_auto\").to_string() }}" }
+                        if let Some(tp) = &tls.configured_thumbprint {
+                            div { "{rust_i18n::t!(\"security_audit.https_thumbprint\").to_string()}: {tp}" }
+                        }
+                        if let Some(tp) = &tls.resolved_thumbprint {
+                            div { "{rust_i18n::t!(\"security_audit.https_thumbprint_resolved\").to_string()}: {tp}" }
+                        }
+                        if let Some(err) = &tls.error {
+                            div { "{rust_i18n::t!(\"security_audit.https_reason\").to_string()}: {err}" }
+                        }
+                        if let Some(hint) = &tls.error_hint {
+                            div { "{rust_i18n::t!(\"security_audit.https_hint\").to_string()}: {hint}" }
+                        }
                     }
                 }
             }

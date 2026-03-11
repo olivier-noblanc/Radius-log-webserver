@@ -59,6 +59,11 @@ pub fn Dashboard(props: DashboardProps) -> Element {
                 }
             }
 
+            // Notifications note (static, future-proof)
+            div { class: "lg:col-span-4 glass-panel p-3 text-xxs text-yellow-500",
+                "Notifications require HTTPS (or localhost). Use IIS/HTTP.sys for TLS if the certificate key is non-exportable."
+            }
+
             // Chart Space
             div { class: "lg:col-span-4 glass-panel p-6 min-h-[16rem] flex flex-col relative overflow-hidden",
                 if !props.stats.security_vulnerabilities.is_empty() {

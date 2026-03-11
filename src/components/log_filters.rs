@@ -63,6 +63,9 @@ pub fn LogFilters(props: LogFiltersProps) -> Element {
                 }
                 label { r#for: "notifToggle", class: "error-only-label", "ALERTS" }
             }
+            div { id: "notifWarning", class: "ml-4 text-[10px] text-yellow-500",
+                "Notifications require HTTPS (or localhost). If you use IIS proxy, ensure URL Rewrite/ARR and HTTPS binding are OK."
+            }
 
             input { r#type: "hidden", id: "sort_by", name: "sort_by", value: "timestamp" }
             input { r#type: "hidden", id: "sort_desc", name: "sort_desc", value: "true" }

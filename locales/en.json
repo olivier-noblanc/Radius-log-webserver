@@ -28,6 +28,16 @@
     "enterprise_wide": "Enterprise-wide (via Active Directory):",
     "local_machine_only": "Local Machine only (Standalone):",
     "tls_config": "TLS/SSL Configuration",
+    "https_status": "HTTPS Status",
+    "https_enabled": "HTTPS enabled",
+    "https_disabled": "HTTPS disabled",
+    "https_source": "Source",
+    "https_source_registry": "Registry (TlsThumbprint)",
+    "https_source_auto": "Auto (first eligible cert)",
+    "https_thumbprint": "Configured thumbprint",
+    "https_thumbprint_resolved": "Resolved thumbprint",
+    "https_reason": "Reason",
+    "https_hint": "Fix",
     "weak_ciphers": "Weak Ciphers Detected",
     "cipher_order": "Cipher Suite Negotiation Order",
     "managed_by_windows": "Managed by Windows Defaults (No GPO override detected)",
@@ -127,7 +137,11 @@
       "https_missing_desc": "The server is running in HTTP-only mode. Browser security features (Notifications, etc.) are disabled.",
       "https_missing_rec": "Configure a TLS certificate in the 'TlsThumbprint' registry key (HKLM\\SOFTWARE\\RadiusLogWebserver) to enable HTTPS on port 8443.",
       "https_not_found_title": "TLS Certificate Not Found",
-      "https_not_found_desc": "Thumbprint %{thumb} is configured but the certificate is missing from the LOCAL_MACHINE\\MY store."
+      "https_not_found_desc": "Thumbprint %{thumb} is configured but the certificate is missing from the LOCAL_MACHINE\\MY store.",
+      "https_failed_title": "HTTPS Failed to Start",
+      "https_failed_desc": "TLS initialization failed: %{error}. %{hint}",
+      "https_failed_rec": "HTTPS fix: %{hint}",
+      "notifications_https_rec": "Browser notifications require HTTPS (or localhost). If the certificate key is non-exportable, use IIS/HTTP.sys to terminate TLS."
     }
   }
 }
