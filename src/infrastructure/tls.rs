@@ -378,12 +378,12 @@ fn is_https_eligible(cert: &CertContext) -> bool {
         return false;
     };
 
-    if parsed.validity().is_valid().is_err() {
+    if !parsed.validity().is_valid() {
         return false;
     }
 
     if let Ok(Some(eku)) = parsed.extended_key_usage() {
-        return eku.server_auth;
+        return eku.value.server_auth;
     }
 
     true

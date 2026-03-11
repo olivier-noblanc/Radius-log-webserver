@@ -28,6 +28,12 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
         .count();
     let tls = &props.report.tls_status;
     let https_enabled = tls.https_enabled;
+    let https_source_label = rust_i18n::t!("security_audit.https_source").to_string();
+    let https_source_value = if tls.source == "registry" {
+        rust_i18n::t!("security_audit.https_source_registry").to_string()
+    } else {
+        rust_i18n::t!("security_audit.https_source_auto").to_string()
+    };
 
     rsx! {
         div { class: "security-audit-container p-6",
@@ -66,7 +72,7 @@ pub fn SecurityAudit(props: SecurityAuditProps) -> Element {
                         {if https_enabled { rust_i18n::t!("security_audit.https_enabled").to_string() } else { rust_i18n::t!("security_audit.https_disabled").to_string() }}
                     }
                     div { class: "text-xxs text-muted mt-2 space-y-1",
-                        div { "{rust_i18n::t!(\"security_audit.https_source\").to_string()}: {if tls.source == \"registry\" { rust_i18n::t!(\"security_audit.https_source_registry\").to_string() } else { rust_i18n::t!(\"security_audit.https_source_auto\").to_string() }}" }
+                        div { "{https_source_label}: " {https_source_value} }
                         if let Some(tp) = &tls.configured_thumbprint {
                             div { "{rust_i18n::t!(\"security_audit.https_thumbprint\").to_string()}: {tp}" }
                         }
